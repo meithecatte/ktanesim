@@ -1,0 +1,11 @@
+# the bot token you want the bot to use
+TOKEN = "eGfyrI1UWu-FyPy9kdBzE1xl.HEscxt.vBNq9p6BO2Y0eFRcI9A7ppfol1O"
+
+# numeric IDs of the text channels you want the bot to listen in
+ALLOWED_CHANNELS = [156302293923752856, 659213955513657646]
+
+# the character a message must start with to be interpreted by the bot
+PREFIX = '!'
+
+# number of leaderboard entries displayed by the !leaderboard command at once
+LEADERBOARD_PAGE_SIZE = 20

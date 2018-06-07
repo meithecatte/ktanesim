@@ -3,12 +3,10 @@ import asyncio
 import logging
 import leaderboard
 
-ALLOWED_CHANNELS = ['453477821508091905']
-PREFIX = '!'
-LEADERBOARD_PAGE_SIZE = 20
-
-with open('token') as f:
-	TOKEN = f.read()
+try:
+	from config import *
+except:
+	raise Exception("Copy config.template to config.py and edit the values!")
 
 logging.basicConfig(level=logging.INFO)
 client = discord.Client()
@@ -19,7 +17,7 @@ async def on_ready():
 
 @client.event
 async def on_message(msg):
-	if not msg.channel.is_private and msg.channel.id not in ALLOWED_CHANNELS: return
+	if type(msg.channel) is not discord.channel.DMChannel and msg.channel.id not in ALLOWED_CHANNELS: return
 	if not msg.content.startswith(PREFIX): return
 	parts = msg.content[1:].strip().split()
 	command = parts.pop(0)
@@ -31,15 +29,15 @@ async def on_message(msg):
 		leaderboard.record_penalty(msg.author, int(parts[0]))
 	elif command in ["leaderboard", "lb"]:
 		if not parts:
-			page = 0
-		elif len(parts) > 1 or not parts[0].isdigit():
-			await client.send_message(msg.channel, "%s Usage: `%sleaderboard [page number]`. Default: page 1. Aliases: `%slb`" % (msg.author.mention, PREFIX, PREFIX))
+			page = 1
+		elif len(parts) > 1 or not parts[0].isdigit() or parts[0] == '0':
+			await msg.channel.send("%s Usage: `%sleaderboard [page number]`. Default: page 1. Aliases: `%slb`" % (msg.author.mention, PREFIX, PREFIX))
+			return
 		else:
-			page = int(parts[0] - 1)
+			page = int(parts[0])
 
-		for entry in leaderboard.get_top(page * LEADERBOARD_PAGE_SIZE, LEADERBOARD_PAGE_SIZE):
-			print(repr(entry))
+		await msg.channel.send(leaderboard.format_page(page, LEADERBOARD_PAGE_SIZE))
 	else:
-		await client.send_message(msg.channel, "%s No such command: `%s`. Type %shelp for help" % (msg.author.mention, command, PREFIX))
+		await msg.channel.send("%s No such command: `%s`. Type %shelp for help" % (msg.author.mention, command, PREFIX))
 
 client.run(TOKEN)
