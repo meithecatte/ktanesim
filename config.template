@@ -7,5 +7,5 @@ ALLOWED_CHANNELS = [156302293923752856, 659213955513657646]
 # the character a message must start with to be interpreted by the bot
 PREFIX = '!'
 
-# number of leaderboard entries displayed by the !leaderboard command at once
-LEADERBOARD_PAGE_SIZE = 20
+LEADERBOARD_PAGE_SIZE = 10
+MAX_UNCLAIMED_LIST_SIZE = 10

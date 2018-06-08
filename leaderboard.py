@@ -23,7 +23,7 @@ def record_penalty(user, points):
 	_record(user, (-points, 0, 0))
 
 def format_page(page, pagesize):
-	entrycount = next(conn.execute('SELECT COUNT(1) FROM leaderboard'))[0]
+	entrycount = conn.execute('SELECT COUNT(1) FROM leaderboard').fetchone()[0]
 
 	if entrycount == 0:
 		return "The leaderboard is empty. Change it by solving a module!"
@@ -34,15 +34,19 @@ def format_page(page, pagesize):
 		return "B... but the leaderboard has only " + ("{:d} pages".format(pagecount) if pagecount > 1 else "one page")
 
 	offset = (page - 1) * pagesize
-	entries = conn.execute('SELECT username, solves, strikes, points FROM leaderboard ORDER BY points DESC LIMIT ? OFFSET ?', (pagesize, offset)).fetchall()
-	max_name_length = max(map(lambda user: len(user[0]), entries))
+	entries = conn.execute('SELECT (SELECT COUNT(1) FROM leaderboard AS i WHERE i.points > o.points) + 1 AS position, o.username, o.solves, o.strikes, o.points FROM leaderboard AS o ORDER BY o.points DESC LIMIT ? OFFSET ?', (pagesize, offset)).fetchall()
+	max_name_length = max(map(lambda user: len(user[1]), entries))
 
-	index = (page - 1) * pagesize + 1
-	last_index = index + len(entries) - 1
-	max_index_digits = len(str(last_index))
+	max_index_digits = len(str(entries[-1][0]))
 	reply = "Leaderboard page {:d} of {:d}: ```\n{:s}   Solves Strikes Points".format(page, pagecount, ' ' * (max_index_digits + max_name_length))
 	for entry in entries:
-		reply += "\n%s. %s %6d %7d %6d" % (str(index).rjust(max_index_digits), entry[0].ljust(max_name_length), entry[1], entry[2], entry[3])
-		index += 1
+		reply += "\n{:-{numwidth}d}. {:{namewidth}s} {:6d} {:7d} {:6d}".format(*entry, numwidth=max_index_digits, namewidth=max_name_length)
 	reply += "```"
 	return reply
+
+def format_rank(user):
+	entry = conn.execute('SELECT (SELECT COUNT(1) FROM leaderboard AS i WHERE i.points > o.points) + 1 AS position, o.solves, o.strikes, o.points FROM leaderboard AS o WHERE o.id = ?', (user.id, )).fetchone()
+	if entry:
+		return "{:s} You're #{:d} with {:d} solves, {:d} strikes and {:d} points".format(user.mention, *entry)
+	else:
+		return "{:s} Sorry, you have to play this game to be included in the leaderboard".format(user.mention)
