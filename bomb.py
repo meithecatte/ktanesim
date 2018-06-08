@@ -2,8 +2,9 @@ import time
 import random
 
 class Module:
-	def __init__(self, bomb):
+	def __init__(self, bomb, ident):
 		self.bomb = bomb
+		self.ident = ident
 		self.solved = False
 		self.claim = None
 	
@@ -52,11 +53,14 @@ class Bomb:
 		for _ in range(5):
 			self.edgework.append(random.choice(Bomb.EDGEWORK_WIDGETS)())
 		self.modules = []
-		for module in modules:
-			self.modules.append(module(self))
+		for index, module in enumerate(modules):
+			self.modules.append(module(self, index + 1))
 		self.hummus = hummus
 		self.strikes = 0
 		self.start_time = time.monotonic()
+
+	def get_claims(self, user):
+		return [module for module in self.modules if module.claim is not None and module.claim.id == user.id]
 
 	def get_widgets(self, type_):
 		return list(filter(lambda widget: type(widget) is type_, self.edgework))
