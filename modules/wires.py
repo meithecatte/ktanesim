@@ -79,10 +79,32 @@ class Wires(Module):
 		def last(color):
 			return len(self.colors) - 1 - self.colors[::-1].index(color)
 
-		serial_odd = int(self.bomb.serial[-1]) % 2 == 1
 		if self.bomb.hummus:
-			raise hell # unimplemented
+			serial_letter = self.bomb.serial[0].isalpha()
+			if len(self.colors) == 3:
+				if count("white") == 0 and serial_letter: return 1 # If there are no white wires and the serial number starts with a letter, cut the second wire.
+				elif count("red") == 1: return 0 # Otherwise, if there is exactly one red wire, cut the first wire.
+				elif count("blue") > 1: return first("blue") # Otherwise, if there is more than one blue wire, cut the first blue wire.
+				elif self.colors[-1] == "red": return 2 # Otherwise, if the last wire is red, cut the last wire.
+				else: return 1 # Otherwise, cut the second wire.
+			elif len(self.colors) == 4:
+				if count("yellow") == 1 and self.colors[-1] == "red": return 2 # If there is exactly one yellow wire and the last wire is red, cut the third wire.
+				elif self.colors[-1] == "white": return 1 # Otherwise, if the last wire is white, cut the second wire.
+				elif count("yellow") == 0: return 0 # Otherwise, if there are no yellow wires, cut the first wire.
+				else: return 3 # Otherwise, cut the last wire.
+			elif len(self.colors) == 5:
+				if count("black") > 1 and serial_letter: return 1 # If there is more than one black wire and the serial number starts with a letter, cut the second wire.
+				elif self.colors[-1] == "blue" and count("red") == 1: return 0 # Otherwise, if the last wire is blue and there is exactly one red wire, cut the first wire.
+				elif self.colors[-1] == "red": return 3 # Otherwise, if the last wire is red, cut the fourth wire.
+				elif count("red") == 0: return 2 # Otherwise, if there are no red wires, cut the third wire.
+				else: return 0 # Otherwise, cut the first wire.
+			elif len(self.colors) == 6:
+				if count("red") == 1: return first("red") # If there is exactly one red wire, cut the red wire.
+				elif self.colors[-1] == "red": return 5 # Otherwise, if the last wire is red, cut the last wire.
+				elif count("yellow") == 0: return 3 # Otherwise, if there are no yellow wires, cut the fourth wire.
+				else: return 1 # Otherwise, cut the second wire.
 		else:
+			serial_odd = int(self.bomb.serial[-1]) % 2 == 1
 			if len(self.colors) == 3:
 				if count("red") == 0: return 1 # If there are no red wires, cut the second wire.
 				elif self.colors[-1] == "white": return 2 # Otherwise, if the last wire is white, cut the last wire.
