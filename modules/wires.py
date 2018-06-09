@@ -46,8 +46,7 @@ class Wires(Module):
 			self.colors.append(random.choice(list(Wires.COLORS.keys())))
 
 	def render(self):
-		svg = '<?xml version="1.0" encoding="utf-8" standalone="yes"?>'
-		svg += '<svg version="1.1" viewBox="0.0 0.0 348.0 348.0" fill="#ffffff" stroke="none" stroke-linecap="square" stroke-miterlimit="10">'
+		svg = '<svg viewBox="0.0 0.0 348.0 348.0" fill="#ffffff" stroke="none" stroke-linecap="square" stroke-miterlimit="10">'
 		svg += '<path stroke="#000000" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m5.07874 5.7758217l336.9134 0l0 337.66928l-336.9134 0z" fill-rule="nonzero" />'
 		svg += '<path stroke="#000000" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m47.026245 61.745407l29.16536 0l0 225.73228l-29.16536 0z" fill-rule="nonzero" />'
 		svg += '<path stroke="#000000" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m257.56955 106.58793l29.165344 0l0 178.20474l-29.165344 0z" fill-rule="nonzero" />'
