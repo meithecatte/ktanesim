@@ -85,7 +85,13 @@ class TheButton(Module):
 	
 	def should_hold(self):
 		if self.bomb.hummus:
-			raise hell # unimplemented
+			if self.button_color == "yellow" and self.button_label == "PRESS": return True
+			elif self.button_color == "white" and self.bomb.has_lit_indicator("BOB"): return False
+			elif self.bomb.get_battery_count() > 1: return True
+			elif self.button_color == "red": return False
+			elif self.button_color == "blue": return True
+			elif self.bomb.get_battery_count() > 2: return False # never reached because of the at least one battery rule
+			else: return True
 		else:
 			if self.button_color == "blue" and self.button_label == "ABORT": return True
 			elif self.bomb.get_battery_count() > 1 and self.button_label == "DETONATE": return False
@@ -97,6 +103,6 @@ class TheButton(Module):
 
 	def get_release_digit(self):
 		if self.bomb.hummus:
-			raise hell # unimplemented
+			return {"white": 3, "yellow": 3, "red": 5, "blue": 4}[self.strip_color]
 		else:
 			return {"blue": 4, "white": 1, "yellow": 5, "red": 1}[self.strip_color]
