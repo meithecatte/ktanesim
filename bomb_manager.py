@@ -1,3 +1,7 @@
+import random
+import discord
+from bomb import Bomb
+from config import *
 from modules.wires import Wires
 from modules.the_button import TheButton
 
@@ -13,9 +17,9 @@ bombs = {}
 
 # given a function, wrap it around a "bomb must be present" check
 def bomb_present(func):
-	async def wrapper(msg, parts):
+	async def wrapper(msg, *args):
 		if msg.channel.id in bombs:
-			func(msg, parts)
+			await func(msg, *args)
 		else:
 			await msg.channel.send("{:s} No bomb is currently running in this channel.".format(msg.author.mention))
 	return wrapper
@@ -26,7 +30,7 @@ async def cmd_edgework(msg, parts):
 
 @bomb_present
 async def cmd_unclaimed(msg, parts):
-	modules = [module for module in bombs[msg.channel.id].modules if not module.claim]
+	modules = bombs[msg.channel.id].get_unclaimed()
 
 	if len(modules) > MAX_UNCLAIMED_LIST_SIZE:
 		reply = 'A random sample of unclaimed modules:'
@@ -48,7 +52,7 @@ async def cmd_unclaimed(msg, parts):
 
 @bomb_present
 async def cmd_claims(msg, parts):
-	claims = ['{:s} (#{:d})'.format(module.display_name, module.ident) for module in bombs[msg.channel.id].get_claims(msg.author)]
+	claims = list(map(str, bombs[msg.channel.id].get_claims(msg.author)))
 	if len(claims) == 0:
 		await msg.channel.send("{:s} You have not claimed any modules.".format(msg.author.mention))
 	elif len(claims) == 1:
@@ -57,11 +61,52 @@ async def cmd_claims(msg, parts):
 		await msg.channel.send("{:s} You have claimed {:s} and {:s}.".format(msg.author.mention, ', '.join(claims[:-1]), claims[-1]))
 
 @bomb_present
-def handle_module_command(msg, parts):
-	pass
+async def cmd_claimany(msg, parts):
+	await handle_module_command(msg, random.choice(bombs[msg.channel.id].get_unclaimed()).ident, ["claim"])
+
+@bomb_present
+async def cmd_claimanyview(msg, parts):
+	await handle_module_command(msg, random.choice(bombs[msg.channel.id].get_unclaimed()).ident, ["claimview"])
+
+@bomb_present
+async def cmd_status(msg, parts):
+	bomb = bombs[msg.channel.id]
+	await msg.channel.send("{:s}Zen mode on, time: {:s}, {:d} strikes, {:d} out of {:d} modules solved.".format(
+		('Hummus mode on, ' if bomb.hummus else ''), bomb.get_time_formatted(), bomb.strikes, bomb.get_solved_count(), len(bomb.modules)))
+@bomb_present
+async def handle_module_command(msg, ident, parts):
+	bomb = bombs[msg.channel.id]
+	if ident > len(bomb.modules):
+		await msg.channel.send("{:s} The bomb has only {:d} modules!".format(msg.author.mention, len(bomb.modules)))
+		return
+	module = bomb.modules[ident - 1]
+	if parts[0] == "claim":
+		if await module.cmd_claim(msg):
+			await msg.channel.send("{:s} {:s} is yours now.".format(msg.author.mention, str(module)))
+	elif parts[0] == "unclaim":
+		await module.cmd_unclaim(msg)
+	elif parts[0] == "view":
+		await module.cmd_view(msg, '')
+	elif parts[0] in ["cv", "claimview"]:
+		if await module.cmd_claim(msg):
+			await module.cmd_view(msg, "{:s} {:s} is yours now.".format(msg.author.mention, str(module)))
+	elif parts[0] == "player":
+		if module.claim:
+			await msg.channel.send("{:s} {:s} has been claimed by {:s}".format(msg.author.mention, str(module), str(module.claim)))
+		else:
+			await msg.channel.send("{:s} {:s} has not been claimed by anybody".format(msg.author.mention, str(module)))
+	elif parts[0] == "take":
+		await module.take(msg)
+	elif parts[0] == "mine":
+		await module.mine(msg)
+	else:
+		await module.command(msg, parts)
 
 async def cmd_modules(msg, parts):
 	await msg.channel.send("Available modules:\nVanilla: `" + '`, `'.join(VANILLA_MODULES.keys()) + "`\nModded: `" + '`, `'.join(MODDED_MODULES.keys()) + '`')
+
+async def update_presence():
+	await client.change_presence(activity=discord.Game("{:d} bombs. Try {prefix}help".format(len(bombs), prefix=PREFIX)))
 
 async def cmd_run(msg, parts):
 	if msg.channel.id in bombs:
@@ -150,3 +195,4 @@ async def cmd_run(msg, parts):
 	bomb = Bomb(modules, hummus)
 	bombs[msg.channel.id] = bomb
 	await msg.channel.send("A bomb with {:d} modules has been armed!\nEdgework: `{:s}`".format(len(bomb.modules), bomb.get_edgework()))
+	await update_presence()

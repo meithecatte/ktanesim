@@ -1,5 +1,7 @@
 import time
 import random
+import discord
+from config import *
 
 class Module:
 	def __init__(self, bomb, ident):
@@ -9,12 +11,53 @@ class Module:
 		self.claim = None
 	
 	def get_manual(self):
-		if self.supports_hummus and bomb.hummus:
-			getparam = '?VanillaRuleSeed = 2'
+		if self.supports_hummus and self.bomb.hummus:
+			getparam = '?VanillaRuleSeed=2'
 		else:
 			getparam = ''
 
 		return 'https://ktane.timwi.de/manual/{:s}.html{:s}'.format(self.manual_name, getparam)
+	
+	def get_help(self):
+		return self.help_text.format(prefix=PREFIX, ident=self.ident)
+	def __str__(self):
+		return '{:s} (#{:d})'.format(self.display_name, self.ident)
+	
+	def handle_solved(self):
+		self.solved = True
+		self.claim = None
+	
+	def render(self):
+		return open('placeholder.jpg', 'rb'), 'render.jpg'
+	
+	async def cmd_view(self, msg, text):
+		stream, filename = self.render()
+		embed = discord.Embed(title=str(self), description='[Manual]({:s}). {:s}'.format(self.get_manual(), self.get_help())).set_image(url="attachment://"+filename)
+		await msg.channel.send(text, file=discord.File(stream, filename=filename), embed=embed)
+
+	async def cmd_claim(self, msg):
+		if self.solved:
+			await msg.channel.send("{:s} {:s} has been solved already.".format(msg.author.mention, str(self)))
+		if self.claim is not None:
+			if self.claim.id == msg.author.id:
+				await msg.channel.send("{:s} You have already claimed {:s}.".format(msg.author.mention, str(self)))
+			else:
+				await msg.channel.send("{:s} Sorry, {:s} has already been claimed by {:s}. Did you mean `{prefix}{:d} take`?"
+					.format(msg.author.mention, str(self), str(self.claim), self.ident, prefix=PREFIX))
+		elif len(self.bomb.get_claims(msg.author)) >= MAX_CLAIMS_PER_PLAYER:
+			await msg.channel.send("{:s} Sorry, you can only claim {:d} modules at once. Try `{prefix}claims`."
+				.format(msg.author.mention, MAX_CLAIMS_PER_PLAYER, prefix=PREFIX))
+		else:
+			self.claim = msg.author
+			return True
+		return False
+	
+	async def cmd_unclaim(self, msg):
+		if self.claim and self.claim.id == msg.author.id:
+			self.claim = None
+			await msg.channel.send("{:s} has unclaimed {:s}".format(msg.author.id, str(self)))
+		else:
+			await msg.channel.send("{:s} You did not claim {:s}, so you can't unclaim it.".format(msg.author.id, str(self)))
 
 class BatteryWidget:
 	def __init__(self):
@@ -78,7 +121,24 @@ class Bomb:
 			' '.join(map(str, self.get_widgets(PortPlateWidget))),
 			self.serial]
 		return ' // '.join(widget for widget in edgework if widget != '')
+	
+	def get_unclaimed(self):
+		return [module for module in self.modules if module.claim is None]
 
+	def get_time(self):
+		return time.monotonic() - self.start_time
+	
+	def get_time_formatted(self):
+		seconds = self.get_time()
+		minutes = int(seconds // 60)
+		seconds %= 60
+		hours = minutes // 60
+		minutes %= 60
+		return '{:d}:{:02d}:{:05.2f}'.format(hours, minutes, seconds)
+	
+	def get_solved_count(self):
+		return sum(module.solved for module in self.modules)
+	
 	def _randomize_serial(self):
 		def get_any():
 			return random.choice(Bomb.SERIAL_NUMBER_CHARACTERS)
