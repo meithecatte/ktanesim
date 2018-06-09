@@ -196,7 +196,7 @@ async def cmd_run(msg, parts):
 				modules.append(random.choice(list(module_candidates_modded.values())))
 	else:
 		modules = []
-		module_candidates = VANILLA_MODULES + MODDED_MODULES
+		module_candidates = {**VANILLA_MODULES, **MODDED_MODULES}
 		for module in parts:
 			if module not in module_candidates:
 				await msg.channel.send("{:s} No such module: `{:s}`".format(msg.author.mention, module))
