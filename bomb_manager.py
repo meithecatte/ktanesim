@@ -111,6 +111,7 @@ async def defused(channel):
 	bomb = bombs[channel.id]
 	await channel.send("The bomb has been defused after {:s} and {:d} strikes".format(bomb.get_time_formatted(), bomb.strikes))
 	del bombs[channel.id]
+	await update_presence()
 
 async def cmd_modules(msg, parts):
 	await msg.channel.send("Available modules:\nVanilla: `" + '`, `'.join(VANILLA_MODULES.keys()) + "`\nModded: `" + '`, `'.join(MODDED_MODULES.keys()) + '`')
