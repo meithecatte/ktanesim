@@ -1,6 +1,8 @@
 import time
 import random
 import discord
+import leaderboard
+import bomb_manager
 from config import *
 
 class Module:
@@ -9,7 +11,10 @@ class Module:
 		self.ident = ident
 		self.solved = False
 		self.claim = None
-	
+
+	def __str__(self):
+		return '{:s} (#{:d})'.format(self.display_name, self.ident)
+
 	def get_manual(self):
 		if self.supports_hummus and self.bomb.hummus:
 			getparam = '?VanillaRuleSeed=2'
@@ -17,19 +22,26 @@ class Module:
 			getparam = ''
 
 		return 'https://ktane.timwi.de/manual/{:s}.html{:s}'.format(self.manual_name, getparam)
-	
+
 	def get_help(self):
 		return self.help_text.format(prefix=PREFIX, ident=self.ident)
-	def __str__(self):
-		return '{:s} (#{:d})'.format(self.display_name, self.ident)
-	
-	def handle_solved(self):
+
+	async def handle_solved(self, msg):
 		self.solved = True
 		self.claim = None
-	
+		leaderboard.record_solve(msg.author, self.module_score)
+		await self.cmd_view(msg, "{:s} solved {:s}. {:d} {:s} been awarded.".format(msg.author.mention, str(self), self.module_score, 'points have' if self.module_score > 1 else 'point has'))
+		if self.bomb.get_solved_count() == len(self.bomb.modules):
+			await bomb_manager.defused(msg.channel)
+
+	async def handle_strike(self, msg):
+		self.bomb.strikes += 1
+		leaderboard.record_strike(msg.author, self.strike_penalty)
+		await self.cmd_view(msg, "{:s} got a strike. -{:d} point{:s} from {:s}".format(str(self), self.strike_penalty, 's' if self.strike_penalty > 1 else '', msg.author.mention))
+
 	def render(self):
 		return open('placeholder.jpg', 'rb'), 'render.jpg'
-	
+
 	async def cmd_view(self, msg, text):
 		stream, filename = self.render()
 		embed = discord.Embed(title=str(self), description='[Manual]({:s}). {:s}'.format(self.get_manual(), self.get_help())).set_image(url="attachment://"+filename)
@@ -38,11 +50,11 @@ class Module:
 	async def cmd_claim(self, msg):
 		if self.solved:
 			await msg.channel.send("{:s} {:s} has been solved already.".format(msg.author.mention, str(self)))
-		if self.claim is not None:
+		elif self.claim is not None:
 			if self.claim.id == msg.author.id:
 				await msg.channel.send("{:s} You have already claimed {:s}.".format(msg.author.mention, str(self)))
 			else:
-				await msg.channel.send("{:s} Sorry, {:s} has already been claimed by {:s}. Did you mean `{prefix}{:d} take`?"
+				await msg.channel.send("{:s} Sorry, {:s} has already been claimed by {:s}. If you think they have abandoned it, you may type `{prefix}{:d} take` to free it up."
 					.format(msg.author.mention, str(self), str(self.claim), self.ident, prefix=PREFIX))
 		elif len(self.bomb.get_claims(msg.author)) >= MAX_CLAIMS_PER_PLAYER:
 			await msg.channel.send("{:s} Sorry, you can only claim {:d} modules at once. Try `{prefix}claims`."
@@ -51,13 +63,13 @@ class Module:
 			self.claim = msg.author
 			return True
 		return False
-	
+
 	async def cmd_unclaim(self, msg):
 		if self.claim and self.claim.id == msg.author.id:
 			self.claim = None
-			await msg.channel.send("{:s} has unclaimed {:s}".format(msg.author.id, str(self)))
+			await msg.channel.send("{:s} has unclaimed {:s}".format(msg.author.mention, str(self)))
 		else:
-			await msg.channel.send("{:s} You did not claim {:s}, so you can't unclaim it.".format(msg.author.id, str(self)))
+			await msg.channel.send("{:s} You did not claim {:s}, so you can't unclaim it.".format(msg.author.mention, str(self)))
 
 class BatteryWidget:
 	def __init__(self):
@@ -69,7 +81,7 @@ class IndicatorWidget:
 	def __init__(self):
 		self.code = random.choice(self.INDICATORS)
 		self.lit = random.random() > 0.4
-	
+
 	def __str__(self):
 		return ('*' if self.lit else '') + self.code
 
@@ -82,7 +94,7 @@ class PortPlateWidget:
 		for port in group:
 			if random.random() > 0.5:
 				self.ports.append(port)
-	
+
 	def __str__(self):
 		return '[' + (', '.join(self.ports) if self.ports else 'Empty') + ']'
 
@@ -110,10 +122,10 @@ class Bomb:
 
 	def get_battery_count(self):
 		return sum(widget.battery_count for widget in self.get_widgets(BatteryWidget))
-	
+
 	def get_holder_count(self):
 		return len(self.get_widgets(BatteryWidget))
-	
+
 	def get_edgework(self):
 		edgework = [
 			'{:d}B {:d}H'.format(self.get_battery_count(), self.get_holder_count()),
@@ -121,13 +133,13 @@ class Bomb:
 			' '.join(map(str, self.get_widgets(PortPlateWidget))),
 			self.serial]
 		return ' // '.join(widget for widget in edgework if widget != '')
-	
+
 	def get_unclaimed(self):
-		return [module for module in self.modules if module.claim is None]
+		return [module for module in self.modules if module.claim is None and not module.solved]
 
 	def get_time(self):
 		return time.monotonic() - self.start_time
-	
+
 	def get_time_formatted(self):
 		seconds = self.get_time()
 		minutes = int(seconds // 60)
@@ -135,15 +147,17 @@ class Bomb:
 		hours = minutes // 60
 		minutes %= 60
 		return '{:d}:{:02d}:{:05.2f}'.format(hours, minutes, seconds)
-	
+
 	def get_solved_count(self):
 		return sum(module.solved for module in self.modules)
-	
+
 	def _randomize_serial(self):
 		def get_any():
 			return random.choice(Bomb.SERIAL_NUMBER_CHARACTERS)
+
 		def get_letter():
 			return random.choice(Bomb.SERIAL_NUMBER_CHARACTERS[:-10])
+
 		def get_digit():
 			return str(random.randint(0, 9))
 

@@ -8,12 +8,14 @@ class Wires(Module):
 	manual_name = "Wires"
 	supports_hummus = True
 	help_text = "`{prefix}{ident} cut 3` to cut the third wire. Empty spaces are not counted."
+	module_score = 1
+	strike_penalty = 6
 
 	COLORS = {
 		"black": "#000000",
 		"blue":  "#0000ff",
 		"red":   "#ff0000",
-		"white": "#888888",
+		"white": "#dddddd",
 		"yellow":"#ff0000"
 	}
 
@@ -55,7 +57,18 @@ class Wires(Module):
 				(Wires.PATHS_CUT if cut else Wires.PATHS_UNCUT)[pos])
 		svg += '</svg>'
 		return io.BytesIO(cairosvg.svg2png(svg.encode('utf-8'))), 'render.png'
-	
+
+	async def command(self, msg, parts):
+		if len(parts) != 2 or parts[0] != "cut" or not parts[1].isdigit():
+			await msg.channel.send("{:s} {:s}".format(msg.author.mention, self.get_help()))
+		else:
+			wire = int(parts[1]) - 1
+			self.cut[wire] = True
+			if self.get_solution() == wire:
+				await self.handle_solved(msg)
+			else:
+				await self.handle_strike(msg)
+
 	def get_solution(self):
 		def count(color):
 			return self.colors.count(color)
@@ -67,7 +80,7 @@ class Wires(Module):
 			return len(self.colors) - 1 - self.colors[::-1].index(color)
 
 		serial_odd = int(self.bomb.serial[-1]) % 2 == 1
-		if hummus:
+		if self.bomb.hummus:
 			raise hell # unimplemented
 		else:
 			if len(self.colors) == 3:

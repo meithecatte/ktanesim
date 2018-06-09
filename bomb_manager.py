@@ -100,7 +100,17 @@ async def handle_module_command(msg, ident, parts):
 	elif parts[0] == "mine":
 		await module.mine(msg)
 	else:
-		await module.command(msg, parts)
+		if module.solved:
+			await msg.channel.send("{:s} {:s} has already been solved.".format(msg.author.mention, str(module)))
+		elif module.claim and module.claim.id != msg.author.id:
+			await msg.channel.send("{:s} Sorry, {:s} has been claimed by {:s}.".format(msg.author.mention, str(module), str(module.claim)))
+		else:
+			await module.command(msg, parts)
+
+async def defused(channel):
+	bomb = bombs[channel.id]
+	await channel.send("The bomb has been defused after {:s} and {:d} strikes".format(bomb.get_time_formatted(), bomb.strikes))
+	del bombs[channel.id]
 
 async def cmd_modules(msg, parts):
 	await msg.channel.send("Available modules:\nVanilla: `" + '`, `'.join(VANILLA_MODULES.keys()) + "`\nModded: `" + '`, `'.join(MODDED_MODULES.keys()) + '`')
