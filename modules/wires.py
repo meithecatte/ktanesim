@@ -16,7 +16,7 @@ class Wires(Module):
 		"blue":  "#0000ff",
 		"red":   "#ff0000",
 		"white": "#dddddd",
-		"yellow":"#ff0000"
+		"yellow":"#ffff00"
 	}
 
 	PATHS_UNCUT = [
