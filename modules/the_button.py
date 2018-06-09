@@ -1,7 +1,9 @@
 import random
 import io
 import cairosvg
+import asyncio
 from bomb import Module
+from config import *
 
 class TheButton(Module):
 	display_name = "The Button"
@@ -43,3 +45,58 @@ class TheButton(Module):
 			svg += '<path stroke="#000" d="M40.97 95.997H218.89v185.701H40.97zM17.709 72.895L41.173 95.95M219.097 281.696l23.087 24.283M242.157 72.895L219.512 95.95M40.764 281.7l-22.646 23.056"/>'
 		svg += '</svg>'
 		return io.BytesIO(cairosvg.svg2png(svg.encode('utf-8'))), 'render.png'
+	
+	async def command(self, msg, parts):
+		if len(parts) not in range(1, 2+1):
+			await self.usage(msg)
+		elif len(parts) == 1:
+			if self.strip_color is not None and parts[0] in ["tap", "hold"]:
+				await msg.channel.send('{:s} The button is being held. Use `{prefix}{ident} release <number>` to release it.'.format(msg.author.mention, prefix=PREFIX, ident=self.ident))
+			elif parts[0] == "tap":
+				if self.should_hold():
+					await self.handle_strike(msg)
+				else:
+					await self.handle_solved(msg)
+			elif parts[0] == "hold":
+				await self.start_holding(msg)
+			else:
+				await self.usage(msg)
+		else:
+			if parts[0] != "release" or not parts[1].isdigit() or len(parts[1]) != 1:
+				await self.usage(msg)
+			elif self.strip_color is None:
+				await msg.channel.send('{:s} Hold the button with `!{prefix}{ident} hold` first.'.format(msg.author.mention, prefix=PREFIX, ident=self.ident))
+			else:
+				time = self.bomb.get_time_formatted()
+				while parts[1] not in time:
+					await asyncio.sleep(0.5)
+					time = self.bomb.get_time_formatted()
+				expected = self.get_release_digit()
+				print("Releasing at", time, "expected", expected, "answer", parts[1])
+				self.strip_color = None
+				if self.should_hold() and str(expected) in time:
+					await self.handle_solved(msg)
+				else:
+					await self.handle_strike(msg)
+
+	async def start_holding(self, msg):
+		self.strip_color = random.choice(list(TheButton.COLORS.keys()))
+		await self.cmd_view(msg, "{:s} The button is being held.".format(msg.author.mention))
+	
+	def should_hold(self):
+		if self.bomb.hummus:
+			raise hell # unimplemented
+		else:
+			if self.button_color == "blue" and self.button_label == "ABORT": return True
+			elif self.bomb.get_battery_count() > 1 and self.button_label == "DETONATE": return False
+			elif self.button_color == "white" and self.bomb.has_lit_indicator("CAR"): return True
+			elif self.bomb.get_battery_count() > 2 and self.bomb.has_lit_indicator("FRK"): return False
+			elif self.button_color == "yellow": return True
+			elif self.button_color == "red" and self.button_label == "HOLD": return False
+			else: return True
+
+	def get_release_digit(self):
+		if self.bomb.hummus:
+			raise hell # unimplemented
+		else:
+			return {"blue": 4, "white": 1, "yellow": 5, "red": 1}[self.strip_color]

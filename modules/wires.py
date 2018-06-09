@@ -59,7 +59,7 @@ class Wires(Module):
 
 	async def command(self, msg, parts):
 		if len(parts) != 2 or parts[0] != "cut" or not parts[1].isdigit():
-			await msg.channel.send("{:s} {:s}".format(msg.author.mention, self.get_help()))
+			await self.usage(msg)
 		else:
 			wire = int(parts[1]) - 1
 			self.cut[wire] = True

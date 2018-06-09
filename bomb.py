@@ -27,6 +27,9 @@ class Module:
 	def get_help(self):
 		return self.help_text.format(prefix=PREFIX, ident=self.ident)
 
+	async def usage(self, msg):
+		await msg.channel.send("{:s} {:s}".format(msg.author.mention, self.get_help()))
+
 	async def handle_solved(self, msg):
 		self.solved = True
 		self.claim = None
@@ -127,6 +130,11 @@ class Bomb:
 	def get_holder_count(self):
 		return len(self.get_widgets(BatteryWidget))
 
+	def has_lit_indicator(self, code):
+		for indicator in self.get_widgets(IndicatorWidget):
+			if indicator.lit and indicator.code == code:
+				return True
+
 	def get_edgework(self):
 		edgework = [
 			'{:d}B {:d}H'.format(self.get_battery_count(), self.get_holder_count()),
@@ -142,12 +150,12 @@ class Bomb:
 		return time.monotonic() - self.start_time
 
 	def get_time_formatted(self):
-		seconds = self.get_time()
-		minutes = int(seconds // 60)
+		seconds = int(self.get_time())
+		minutes = seconds // 60
 		seconds %= 60
 		hours = minutes // 60
 		minutes %= 60
-		return '{:d}:{:02d}:{:05.2f}'.format(hours, minutes, seconds)
+		return '{:d}:{:02d}:{:02d}'.format(hours, minutes, seconds)
 
 	def get_solved_count(self):
 		return sum(module.solved for module in self.modules)
