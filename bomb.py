@@ -1,5 +1,6 @@
 import time
 import random
+from urllib.parse import quote as urlencode
 import discord
 import leaderboard
 import bomb_manager
@@ -21,7 +22,7 @@ class Module:
 		else:
 			getparam = ''
 
-		return 'https://ktane.timwi.de/manual/{:s}.html{:s}'.format(self.manual_name, getparam)
+		return 'https://ktane.timwi.de/manual/{:s}.html{:s}'.format(urlencode(self.manual_name), getparam)
 
 	def get_help(self):
 		return self.help_text.format(prefix=PREFIX, ident=self.ident)
