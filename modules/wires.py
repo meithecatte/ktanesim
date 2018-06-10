@@ -1,6 +1,4 @@
 import random
-import io
-import cairosvg
 from bomb import Module
 
 class Wires(Module):
@@ -45,7 +43,7 @@ class Wires(Module):
 		for _ in range(wire_count):
 			self.colors.append(random.choice(list(Wires.COLORS.keys())))
 
-	def render(self):
+	def get_svg(self):
 		svg = '<svg viewBox="0.0 0.0 348.0 348.0" fill="#ffffff" stroke="none" stroke-linecap="square" stroke-miterlimit="10">'
 		svg += '<path stroke="#000000" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m5.07874 5.7758217l336.9134 0l0 337.66928l-336.9134 0z" fill-rule="nonzero" />'
 		svg += '<path stroke="#000000" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="butt" d="m47.026245 61.745407l29.16536 0l0 225.73228l-29.16536 0z" fill-rule="nonzero" />'
@@ -55,7 +53,7 @@ class Wires(Module):
 			svg += '<path stroke="{:s}" stroke-width="6.0" stroke-linejoin="round" stroke-linecap="butt" d="{:s}" />'.format(Wires.COLORS[color],
 				(Wires.PATHS_CUT if cut else Wires.PATHS_UNCUT)[pos])
 		svg += '</svg>'
-		return io.BytesIO(cairosvg.svg2png(svg.encode('utf-8'))), 'render.png'
+		return svg
 
 	async def command(self, msg, parts):
 		if len(parts) != 2 or parts[0] != "cut" or not parts[1].isdigit():

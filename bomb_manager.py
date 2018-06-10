@@ -4,13 +4,15 @@ from bomb import Bomb
 from config import *
 from modules.wires import Wires
 from modules.the_button import TheButton
+from modules.keypad import Keypad
 
 VANILLA_MODULES = {
-	"wires": Wires
+	"wires": Wires,
+	"theButton": TheButton
 }
 
 MODDED_MODULES = {
-	"theButton": TheButton
+	"keypad": Keypad
 }
 
 bombs = {}

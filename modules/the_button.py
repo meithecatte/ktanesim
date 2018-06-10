@@ -1,6 +1,4 @@
 import random
-import io
-import cairosvg
 import asyncio
 from bomb import Module
 from config import *
@@ -27,7 +25,7 @@ class TheButton(Module):
 		self.button_color = random.choice(list(TheButton.COLORS.keys()))
 		self.strip_color = None
 
-	def render(self):
+	def get_svg(self):
 		svg = '<svg viewBox="0.0 0.0 348.0 348.0" fill="none" stroke="none" strike-linejoin="round" stroke-linecap="butt" stroke-miterlimit="10">'
 		svg += '<path stroke="#000" fill="#fff" stroke-width="2" d="M5.079 5.776h336.913v337.67H5.08z"/>'
 		svg += '<path stroke="#000" fill="#ccc" stroke-width="2" d="M55.186 58.892H81.14v12.284H55.186zM180.336 58.892h25.953v12.284h-25.953zM84.142 63.423h92.252v7.748H84.142z"/>'
@@ -44,7 +42,7 @@ class TheButton(Module):
 		if self.strip_color is None:
 			svg += '<path stroke="#000" d="M40.97 95.997H218.89v185.701H40.97zM17.709 72.895L41.173 95.95M219.097 281.696l23.087 24.283M242.157 72.895L219.512 95.95M40.764 281.7l-22.646 23.056"/>'
 		svg += '</svg>'
-		return io.BytesIO(cairosvg.svg2png(svg.encode('utf-8'))), 'render.png'
+		return svg
 	
 	async def command(self, msg, parts):
 		if len(parts) not in range(1, 2+1):

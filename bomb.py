@@ -2,6 +2,8 @@ import time
 import random
 from urllib.parse import quote as urlencode
 import discord
+import io
+import cairosvg
 import leaderboard
 import bomb_manager
 from config import *
@@ -44,7 +46,7 @@ class Module:
 		await self.cmd_view(msg, "{:s} got a strike. -{:d} point{:s} from {:s}".format(str(self), self.strike_penalty, 's' if self.strike_penalty > 1 else '', msg.author.mention))
 
 	def render(self):
-		return open('placeholder.jpg', 'rb'), 'render.jpg'
+		return io.BytesIO(cairosvg.svg2png(self.get_svg().encode('utf-8'), unsafe=True)), 'render.png'
 
 	async def cmd_view(self, msg, text):
 		stream, filename = self.render()
@@ -107,6 +109,8 @@ class Bomb:
 	EDGEWORK_WIDGETS = [BatteryWidget, IndicatorWidget, PortPlateWidget]
 
 	def __init__(self, modules, hummus = False):
+		self.hummus = hummus
+		self.strikes = 0
 		self.serial = self._randomize_serial()
 		self.edgework = []
 		for _ in range(5):
@@ -114,8 +118,6 @@ class Bomb:
 		self.modules = []
 		for index, module in enumerate(modules):
 			self.modules.append(module(self, index + 1))
-		self.hummus = hummus
-		self.strikes = 0
 		self.start_time = time.monotonic()
 
 	def get_claims(self, user):
