@@ -30,7 +30,9 @@ class Keypad(Module):
 				["pitchfork", "smiley", "bt", "normalc", "paragraph", "three", "fullstar"],
 				["six", "euro", "tracks", "ae", "pitchfork", "n", "omega"]])
 
+		self.log("Precedence list: {:s}".format(' '.join(self.column)))
 		self.buttons = random.sample(self.column, 4)
+		self.log("Buttons: {:s}".format(' '.join(self.buttons)))
 		self.led = ['#000'] * 4
 		self.progress = 0
 		self.solution = []
@@ -38,6 +40,7 @@ class Keypad(Module):
 		for button in self.column:
 			if button in self.buttons:
 				self.solution.append(self.buttons.index(button))
+		self.log("Solution: {:s}".format(' '.join(map(str, self.solution))))
 
 	def get_svg(self):
 		svg = '<svg viewBox="0.0 0.0 348.0 348.0" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink">'
@@ -57,6 +60,7 @@ class Keypad(Module):
 		return svg
 	
 	async def command(self, msg, parts):
+		self.log("Command: {:s}".format(' '.join(parts)))
 		if len(parts) < 2 or parts[0] != "press":
 			await self.usage(msg)
 			return
@@ -65,19 +69,22 @@ class Keypad(Module):
 		for part in parts[1:]:
 			part = part.lower()
 			if part.isdigit():
+				self.log("Digit input: {:s}".format(part))
 				input_ += [int(digit) - 1 for digit in part]
 			elif part in Keypad.BUTTONS:
+				self.log("Named input: {:s}".format(part))
 				input_.append(Keypad.BUTTONS.index(part))
 			else:
 				await self.usage(msg)
 				return
 
-		print(*input_)
+		self.log("Parsed input: {:s}".format(' '.join(map(str, input_))))
 		while input_ and not self.solved:
 			press = input_.pop(0)
 			expected = self.solution[self.progress]
-			print("Stage", self.progress, "expected", expected, "got", press)
+			self.log("Stage {:d}, expected {:d}, got {:d}".format(self.progress, expected, press))
 			if expected == press:
+				self.log("Correct button pressed")
 				self.led[press] = '#0f0'
 				self.progress += 1
 				if self.progress == 4:
@@ -86,9 +93,8 @@ class Keypad(Module):
 					return
 			else:
 				if self.led[press] == '#0f0':
-					print("Button", press, "has already been pressed")
+					self.log("Button {:d} has already been pressed, ignoring".format(press))
 				else:
-					print("Strike!")
 					self.led[press] = '#f00'
 					await self.handle_strike(msg)
 					self.led[press] = '#000'

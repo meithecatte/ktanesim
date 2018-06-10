@@ -23,6 +23,8 @@ class TheButton(Module):
 		super().__init__(bomb, ident)
 		self.button_label = random.choice(TheButton.LABELS)
 		self.button_color = random.choice(list(TheButton.COLORS.keys()))
+		self.log("button label: {:s}".format(self.button_label))
+		self.log("button color: {:s}".format(self.button_color))
 		self.strip_color = None
 
 	def get_svg(self):
@@ -43,17 +45,21 @@ class TheButton(Module):
 			svg += '<path stroke="#000" d="M40.97 95.997H218.89v185.701H40.97zM17.709 72.895L41.173 95.95M219.097 281.696l23.087 24.283M242.157 72.895L219.512 95.95M40.764 281.7l-22.646 23.056"/>'
 		svg += '</svg>'
 		return svg
-	
+
 	async def command(self, msg, parts):
+		self.log('command: {:s}'.format(' '.join(parts)))
 		if len(parts) not in range(1, 2+1):
 			await self.usage(msg)
 		elif len(parts) == 1:
 			if self.strip_color is not None and parts[0] in ["tap", "hold"]:
 				await msg.channel.send('{:s} The button is being held. Use `{prefix}{ident} release <number>` to release it.'.format(msg.author.mention, prefix=PREFIX, ident=self.ident))
 			elif parts[0] == "tap":
-				if self.should_hold():
+				should_hold = self.should_hold()
+				if should_hold:
+					self.log("tapping - should hold")
 					await self.handle_strike(msg)
 				else:
+					self.log("tapping - correct")
 					await self.handle_solved(msg)
 			elif parts[0] == "hold":
 				await self.start_holding(msg)
@@ -70,34 +76,66 @@ class TheButton(Module):
 					await asyncio.sleep(0.5)
 					time = self.bomb.get_time_formatted()
 				expected = self.get_release_digit()
-				print("Releasing at", time, "expected", expected, "answer", parts[1])
+				self.log("Releasing at {:s}, expected {:d}, player answered {:s}".format(time, expected, parts[1]))
 				self.strip_color = None
-				if self.should_hold() and str(expected) in time:
+				should_hold = self.should_hold()
+				self.log("should{:s} hold".format("n't" if not should_hold else ''))
+				if should_hold and str(expected) in time:
 					await self.handle_solved(msg)
 				else:
 					await self.handle_strike(msg)
 
 	async def start_holding(self, msg):
 		self.strip_color = random.choice(list(TheButton.COLORS.keys()))
+		self.log('start holding, strip color: {:s}'.format(self.strip_color))
 		await self.cmd_view(msg, "{:s} The button is being held.".format(msg.author.mention))
 	
 	def should_hold(self):
 		if self.bomb.hummus:
-			if self.button_color == "yellow" and self.button_label == "PRESS": return True
-			elif self.button_color == "white" and self.bomb.has_lit_indicator("BOB"): return False
-			elif self.bomb.get_battery_count() > 1: return True
-			elif self.button_color == "red": return False
-			elif self.button_color == "blue": return True
-			elif self.bomb.get_battery_count() > 2: return False # never reached because of the at least one battery rule
-			else: return True
+			if self.button_color == "yellow" and self.button_label == "PRESS":
+				self.log('rule: yellow PRESS')
+				return True
+			elif self.button_color == "white" and self.bomb.has_lit_indicator("BOB"):
+				self.log('rule: white with lit BOB')
+				return False
+			elif self.bomb.get_battery_count() > 1:
+				self.log('rule: more than one battery')
+				return True
+			elif self.button_color == "red":
+				self.log('rule: red')
+				return False
+			elif self.button_color == "blue":
+				self.log('rule: blue')
+				return True
+			elif self.bomb.get_battery_count() > 2:
+				# never reached because of the one battery rule
+				self.log('rule: more than two batteries')
+				return False
+			else:
+				self.log('rule: wildcard')
+				return True
 		else:
-			if self.button_color == "blue" and self.button_label == "ABORT": return True
-			elif self.bomb.get_battery_count() > 1 and self.button_label == "DETONATE": return False
-			elif self.button_color == "white" and self.bomb.has_lit_indicator("CAR"): return True
-			elif self.bomb.get_battery_count() > 2 and self.bomb.has_lit_indicator("FRK"): return False
-			elif self.button_color == "yellow": return True
-			elif self.button_color == "red" and self.button_label == "HOLD": return False
-			else: return True
+			if self.button_color == "blue" and self.button_label == "ABORT":
+				self.log('rule: blue ABORT')
+				return True
+			elif self.bomb.get_battery_count() > 1 and self.button_label == "DETONATE":
+				self.log('rule: more than one battery and DETONATE')
+				return False
+			elif self.button_color == "white" and self.bomb.has_lit_indicator("CAR"):
+				self.log('rule: white with lit CAR')
+				return True
+			elif self.bomb.get_battery_count() > 2 and self.bomb.has_lit_indicator("FRK"):
+				self.log('rule: more than two batteries and lit FRK')
+				return False
+			elif self.button_color == "yellow":
+				self.log('rule: yellow')
+				return True
+			elif self.button_color == "red" and self.button_label == "HOLD":
+				self.log('rule: red HOLD')
+				return False
+			else:
+				self.log('rule: wildcard')
+				return True
 
 	def get_release_digit(self):
 		if self.bomb.hummus:

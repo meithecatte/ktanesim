@@ -14,9 +14,16 @@ class Module:
 		self.ident = ident
 		self.solved = False
 		self.claim = None
+		self.log_data = []
 
 	def __str__(self):
 		return '{:s} (#{:d})'.format(self.display_name, self.ident)
+
+	def log(self, msg):
+		self.log_data.append((self.bomb.get_time_formatted(), msg))
+	
+	def get_log(self):
+		return ['[{:s}@{:s}] {:s}'.format(x[0], str(self), x[1]) for x in self.log_data]
 
 	def get_manual(self):
 		if self.supports_hummus and self.bomb.hummus:
@@ -33,6 +40,7 @@ class Module:
 		await msg.channel.send("{:s} {:s}".format(msg.author.mention, self.get_help()))
 
 	async def handle_solved(self, msg):
+		self.log('module solved')
 		self.solved = True
 		self.claim = None
 		leaderboard.record_solve(msg.author, self.module_score)
@@ -41,6 +49,7 @@ class Module:
 			await bomb_manager.defused(msg.channel)
 
 	async def handle_strike(self, msg):
+		self.log('strike!')
 		self.bomb.strikes += 1
 		leaderboard.record_strike(msg.author, self.strike_penalty)
 		await self.cmd_view(msg, "{:s} got a strike. -{:d} point{:s} from {:s}".format(str(self), self.strike_penalty, 's' if self.strike_penalty > 1 else '', msg.author.mention))
@@ -109,6 +118,7 @@ class Bomb:
 	EDGEWORK_WIDGETS = [BatteryWidget, IndicatorWidget, PortPlateWidget]
 
 	def __init__(self, modules, hummus = False):
+		self.start_time = time.monotonic()
 		self.hummus = hummus
 		self.strikes = 0
 		self.serial = self._randomize_serial()
@@ -118,7 +128,12 @@ class Bomb:
 		self.modules = []
 		for index, module in enumerate(modules):
 			self.modules.append(module(self, index + 1))
-		self.start_time = time.monotonic()
+
+	def get_log(self):
+		log = ["Edgework: {:s}".format(self.get_edgework())]
+		for module in self.modules:
+			log += module.get_log()
+		return '\n'.join(log)
 
 	def get_claims(self, user):
 		return [module for module in self.modules if module.claim is not None and module.claim.id == user.id]

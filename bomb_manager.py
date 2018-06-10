@@ -1,5 +1,8 @@
 import random
 import discord
+import aiohttp
+import traceback
+import async_timeout
 from bomb import Bomb
 from config import *
 from modules.wires import Wires
@@ -62,13 +65,20 @@ async def cmd_claims(msg, parts):
 	else:
 		await msg.channel.send("{:s} You have claimed {:s} and {:s}.".format(msg.author.mention, ', '.join(claims[:-1]), claims[-1]))
 
+async def unclaimed_command(msg, cmd):
+	unclaimed = bombs[msg.channel.id].get_unclaimed()
+	if unclaimed:
+		await handle_module_command(msg, random.choice(unclaimed).ident, cmd)
+	else:
+		await msg.channel.send("{:s} Sorry, there are no unclaimed modules.".format(msg.author.mention))
+
 @bomb_present
 async def cmd_claimany(msg, parts):
-	await handle_module_command(msg, random.choice(bombs[msg.channel.id].get_unclaimed()).ident, ["claim"])
+	await unclaimed_command(msg, "claim")
 
 @bomb_present
 async def cmd_claimanyview(msg, parts):
-	await handle_module_command(msg, random.choice(bombs[msg.channel.id].get_unclaimed()).ident, ["claimview"])
+	await unclaimed_command(msg, "claimview")
 
 @bomb_present
 async def cmd_status(msg, parts):
@@ -109,9 +119,26 @@ async def handle_module_command(msg, ident, parts):
 		else:
 			await module.command(msg, parts)
 
+hastebin_session = None
 async def defused(channel):
 	bomb = bombs[channel.id]
-	await channel.send("The bomb has been defused after {:s} and {:d} strikes".format(bomb.get_time_formatted(), bomb.strikes))
+	log = bomb.get_log()
+	global hastebin_session
+	if hastebin_session is None:
+		hastebin_session = aiohttp.ClientSession()
+	try:
+		with async_timeout.timeout(5):
+			async with hastebin_session.post('https://hastebin.com/documents', data=log.encode('utf-8')) as resp:
+				decoded = await resp.json()
+				if 'key' in decoded:
+					logurl = 'Log: https://hastebin.com/{:s}.txt'.format(decoded['key'])
+				elif 'message' in decoded:
+					logurl = 'Log upload failed with error message: `{:s}`'.format(decoded['message'])
+				else:
+					logurl = 'Log upload failed with malformed JSON: `{:s}`'.format(repr(decoded))
+	except Exception:
+		logurl = 'Log upload failed with exception: ```\n{:s}```'.format(traceback.format_exc())
+	await channel.send("The bomb has been defused after {:s} and {:d} strikes. {:s}".format(bomb.get_time_formatted(), bomb.strikes, logurl))
 	del bombs[channel.id]
 	await update_presence()
 

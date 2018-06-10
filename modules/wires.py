@@ -42,6 +42,7 @@ class Wires(Module):
 		self.colors = []
 		for _ in range(wire_count):
 			self.colors.append(random.choice(list(Wires.COLORS.keys())))
+		self.log("There are {:d} wires: {:s}".format(len(self.colors), ' '.join(self.colors)))
 
 	def get_svg(self):
 		svg = '<svg viewBox="0.0 0.0 348.0 348.0" fill="#ffffff" stroke="none" stroke-linecap="square" stroke-miterlimit="10">'
@@ -56,12 +57,16 @@ class Wires(Module):
 		return svg
 
 	async def command(self, msg, parts):
+		self.log('command: {:s}'.format(' '.join(parts)))
 		if len(parts) != 2 or parts[0] != "cut" or not parts[1].isdigit():
 			await self.usage(msg)
 		else:
 			wire = int(parts[1]) - 1
+			expected = self.get_solution()
+			self.log("player's solution: {:d}".format(wire))
+			self.log("correct solution: {:d}".format(expected))
 			self.cut[wire] = True
-			if self.get_solution() == wire:
+			if expected == wire:
 				await self.handle_solved(msg)
 			else:
 				await self.handle_strike(msg)
@@ -78,48 +83,126 @@ class Wires(Module):
 
 		if self.bomb.hummus:
 			serial_letter = self.bomb.serial[0].isalpha()
+
+			if serial_letter:
+				self.log('the serial number starts with a letter')
+			else:
+				self.log('the serial number does not start with a letter')
+
 			if len(self.colors) == 3:
-				if count("white") == 0 and serial_letter: return 1 # If there are no white wires and the serial number starts with a letter, cut the second wire.
-				elif count("red") == 1: return 0 # Otherwise, if there is exactly one red wire, cut the first wire.
-				elif count("blue") > 1: return first("blue") # Otherwise, if there is more than one blue wire, cut the first blue wire.
-				elif self.colors[-1] == "red": return 2 # Otherwise, if the last wire is red, cut the last wire.
-				else: return 1 # Otherwise, cut the second wire.
+				if count("white") == 0 and serial_letter:
+					self.log('rule: there are no white wires and the serial number starts with a letter')
+					return 1
+				elif count("red") == 1:
+					self.log('rule: there is exactly one red wire')
+					return 0
+				elif count("blue") > 1:
+					self.log('rule: there is more than one blue wire')
+					return first("blue")
+				elif self.colors[-1] == "red":
+					self.log('rule: the last wire is red')
+					return 2
+				else:
+					self.log('rule: wildcard')
+					return 1
 			elif len(self.colors) == 4:
-				if count("yellow") == 1 and self.colors[-1] == "red": return 2 # If there is exactly one yellow wire and the last wire is red, cut the third wire.
-				elif self.colors[-1] == "white": return 1 # Otherwise, if the last wire is white, cut the second wire.
-				elif count("yellow") == 0: return 0 # Otherwise, if there are no yellow wires, cut the first wire.
-				else: return 3 # Otherwise, cut the last wire.
+				if count("yellow") == 1 and self.colors[-1] == "red":
+					self.log('rule: there is exactly one yellow wire and the last wire is red')
+					return 2
+				elif self.colors[-1] == "white":
+					self.log('rule: the last wire is white')
+					return 1
+				elif count("yellow") == 0:
+					self.log('rule: there are no yellow wires')
+					return 0
+				else:
+					self.log('rule: wildcard')
+					return 3
 			elif len(self.colors) == 5:
-				if count("black") > 1 and serial_letter: return 1 # If there is more than one black wire and the serial number starts with a letter, cut the second wire.
-				elif self.colors[-1] == "blue" and count("red") == 1: return 0 # Otherwise, if the last wire is blue and there is exactly one red wire, cut the first wire.
-				elif self.colors[-1] == "red": return 3 # Otherwise, if the last wire is red, cut the fourth wire.
-				elif count("red") == 0: return 2 # Otherwise, if there are no red wires, cut the third wire.
-				else: return 0 # Otherwise, cut the first wire.
+				if count("black") > 1 and serial_letter:
+					self.log('rule: there is more than one black wire and the serial number starts with a letter')
+					return 1
+				elif self.colors[-1] == "blue" and count("red") == 1:
+					self.log('rule: the last wire is blue and there is exactly one red wire')
+					return 0
+				elif self.colors[-1] == "red":
+					self.log('rule: the last wire is red')
+					return 3
+				elif count("red") == 0:
+					self.log('rule: there are no red wires')
+					return 2
+				else:
+					self.log('rule: wildcard')
+					return 0
 			elif len(self.colors) == 6:
-				if count("red") == 1: return first("red") # If there is exactly one red wire, cut the red wire.
-				elif self.colors[-1] == "red": return 5 # Otherwise, if the last wire is red, cut the last wire.
-				elif count("yellow") == 0: return 3 # Otherwise, if there are no yellow wires, cut the fourth wire.
-				else: return 1 # Otherwise, cut the second wire.
+				if count("red") == 1:
+					self.log('rule: there is exactly one red wire')
+					return first("red")
+				elif self.colors[-1] == "red":
+					self.log('rule: the last wire is red')
+					return 5
+				elif count("yellow") == 0:
+					self.log('rule: there are no yellow wires')
+					return 3
+				else:
+					self.log('rule: wildcard')
+					return 1
 		else:
 			serial_odd = int(self.bomb.serial[-1]) % 2 == 1
+			self.log('the last digit of the serial number is {:s}'.format('odd' if serial_odd else 'even'))
+
 			if len(self.colors) == 3:
-				if count("red") == 0: return 1 # If there are no red wires, cut the second wire.
-				elif self.colors[-1] == "white": return 2 # Otherwise, if the last wire is white, cut the last wire.
-				elif count("blue") > 1: return last("blue") # Otherwise, if there is more than one blue wire, cut the last blue wire.
-				else: return 2 # Otherwise, cut the last wire.
+				if count("red") == 0:
+					self.log('rule: there are no red wires')
+					return 1
+				elif self.colors[-1] == "white":
+					self.log('rule: the last wire is white')
+					return 2
+				elif count("blue") > 1:
+					self.log('rule: there is more than one blue wire')
+					return last("blue")
+				else:
+					self.log('rule: wildcard')
+					return 2
 			elif len(self.colors) == 4:
-				if count("red") > 1 and serial_odd: return last("red") # If there is more than one red wire and the last digit of the serial number is odd, cut the last red wire.
-				elif self.colors[-1] == "yellow" and count("red") == 0: return 0 # Otherwise, if the last wire is yellow and there are no red wires, cut the first wire.
-				elif count("blue") == 1: return 0 # Otherwise, if there is exactly one blue wire, cut the first wire.
-				elif count("yellow") > 1: return 3 # Otherwise, if there is more than one yellow wire, cut the last wire.
-				else: return 1 # Otherwise, cut the second wire.
+				if count("red") > 1 and serial_odd:
+					self.log('rule: there is more than one red wire')
+					return last("red")
+				elif self.colors[-1] == "yellow" and count("red") == 0:
+					self.log('rule: the last wire is yellow and there are no red wires')
+					return 0
+				elif count("blue") == 1:
+					self.log('rule: there is exactly one blue wire')
+					return 0
+				elif count("yellow") > 1:
+					self.log('rule: there is more than one yellow wire')
+					return 3
+				else:
+					self.log('rule: wildcard')
+					return 1
 			elif len(self.colors) == 5:
-				if self.colors[-1] == "black" and serial_odd: return 3 # If the last wire is black and the last digit of the serial number is odd, cut the fourth wire.
-				elif count("red") == 1 and count("yellow") > 1: return 0 # Otherwise, if there is exactly one red wire and there is more than one yellow wire, cut the first wire.
-				elif count("black") == 0: return 1 # Otherwise, if there are no black wires, cut the second wire.
-				else: return 0 # Otherwise, cut the first wire.
+				if self.colors[-1] == "black" and serial_odd:
+					self.log('rule: the last wire is black and the last digit of the serial number is odd')
+					return 3
+				elif count("red") == 1 and count("yellow") > 1:
+					self.log('rule: there is exactly one red wire and there is more than one yellow wire')
+					return 0
+				elif count("black") == 0:
+					self.log('rule: there are no black wires')
+					return 1
+				else:
+					self.log('rule: wildcard')
+					return 0
 			else:
-				if count("yellow") == 0 and serial_odd: return 2 # If there are no yellow wires and the last digit of the serial number is odd, cut the third wire.
-				elif count("yellow") == 1 and count("white") > 1: return 3 # Otherwise, if there is exactly one yellow wire and there is more than one white wire, cut the fourth wire.
-				elif count("red") == 0: return 5 # Otherwise, if there are no red wires, cut the last wire.
-				else: return 3 # Otherwise, cut the fourth wire.
+				if count("yellow") == 0 and serial_odd:
+					self.log('rule: there are no yellow wires and the last digit of the serial number is odd')
+					return 2
+				elif count("yellow") == 1 and count("white") > 1:
+					self.log('rule: there is exactly one yellow wire and there is more than one white wire')
+					return 3
+				elif count("red") == 0:
+					self.log('rule: there are no red wires')
+					return 5
+				else:
+					self.log('rule: wildcard')
+					return 3
