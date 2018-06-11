@@ -14,6 +14,7 @@ class Module:
 		self.ident = ident
 		self.solved = False
 		self.claim = None
+		self.take_pending = None
 		self.log_data = []
 
 	def __str__(self):
@@ -42,7 +43,6 @@ class Module:
 	async def handle_solved(self, msg):
 		self.log('module solved')
 		self.solved = True
-		self.claim = None
 		leaderboard.record_solve(msg.author, self.module_score)
 		await self.cmd_view(msg, "{:s} solved {:s}. {:d} {:s} been awarded.".format(msg.author.mention, str(self), self.module_score, 'points have' if self.module_score > 1 else 'point has'))
 		if self.bomb.get_solved_count() == len(self.bomb.modules):
@@ -57,6 +57,17 @@ class Module:
 	def render(self):
 		return io.BytesIO(cairosvg.svg2png(self.get_svg().encode('utf-8'), unsafe=True)), 'render.png'
 
+	async def cmd_take(self, msg):
+		if self.claim is None:
+			await msg.channel.send("{:s} {:s} is not claimed by anybody. Type `{prefix}{ident} claim` to claim it.".format(msg.author.mention, prefix=PREFIX, ident=self.ident))
+		elif self.claim.id == msg.author.id:
+			await msg.channel.send("{:s} You already claimed this module. Did you mean `{prefix}{ident} mine`?".format(msg.author.mention, prefix=PREFIX, ident=self.ident))
+		elif self.take_pending is not None:
+			await msg.channel.send("{:s} {:s} has already issued a `take` command.".format(msg.author.mention, str(self.take_pending)))
+		else:
+			self.take_pending = msg.author
+			await msg.channel.send("{:s} {:s} wants to take {:s}. Type `{prefix}{ident} mine` within {:d} seconds to confirm you are still working on the module"
+				.format(self.claim.mention, str(msg.author), str(self), TAKE_TIMEOUT, prefix=PREFIX, timeout=TIMEOUT))
 	async def cmd_view(self, msg, text):
 		stream, filename = self.render()
 		embed = discord.Embed(title=str(self), description='[Manual]({:s}). {:s}'.format(self.get_manual(), self.get_help())).set_image(url="attachment://"+filename)
@@ -136,7 +147,7 @@ class Bomb:
 		return '\n'.join(log)
 
 	def get_claims(self, user):
-		return [module for module in self.modules if module.claim is not None and module.claim.id == user.id]
+		return [module for module in self.modules if not module.solved and module.claim is not None and module.claim.id == user.id]
 
 	def get_widgets(self, type_):
 		return list(filter(lambda widget: type(widget) is type_, self.edgework))
