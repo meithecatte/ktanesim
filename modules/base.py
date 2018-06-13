@@ -2,6 +2,7 @@ from urllib.parse import quote as urlencode
 import io
 import cairosvg
 import discord
+import asyncio
 import leaderboard
 from config import *
 
@@ -30,6 +31,7 @@ class Module:
 		self.solved = False
 		self.claim = None
 		self.take_pending = None
+		self.last_img = None
 		self.log_data = []
 
 	def __str__(self):
@@ -84,7 +86,12 @@ class Module:
 		embed = discord.Embed(title=str(self), description=f"[Manual]({self.get_manual()}). {self.get_help()}")
 		embed.set_image(url=f"attachment://{filename}")
 		file_ = discord.File(stream, filename=filename)
-		await self.bomb.channel.send(text, file=file_, embed=embed)
+		send_task = asyncio.ensure_future(self.bomb.channel.send(text, file=file_, embed=embed))
+		if self.last_img is not None:
+			delete_task = asyncio.ensure_future(self.last_img.delete())
+			self.last_img = (await asyncio.gather(send_task, delete_task))[0]
+		else:
+			self.last_img = (await asyncio.gather(send_task))[0]
 
 	@noparts
 	async def cmd_claim(self, author):
