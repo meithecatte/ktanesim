@@ -59,7 +59,7 @@ class Wires(modules.Module):
 	@modules.check_solve_cmd
 	async def cmd_cut(self, author, parts):
 		if len(parts) != 1 or not parts[0].isdigit():
-			await self.usage(msg)
+			await self.usage(author)
 		elif parts[0] == "0":
 			await self.bomb.channel.send(f"{author.mention} Arrays start at 0, but wires start at 1.")
 		else:
