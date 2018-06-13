@@ -143,13 +143,22 @@ class Module:
 			await self.bomb.channel.send(f"{author.mention} {self.take_pending} has already issued a `take` command.")
 		else:
 			self.take_pending = author
-			await self.bomb.channel.send(f"{self.claim.mention} {author} wants to take {self}. React with {TAKE_REACT} within {TAKE_TIMEOUT} seconds to confirm you are still working on the module")
-			raise hell # unimplemented
+			msg = await self.bomb.channel.send(f"{self.claim.mention} {author} wants to take {self}. React with {TAKE_REACT} within {TAKE_TIMEOUT} seconds to confirm you are still working on the module")
+			await msg.add_reaction(TAKE_REACT)
+			try:
+				await self.bomb.client.wait_for('reaction_add', timeout=TAKE_TIMEOUT, check=lambda reaction, user: reaction.emoji == TAKE_REACT and user == self.claim and reaction.message.id == msg.id)
+			except asyncio.TimeoutError:
+				await self.bomb.channel.send(f"{author.mention} {self} is now yours.")
+				self.claim = author
+			else:
+				await self.bomb.channel.send(f"{self.claim.mention} confirms he is still working on {self}.")
+			self.take_pending = None
 
 	COMMANDS = {
 		"view": cmd_view,
 		"claim": cmd_claim,
 		"unclaim": cmd_unclaim,
 		"claimview": cmd_claimview,
-		"cv": cmd_claimview
+		"cv": cmd_claimview,
+		"take": cmd_take
 	}
