@@ -62,7 +62,7 @@ class Bomb:
 	@staticmethod
 	async def cmd_run(channel, author, parts):
 		if channel.id in Bomb.bombs:
-			await channel.send("{author.mention} A bomb is already ticking in this channel!")
+			await channel.send(f"{author.mention} A bomb is already ticking in this channel!")
 			return
 
 		usage = (
