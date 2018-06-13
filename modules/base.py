@@ -80,7 +80,7 @@ class Module:
 		await self.do_view(author.mention)
 
 	async def do_view(self, text):
-		stream, filename = self.render()
+		stream, filename = await self.bomb.client.loop.run_in_executor(None, self.render)
 		embed = discord.Embed(title=str(self), description=f"[Manual]({self.get_manual()}). {self.get_help()}")
 		embed.set_image(url=f"attachment://{filename}")
 		file_ = discord.File(stream, filename=filename)
