@@ -280,7 +280,7 @@ class Bomb:
 	async def cmd_status(self, author, parts):
 		await self.channel.send(('Hummus mode on, ' if self.hummus else '') +
 			f"Zen mode on, time: {self.get_time_formatted()}, {self.strikes} strikes, "
-			f"{self.get_solved_count()} out of {self.modules} modules solved.")
+			f"{self.get_solved_count()} out of {len(self.modules)} modules solved.")
 
 	def get_random_unclaimed(self):
 		return random.choice([module for module in self.modules if not module.solved])
