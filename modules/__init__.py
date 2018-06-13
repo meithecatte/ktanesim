@@ -1,15 +1,15 @@
 from modules.base import Module, noparts, check_claim
 from modules.wires import Wires
-#from modules.the_button import TheButton
+from modules.the_button import TheButton
 #from modules.keypad import Keypad
 
 VANILLA_MODULES = {
 	"wires": Wires,
-	#"theButton": TheButton
+	"theButton": TheButton,
+	#"keypad": Keypad
 }
 
 MODDED_MODULES = {
-	#"keypad": Keypad
 }
 
 async def cmd_modules(channel, author, parts):

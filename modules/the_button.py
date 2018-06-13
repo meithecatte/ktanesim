@@ -1,13 +1,13 @@
 import random
 import asyncio
-from modules import Module
+import modules
 from config import *
 
-class TheButton(Module):
+class TheButton(modules.Module):
 	display_name = "The Button"
 	manual_name = "The Button"
 	supports_hummus = True
-	help_text = "`{prefix}{ident} tap` to tap, `{prefix}{ident} hold` to hold, `{prefix}{ident} release 7` to release when any digit of the timer is 7."
+	help_text = "`{cmd} tap` to tap, `{cmd} hold` to hold, `{cmd} release 7` to release when any digit of the timer is 7."
 	module_score = 1
 	strike_penalty = 6
 
@@ -46,50 +46,45 @@ class TheButton(Module):
 		svg += '</svg>'
 		return svg
 
-	async def command(self, msg, parts):
-		self.log('command: {:s}'.format(' '.join(parts)))
-		if len(parts) not in range(1, 2+1):
-			await self.usage(msg)
-		elif len(parts) == 1:
-			if self.strip_color is not None and parts[0] in ["tap", "hold"]:
-				await msg.channel.send('{:s} The button is being held. Use `{prefix}{ident} release <number>` to release it.'.format(msg.author.mention, prefix=PREFIX, ident=self.ident))
-			elif parts[0] == "tap":
-				should_hold = self.should_hold()
-				if should_hold:
-					self.log("tapping - should hold")
-					await self.handle_strike(msg)
-				else:
-					self.log("tapping - correct")
-					await self.handle_solved(msg)
-			elif parts[0] == "hold":
-				await self.start_holding(msg)
-			else:
-				await self.usage(msg)
+	@modules.check_claim
+	@modules.noparts
+	async def cmd_tap(self, author):
+		if self.should_hold():
+			self.log("tapping - should hold")
+			await self.handle_strike(author)
 		else:
-			if parts[0] != "release" or not parts[1].isdigit() or len(parts[1]) != 1:
-				await self.usage(msg)
-			elif self.strip_color is None:
-				await msg.channel.send('{:s} Hold the button with `!{prefix}{ident} hold` first.'.format(msg.author.mention, prefix=PREFIX, ident=self.ident))
-			else:
-				time = self.bomb.get_time_formatted()
-				while parts[1] not in time:
-					await asyncio.sleep(0.5)
-					time = self.bomb.get_time_formatted()
-				expected = self.get_release_digit()
-				self.log("Releasing at {:s}, expected {:d}, player answered {:s}".format(time, expected, parts[1]))
-				self.strip_color = None
-				should_hold = self.should_hold()
-				self.log("should{:s} hold".format("n't" if not should_hold else ''))
-				if should_hold and str(expected) in time:
-					await self.handle_solved(msg)
-				else:
-					await self.handle_strike(msg)
-
-	async def start_holding(self, msg):
+			self.log("tapping - correct")
+			await self.handle_solved(author)
+	
+	@modules.check_claim
+	@modules.noparts
+	async def cmd_hold(self, author):
 		self.strip_color = random.choice(list(TheButton.COLORS.keys()))
 		self.log('start holding, strip color: {:s}'.format(self.strip_color))
-		await self.cmd_view(msg, "{:s} The button is being held.".format(msg.author.mention))
+		await self.do_view(f"{author.mention} The button is being held.")
 	
+	@modules.check_claim
+	async def cmd_release(self, author, parts):
+		if not parts or not parts[0].isdigit() or len(parts[0]) != 1:
+			await self.usage(author)
+		elif self.strip_color is None:
+			await self.bomb.channel.send(f"{author.mention} The button is not being held. Hold it with `!{PREFIX}{self.ident} hold` first.")
+		else:
+			answer = parts[0]
+			time = self.bomb.get_time_formatted()
+			while answer not in time:
+				await asyncio.sleep(0.5)
+				time = self.bomb.get_time_formatted()
+			expected = self.get_release_digit()
+			self.log("Releasing at {:s}, expected {:d}, player answered {:s}".format(time, expected, answer))
+			self.strip_color = None
+			should_hold = self.should_hold()
+			self.log("should{:s} hold".format("n't" if not should_hold else ''))
+			if should_hold and str(expected) in time:
+				await self.handle_solved(author)
+			else:
+				await self.handle_strike(author)
+		
 	def should_hold(self):
 		if self.bomb.hummus:
 			if self.button_color == "yellow" and self.button_label == "PRESS":
@@ -142,3 +137,9 @@ class TheButton(Module):
 			return {"white": 3, "yellow": 3, "red": 5, "blue": 4}[self.strip_color]
 		else:
 			return {"blue": 4, "white": 1, "yellow": 5, "red": 1}[self.strip_color]
+	
+	COMMANDS = {**modules.Module.COMMANDS,
+		"tap": cmd_tap,
+		"hold": cmd_hold,
+		"release": cmd_release
+	}
