@@ -3,7 +3,6 @@ import random
 import aiohttp
 import discord
 import modules
-import async_timeout
 import traceback
 from config import *
 
@@ -159,18 +158,17 @@ class Bomb:
 
 	async def bomb_defused(self):
 		if Bomb.hastebin_session is None:
-			Bomb.hastebin_session = aiohttp.ClientSession()
+			Bomb.hastebin_session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5))
 
 		try:
-			with async_timeout.timeout(5):
-				async with self.hastebin_session.post('https://hastebin.com/documents', data=self.get_log().encode('utf-8')) as resp:
-					decoded = await resp.json()
-					if 'key' in decoded:
-						logurl = f"Log: https://hastebin.com/{decoded['key']}.txt"
-					elif 'message' in decoded:
-						logurl = f"Log upload failed with error message: `{decoded['message']}`"
-					else:
-						logurl = f"Log upload failed with no error message: `{repr(decoded)}`"
+			async with self.hastebin_session.post('https://hastebin.com/documents', data=self.get_log().encode('utf-8')) as resp:
+				decoded = await resp.json()
+				if 'key' in decoded:
+					logurl = f"Log: https://hastebin.com/{decoded['key']}.txt"
+				elif 'message' in decoded:
+					logurl = f"Log upload failed with error message: `{decoded['message']}`"
+				else:
+					logurl = f"Log upload failed with no error message: `{repr(decoded)}`"
 		except Exception:
 			logurl = f"Log upload failed with exception: ```\n{traceback.format_exc()}```"
 		await self.channel.send(f"The bomb has been defused after {self.get_time_formatted()} and {self.strikes} strikes. {logurl}")
