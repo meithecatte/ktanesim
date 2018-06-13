@@ -23,11 +23,11 @@ def record_strike(user, weight):
 def record_penalty(user, points):
 	_record(user, (-points, 0, 0))
 
-async def cmd_leaderboard(msg, parts):
+async def cmd_leaderboard(channel, author, parts):
 	if not parts:
 		page = 1
 	elif len(parts) > 1 or not parts[0].isdigit() or parts[0] == '0':
-		await msg.channel.send("{:s} Usage: `{prefix}leaderboard [<page number>]`. Default: page 1. Aliases: `{prefix}lb`".format(msg.author.mention, prefix=PREFIX))
+		await channel.send(f"{author.mention} Usage: `{PREFIX}leaderboard [<page number>]`. Default: page 1. Aliases: `{PREFIX}lb`")
 		return
 	else:
 		page = int(parts[0])
@@ -35,31 +35,32 @@ async def cmd_leaderboard(msg, parts):
 	entrycount = conn.execute('SELECT COUNT(1) FROM leaderboard').fetchone()[0]
 
 	if entrycount == 0:
-		await msg.channel.send("{:s} The leaderboard is empty. Change it by solving a module!".format(msg.author.mention))
+		await channel.send(f"{author.mention} The leaderboard is empty. Change it by solving a module!")
 		return
 
 	pagecount = (entrycount - 1) // LEADERBOARD_PAGE_SIZE + 1
 
 	if page > pagecount:
-		await msg.channel.send("{:s} B... but the leaderboard has only ".format(msg.author.mention) + ("{:d} pages!".format(pagecount) if pagecount > 1 else "one page!"))
+		await channel.send(f"{author.mention} B... but the leaderboard has only {f'{pagecount} pages' if pagecount > 1 else 'a single page'}!")
 		return
 
 	offset = (page - 1) * LEADERBOARD_PAGE_SIZE
 	entries = conn.execute('SELECT (SELECT COUNT(1) FROM leaderboard AS i WHERE i.points > o.points) + 1 AS position, ' +
 		'o.username, o.solves, o.strikes, o.points FROM leaderboard AS o ORDER BY o.points DESC LIMIT ? OFFSET ?', (LEADERBOARD_PAGE_SIZE, offset)).fetchall()
-	max_name_length = max(map(lambda user: len(user[1]), entries))
+	namewidth = max(map(lambda user: len(user[1]), entries))
 
-	max_index_digits = len(str(entries[-1][0]))
-	reply = "Leaderboard page {:d} of {:d}: ```\n{:s}   Solves Strikes Points".format(page, pagecount, ' ' * (max_index_digits + max_name_length))
-	for entry in entries:
-		reply += "\n{:-{numwidth}d}. {:{namewidth}s} {:6d} {:7d} {:6d}".format(*entry, numwidth=max_index_digits, namewidth=max_name_length)
+	numwidth = len(str(entries[-1][0]))
+	reply = f"Leaderboard page {page} of {pagecount}: ```\n{'': <{numwidth + namewidth}}   Solves Strikes Points"
+	for index, name, solves, strikes, points in entries:
+		reply += f"\n{index: >{numwidth}}. {name: <{namewidth}} {solves: >6} {strikes: >7} {points: >6}"
 	reply += "```"
-	await msg.channel.send(reply)
+	await channel.send(reply)
 
-async def cmd_rank(msg, parts):
+async def cmd_rank(channel, author, parts):
 	entry = conn.execute('SELECT (SELECT COUNT(1) FROM leaderboard AS i WHERE i.points > o.points) + 1 AS position, ' +
 		'o.solves, o.strikes, o.points FROM leaderboard AS o WHERE o.id = ?', (msg.author.id, )).fetchone()
 	if entry:
-		await msg.channel.send("{:s} You're #{:d} with {:d} solves, {:d} strikes and {:d} points".format(user.mention, *entry))
+		position, solves, strikes, points = entry
+		await channel.send(f"{author.mention} You're #{position} with {solves} solves, {strikes} strikes and {points} points")
 	else:
-		await msg.channel.send("{:s} Sorry, you have to play this game to be included in the leaderboard".format(user.mention))
+		await channel.send(f"{author.mention} Sorry, you have to play this game to be included in the leaderboard")

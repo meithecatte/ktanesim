@@ -1,11 +1,11 @@
 import random
-from bomb import Module
+import modules
 
-class Wires(Module):
+class Wires(modules.Module):
 	display_name = "Wires"
 	manual_name = "Wires"
 	supports_hummus = True
-	help_text = "`{prefix}{ident} cut 3` to cut the third wire. Empty spaces are not counted."
+	help_text = "`{cmd} cut 3` to cut the third wire. Empty spaces are not counted."
 	module_score = 1
 	strike_penalty = 6
 
@@ -42,7 +42,7 @@ class Wires(Module):
 		self.colors = []
 		for _ in range(wire_count):
 			self.colors.append(random.choice(list(Wires.COLORS.keys())))
-		self.log("There are {:d} wires: {:s}".format(len(self.colors), ' '.join(self.colors)))
+		self.log(f"There are {len(self.colors)} wires: {' '.join(self.colors)}")
 
 	def get_svg(self):
 		svg = '<svg viewBox="0.0 0.0 348.0 348.0" fill="#ffffff" stroke="none" stroke-linecap="square" stroke-miterlimit="10">'
@@ -56,20 +56,25 @@ class Wires(Module):
 		svg += '</svg>'
 		return svg
 
-	async def command(self, msg, parts):
-		self.log('command: {:s}'.format(' '.join(parts)))
-		if len(parts) != 2 or parts[0] != "cut" or not parts[1].isdigit():
+	@modules.check_claim
+	async def cmd_cut(self, author, parts):
+		if len(parts) != 1 or not parts[0].isdigit():
 			await self.usage(msg)
+		elif parts[0] == "0":
+			await self.bomb.channel.send(f"{author.mention} Arrays start at 0, but wires start at 1.")
 		else:
-			wire = int(parts[1]) - 1
-			expected = self.get_solution()
-			self.log("player's solution: {:d}".format(wire))
-			self.log("correct solution: {:d}".format(expected))
-			self.cut[wire] = True
-			if expected == wire:
-				await self.handle_solved(msg)
+			wire = int(parts[0]) - 1
+			if wire not in range(len(self.colors)):
+				await self.bomb.channel.send(f"There are only {len(self.colors)} wires. How on earth am I supposed to cut wire {parts[0]}?")
 			else:
-				await self.handle_strike(msg)
+				expected = self.get_solution()
+				self.log("player's solution: {:d}".format(wire))
+				self.log("correct solution: {:d}".format(expected))
+				self.cut[wire] = True
+				if expected == wire:
+					await self.handle_solved(author)
+				else:
+					await self.handle_strike(author)
 
 	def get_solution(self):
 		def count(color):
@@ -206,3 +211,7 @@ class Wires(Module):
 				else:
 					self.log('rule: wildcard')
 					return 3
+	
+	COMMANDS = {**modules.Module.COMMANDS,
+		"cut": cmd_cut
+	}

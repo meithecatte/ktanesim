@@ -1,101 +1,11 @@
 import time
 import random
-from urllib.parse import quote as urlencode
+import aiohttp
 import discord
-import io
-import cairosvg
-import leaderboard
-import bomb_manager
+import modules
+import async_timeout
+import traceback
 from config import *
-
-class Module:
-	def __init__(self, bomb, ident):
-		self.bomb = bomb
-		self.ident = ident
-		self.solved = False
-		self.claim = None
-		self.take_pending = None
-		self.log_data = []
-
-	def __str__(self):
-		return '{:s} (#{:d})'.format(self.display_name, self.ident)
-
-	def log(self, msg):
-		self.log_data.append((self.bomb.get_time_formatted(), msg))
-	
-	def get_log(self):
-		return ['[{:s}@{:s}] {:s}'.format(x[0], str(self), x[1]) for x in self.log_data]
-
-	def get_manual(self):
-		if self.supports_hummus and self.bomb.hummus:
-			getparam = '?VanillaRuleSeed=2'
-		else:
-			getparam = ''
-
-		return 'https://ktane.timwi.de/manual/{:s}.html{:s}'.format(urlencode(self.manual_name), getparam)
-
-	def get_help(self):
-		return self.help_text.format(prefix=PREFIX, ident=self.ident)
-
-	async def usage(self, msg):
-		await msg.channel.send("{:s} {:s}".format(msg.author.mention, self.get_help()))
-
-	async def handle_solved(self, msg):
-		self.log('module solved')
-		self.solved = True
-		leaderboard.record_solve(msg.author, self.module_score)
-		await self.cmd_view(msg, "{:s} solved {:s}. {:d} {:s} been awarded.".format(msg.author.mention, str(self), self.module_score, 'points have' if self.module_score > 1 else 'point has'))
-		if self.bomb.get_solved_count() == len(self.bomb.modules):
-			await bomb_manager.defused(msg.channel)
-
-	async def handle_strike(self, msg):
-		self.log('strike!')
-		self.bomb.strikes += 1
-		leaderboard.record_strike(msg.author, self.strike_penalty)
-		await self.cmd_view(msg, "{:s} got a strike. -{:d} point{:s} from {:s}".format(str(self), self.strike_penalty, 's' if self.strike_penalty > 1 else '', msg.author.mention))
-
-	def render(self):
-		return io.BytesIO(cairosvg.svg2png(self.get_svg().encode('utf-8'), unsafe=True)), 'render.png'
-
-	async def cmd_take(self, msg):
-		if self.claim is None:
-			await msg.channel.send("{:s} {:s} is not claimed by anybody. Type `{prefix}{ident} claim` to claim it.".format(msg.author.mention, prefix=PREFIX, ident=self.ident))
-		elif self.claim.id == msg.author.id:
-			await msg.channel.send("{:s} You already claimed this module. Did you mean `{prefix}{ident} mine`?".format(msg.author.mention, prefix=PREFIX, ident=self.ident))
-		elif self.take_pending is not None:
-			await msg.channel.send("{:s} {:s} has already issued a `take` command.".format(msg.author.mention, str(self.take_pending)))
-		else:
-			self.take_pending = msg.author
-			await msg.channel.send("{:s} {:s} wants to take {:s}. Type `{prefix}{ident} mine` within {:d} seconds to confirm you are still working on the module"
-				.format(self.claim.mention, str(msg.author), str(self), TAKE_TIMEOUT, prefix=PREFIX, timeout=TIMEOUT))
-	async def cmd_view(self, msg, text):
-		stream, filename = self.render()
-		embed = discord.Embed(title=str(self), description='[Manual]({:s}). {:s}'.format(self.get_manual(), self.get_help())).set_image(url="attachment://"+filename)
-		await msg.channel.send(text, file=discord.File(stream, filename=filename), embed=embed)
-
-	async def cmd_claim(self, msg):
-		if self.solved:
-			await msg.channel.send("{:s} {:s} has been solved already.".format(msg.author.mention, str(self)))
-		elif self.claim is not None:
-			if self.claim.id == msg.author.id:
-				await msg.channel.send("{:s} You have already claimed {:s}.".format(msg.author.mention, str(self)))
-			else:
-				await msg.channel.send("{:s} Sorry, {:s} has already been claimed by {:s}. If you think they have abandoned it, you may type `{prefix}{:d} take` to free it up."
-					.format(msg.author.mention, str(self), str(self.claim), self.ident, prefix=PREFIX))
-		elif len(self.bomb.get_claims(msg.author)) >= MAX_CLAIMS_PER_PLAYER:
-			await msg.channel.send("{:s} Sorry, you can only claim {:d} modules at once. Try `{prefix}claims`."
-				.format(msg.author.mention, MAX_CLAIMS_PER_PLAYER, prefix=PREFIX))
-		else:
-			self.claim = msg.author
-			return True
-		return False
-
-	async def cmd_unclaim(self, msg):
-		if self.claim and self.claim.id == msg.author.id:
-			self.claim = None
-			await msg.channel.send("{:s} has unclaimed {:s}".format(msg.author.mention, str(self)))
-		else:
-			await msg.channel.send("{:s} You did not claim {:s}, so you can't unclaim it.".format(msg.author.mention, str(self)))
 
 class BatteryWidget:
 	def __init__(self):
@@ -127,24 +37,151 @@ class PortPlateWidget:
 class Bomb:
 	SERIAL_NUMBER_CHARACTERS = "ABCDEFGHIJKLMNEPQRSTUVWXZ0123456789"
 	EDGEWORK_WIDGETS = [BatteryWidget, IndicatorWidget, PortPlateWidget]
+	bombs = {}
+	hastebin_session = None
+	client = None
 
-	def __init__(self, modules, hummus = False):
-		self.start_time = time.monotonic()
+	def __init__(self, channel, modules, hummus = False):
+		self.channel = channel
 		self.hummus = hummus
 		self.strikes = 0
+		self.start_time = time.monotonic()
 		self.serial = self._randomize_serial()
+
 		self.edgework = []
 		for _ in range(5):
 			self.edgework.append(random.choice(Bomb.EDGEWORK_WIDGETS)())
+
 		self.modules = []
 		for index, module in enumerate(modules):
 			self.modules.append(module(self, index + 1))
 
+	@staticmethod
+	async def update_presence():
+		await Bomb.client.change_presence(activity=discord.Game(f"{len(Bomb.bombs)} bombs. {PREFIX}help for help"))
+
+	@staticmethod
+	async def cmd_run(channel, author, parts):
+		if channel.id in Bomb.bombs:
+			await channel.send("{author.mention} A bomb is already ticking in this channel!")
+			return
+
+		usage = (
+			f"{author.mention} Usage: `{PREFIX}run [hummus] <module count> <module distributon> [-<module 1> [-<module 2> [...]]]` or "
+			f"`{PREFIX}run [hummus] <module 1> [<module 2> [...]]`.\n"
+			f"For example:\n - `{PREFIX}run hummus 7 vanilla` - 7 vanilla modules that use the modified manual by LtHummus\n"
+			f" - `{PREFIX}run 12 mixed -souvenir -theCube` - 12 modules, half of which being vanilla. "
+			f"Souvenir and The Cube modules will not be generated\n"
+			f" - `{PREFIX}run marbleTumble` - a single Marble Tumble module and nothing else\n"
+			f" - `{PREFIX}run hummus complicatedWires morseCode 3Dmaze` - three modules: Complicated Wires and Morse Code, both using LtHummus's manual,"
+			f" and 3D Maze, using the normal manual since only vanilla modules support hummus."
+			f"Use `{PREFIX}modules` to see the implemented modules.\nAvailable distributions:")
+
+		distributions = {
+			"vanilla": 1,
+			"mods": 0,
+			"modded": 0,
+			"mixed": 0.5,
+			"lightmixed": 0.67,
+			"mixedlight": 0.67,
+			"heavymixed": 0.33,
+			"mixedheavy": 0.33,
+			"light": 0.8,
+			"heavy": 0.2,
+			"extralight": 0.9,
+			"extraheavy": 0.1
+		}
+
+		for distribution in distributions:
+			if distribution not in ["lightmixed", "heavymixed", "modded"]:
+				vanilla = int(distributions[distribution] * 100)
+				usage += f"\n`{distribution}`: {vanilla}% vanilla, {100 - vanilla}% modded"
+
+		if len(parts) < 1:
+			return await channel.send(usage.format(author.mention, prefix=PREFIX))
+
+		hummus = parts[0] == "hummus"
+		if hummus: parts.pop(0)
+
+		if parts[0].isdigit():
+			if len(parts) < 2 or parts[1] not in distributions:
+				await channel.send(usage.format(author.mention, prefix=PREFIX))
+				return
+
+			module_candidates_vanilla = modules.VANILLA_MODULES.copy()
+			module_candidates_modded = modules.MODDED_MODULES.copy()
+			module_count = int(parts[0])
+
+			if module_count == 0:
+				return await channel.send(f"{author.mention} What would it even mean for a bomb to have no modules? :thinking:")
+
+			for veto in parts[2:]:
+				if not veto.startswith('-'):
+					await channel.send(usage)
+					return
+
+				veto = veto[1:]
+				
+				if veto in module_candidates_vanilla:
+					del module_candidates_vanilla[veto]
+				elif veto in module_candidates_modded:
+					del module_candidates_modded[veto]
+				else:
+					return await channel.send(f"{author.mention} No such module: `{veto}`")
+
+			chosen_modules = []
+
+			vanilla_count = distributions[parts[1]] * module_count
+
+			if (not module_candidates_vanilla or vanilla_count == 0) and (not module_candidates_modded or vanilla_count == module_count):
+				return await channel.send(f"{author.mention} You've blacklisted all the modules! If you don't want to play, just say so!")
+
+			if not module_candidates_vanilla: vanilla_count = 0
+			elif not module_candidates_modded: vanilla_count = module_count
+
+			for _ in range(vanilla_count):
+				chosen_modules.append(random.choice(list(module_candidates_vanilla.values())))
+
+			for _ in range(module_count - vanilla_count):
+				chosen_modules.append(random.choice(list(module_candidates_modded.values())))
+		else:
+			chosen_modules = []
+			module_candidates = {**modules.VANILLA_MODULES, **modules.MODDED_MODULES}
+			for module in parts:
+				if module not in module_candidates:
+					return await channel.send(f"{author.mention} No such module: `{module}`")
+				chosen_modules.append(module_candidates[module])
+
+		bomb = Bomb(channel, chosen_modules, hummus)
+		Bomb.bombs[channel.id] = bomb
+		await channel.send(f"A bomb with {len(bomb.modules)} modules has been armed!\nEdgework: `{bomb.get_edgework()}`")
+		await Bomb.update_presence()
+
+	async def bomb_defused(self):
+		if Bomb.hastebin_session is None:
+			Bomb.hastebin_session = aiohttp.ClientSession()
+
+		try:
+			with async_timeout.timeout(5):
+				async with self.hastebin_session.post('https://hastebin.com/documents', data=self.get_log().encode('utf-8')) as resp:
+					decoded = await resp.json()
+					if 'key' in decoded:
+						logurl = f"Log: https://hastebin.com/{decoded['key']}.txt"
+					elif 'message' in decoded:
+						logurl = f"Log upload failed with error message: `{decoded['message']}`"
+					else:
+						logurl = f"Log upload failed with no error message: `{repr(decoded)}`"
+		except Exception:
+			logurl = f"Log upload failed with exception: ```\n{traceback.format_exc()}```"
+		await self.channel.send(f"The bomb has been defused after {self.get_time_formatted()} and {self.strikes} strikes. {logurl}")
+		del Bomb.bombs[self.channel.id]
+		await Bomb.update_presence()
+
 	def get_log(self):
 		log = ["Edgework: {:s}".format(self.get_edgework())]
 		for module in self.modules:
-			log += module.get_log()
-		return '\n'.join(log)
+			log.append(module.get_log())
+		return '\n\n'.join(log)
 
 	def get_claims(self, user):
 		return [module for module in self.modules if not module.solved and module.claim is not None and module.claim.id == user.id]
@@ -199,3 +236,67 @@ class Bomb:
 			return str(random.randint(0, 9))
 
 		return get_any() + get_any() + get_digit() + get_letter() + get_letter() + get_digit()
+
+	async def handle_command(self, command, author, parts):
+		if command in Bomb.COMMANDS:
+			await Bomb.COMMANDS[command](self, author, parts)
+		elif command.isdigit():
+			ident = int(command)
+			if ident not in range(1, len(self.modules) + 1):
+				await self.channel.send("f{author.mention} Double check the module number - there are only {len(self.modules)} modules on this bomb!")
+			elif not parts:
+				await self.channel.send("f{author.mention} What should I do with module {ident}? You need to give me a command!")
+			else:
+				command = parts.pop(0)
+				await self.modules[ident - 1].handle_command(command, author, parts)
+
+	async def cmd_edgework(self, author, parts):
+		await self.channel.send(f"{author.mention} Edgework: `{self.get_edgework()}`")
+
+	async def cmd_unclaimed(self, author, parts):
+		unclaimed = self.get_unclaimed()
+
+		if len(unclaimed) > MAX_UNCLAIMED_LIST_SIZE:
+			reply = f'{MAX_UNCLAIMED_LIST_SIZE} randomly chosen unclaimed modules:'
+			unclaimed = random.sample(modules, MAX_UNCLAIMED_LIST_SIZE)
+			unclaimed.sort(key=lambda module: module.ident)
+		else:
+			reply = 'Unclaimed modules:'
+
+		for module in unclaimed:
+			reply += f"\n#{module.ident}: {module.display_name}"
+
+		await self.channel.send(reply)
+
+	async def cmd_claims(self, author, parts):
+		claims = list(map(str, self.get_claims(author)))
+		if len(claims) == 0:
+			await self.channel.send("{author.mention} You have not claimed any modules.")
+		elif len(claims) == 1:
+			await self.channel.send("{author.mention} You have only claimed {claims[0]}.")
+		else:
+			await self.channel.send("{author.mention} You have claimed {', '.join(claims[::-1])} and {claims[-1]}.")
+
+	async def cmd_status(self, author, parts):
+		await self.channel.send(('Hummus mode on, ' if self.hummus else '') +
+			f"Zen mode on, time: {self.get_time_formatted()}, {self.strikes} strikes, "
+			f"{self.get_solved_count()} out of {self.modules} modules solved.")
+
+	def get_random_unclaimed(self):
+		return random.choice([module for module in self.modules if not module.solved])
+	
+	async def cmd_claimany(self, author, parts):
+		await self.get_random_unclaimed().handle_command("claim", author, parts)
+
+	async def cmd_claimanyview(self, author, parts):
+		await self.get_random_unclaimed().handle_command("claimview", author, parts)
+
+	COMMANDS = {
+		"edgework": cmd_edgework,
+		"unclaimed": cmd_unclaimed,
+		"status": cmd_status,
+		"claims": cmd_claims,
+		"claimany": cmd_claimany,
+		"claimanyview": cmd_claimanyview,
+		"cvany": cmd_claimanyview,
+	}

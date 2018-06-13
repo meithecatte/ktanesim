@@ -1,6 +1,6 @@
 import random
 import asyncio
-from bomb import Module
+from modules import Module
 from config import *
 
 class TheButton(Module):

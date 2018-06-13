@@ -3,67 +3,8 @@ import discord
 import aiohttp
 import traceback
 import async_timeout
-from bomb import Bomb
 from config import *
-from modules.wires import Wires
-from modules.the_button import TheButton
-from modules.keypad import Keypad
-
-VANILLA_MODULES = {
-	"wires": Wires,
-	"theButton": TheButton
-}
-
-MODDED_MODULES = {
-	"keypad": Keypad
-}
-
-bombs = {}
-
-# given a function, wrap it around a "bomb must be present" check
-def bomb_present(func):
-	async def wrapper(msg, *args):
-		if msg.channel.id in bombs:
-			await func(msg, *args)
-		else:
-			await msg.channel.send("{:s} No bomb is currently running in this channel.".format(msg.author.mention))
-	return wrapper
-
-@bomb_present
-async def cmd_edgework(msg, parts):
-	await msg.channel.send("{:s} Edgework: `{:s}`".format(msg.author.mention, bombs[msg.channel.id].get_edgework()))
-
-@bomb_present
-async def cmd_unclaimed(msg, parts):
-	modules = bombs[msg.channel.id].get_unclaimed()
-
-	if len(modules) > MAX_UNCLAIMED_LIST_SIZE:
-		reply = 'A random sample of unclaimed modules:'
-		modules = random.sample(modules, MAX_UNCLAIMED_LIST_SIZE)
-	else:
-		reply = 'Unclaimed modules:'
-
-	modules.sort(key=lambda module: module.ident)
-
-	for module in modules:
-		if module.solved:
-			status = 'solved'
-		elif module.claim:
-			status = 'claimed by {:s}'.format(module.claim)
-		else:
-			status = 'unclaimed'
-		reply += "\n#{:d}: {:s} - {:s}".format(module.ident, module.display_name, status)
-	await msg.channel.send(reply)
-
-@bomb_present
-async def cmd_claims(msg, parts):
-	claims = list(map(str, bombs[msg.channel.id].get_claims(msg.author)))
-	if len(claims) == 0:
-		await msg.channel.send("{:s} You have not claimed any modules.".format(msg.author.mention))
-	elif len(claims) == 1:
-		await msg.channel.send("{:s} You have only claimed {:s}.".format(msg.author.mention, claims[0]))
-	else:
-		await msg.channel.send("{:s} You have claimed {:s} and {:s}.".format(msg.author.mention, ', '.join(claims[:-1]), claims[-1]))
+from bomb import Bomb
 
 async def unclaimed_command(msg, cmd):
 	unclaimed = bombs[msg.channel.id].get_unclaimed()
@@ -80,11 +21,6 @@ async def cmd_claimany(msg, parts):
 async def cmd_claimanyview(msg, parts):
 	await unclaimed_command(msg, "claimview")
 
-@bomb_present
-async def cmd_status(msg, parts):
-	bomb = bombs[msg.channel.id]
-	await msg.channel.send("{:s}Zen mode on, time: {:s}, {:d} strikes, {:d} out of {:d} modules solved.".format(
-		('Hummus mode on, ' if bomb.hummus else ''), bomb.get_time_formatted(), bomb.strikes, bomb.get_solved_count(), len(bomb.modules)))
 @bomb_present
 async def handle_module_command(msg, ident, parts):
 	bomb = bombs[msg.channel.id]
@@ -141,12 +77,6 @@ async def defused(channel):
 	await channel.send("The bomb has been defused after {:s} and {:d} strikes. {:s}".format(bomb.get_time_formatted(), bomb.strikes, logurl))
 	del bombs[channel.id]
 	await update_presence()
-
-async def cmd_modules(msg, parts):
-	await msg.channel.send("Available modules:\nVanilla: `" + '`, `'.join(VANILLA_MODULES.keys()) + "`\nModded: `" + '`, `'.join(MODDED_MODULES.keys()) + '`')
-
-async def update_presence():
-	await client.change_presence(activity=discord.Game("{:d} bombs. Try {prefix}help".format(len(bombs), prefix=PREFIX)))
 
 async def cmd_run(msg, parts):
 	if msg.channel.id in bombs:

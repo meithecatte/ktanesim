@@ -1,5 +1,5 @@
 import random
-from bomb import Module
+from modules import Module
 
 class Keypad(Module):
 	display_name = "Keypad"
