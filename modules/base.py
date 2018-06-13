@@ -141,5 +141,6 @@ class Module:
 		"view": cmd_view,
 		"claim": cmd_claim,
 		"unclaim": cmd_unclaim,
-		"claimview": cmd_claimview
+		"claimview": cmd_claimview,
+		"cv": cmd_claimview
 	}
