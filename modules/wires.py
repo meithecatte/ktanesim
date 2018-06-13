@@ -56,7 +56,7 @@ class Wires(modules.Module):
 		svg += '</svg>'
 		return svg
 
-	@modules.check_claim
+	@modules.check_solve_cmd
 	async def cmd_cut(self, author, parts):
 		if len(parts) != 1 or not parts[0].isdigit():
 			await self.usage(msg)

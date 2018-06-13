@@ -13,9 +13,11 @@ def noparts(func):
 			await func(self, author)
 	return wrapper
 
-def check_claim(func):
+def check_solve_cmd(func):
 	async def wrapper(self, author, parts):
-		if self.claim and self.claim.id != author.id:
+		if self.solved:
+			await self.bomb.channel.send(f"{author.mention} {self} has already been solved.")
+		elif self.claim and self.claim.id != author.id:
 			await self.bomb.channel.send(f"{author.mention} {self} has been claimed by {self.claim}.")
 		else:
 			await func(self, author, parts)

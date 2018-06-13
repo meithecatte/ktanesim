@@ -46,7 +46,7 @@ class TheButton(modules.Module):
 		svg += '</svg>'
 		return svg
 
-	@modules.check_claim
+	@modules.check_solve_cmd
 	@modules.noparts
 	async def cmd_tap(self, author):
 		if self.should_hold():
@@ -56,14 +56,14 @@ class TheButton(modules.Module):
 			self.log("tapping - correct")
 			await self.handle_solved(author)
 	
-	@modules.check_claim
+	@modules.check_solve_cmd
 	@modules.noparts
 	async def cmd_hold(self, author):
 		self.strip_color = random.choice(list(TheButton.COLORS.keys()))
 		self.log('start holding, strip color: {:s}'.format(self.strip_color))
 		await self.do_view(f"{author.mention} The button is being held.")
 	
-	@modules.check_claim
+	@modules.check_solve_cmd
 	async def cmd_release(self, author, parts):
 		if not parts or not parts[0].isdigit() or len(parts[0]) != 1:
 			await self.usage(author)
