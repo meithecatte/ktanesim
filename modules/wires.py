@@ -55,7 +55,7 @@ class Wires(modules.Module):
 		       f'<path stroke="#000000" {solvelight} stroke-width="2.0" d="m282.73444 40.553925l0 0c0 -8.375591 6.966034 -15.165352 15.5590515 -15.165352l0 0c4.126526 0 8.084015 1.5977726 11.001923 4.441828c2.9178772 2.844057 4.557129 6.7014217 4.557129 10.723524l0 0c0 8.375595 -6.9660034 15.165356 -15.5590515 15.165356l0 0c-8.593018 0 -15.5590515 -6.7897606 -15.5590515 -15.165356z" fill-rule="nonzero" />')
 		for pos, color, cut in zip(self.positions, self.colors, self.cut):
 			paths = Wires.PATHS_CUT if cut else Wires.PATHS_UNCUT
-			svg += f'<path fill="{Wires.COLORS[color]}" stroke="{"#000000" if color == "white" else "none"}" stroke-width="2.0" d="{paths[pos]}" />'
+			svg += f'<path fill="{Wires.COLORS[color]}" stroke="#000000" stroke-width="2.0" d="{paths[pos]}" />'
 		svg += '</svg>'
 		return svg
 
