@@ -120,7 +120,7 @@ class Module:
 
 	@noparts
 	async def cmd_unclaim(self, author):
-		if self.claim and self.claim.id == msg.author.id:
+		if self.claim and self.claim.id == author.id:
 			self.claim = None
 			await self.bomb.channel.send(f"{author.mention} has unclaimed {self}")
 		else:
