@@ -16,7 +16,7 @@ class Button(modules.Module):
 		"red": "#ff0000",
 		"blue": "#0000ff",
 		"yellow": "#ffff00",
-		"white": "#ececec"
+		"white": "#ffffff"
 	}
 
 	def __init__(self, bomb, ident):
