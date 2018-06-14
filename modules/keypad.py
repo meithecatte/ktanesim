@@ -99,6 +99,6 @@ class Keypad(modules.Module):
 					return
 		await self.do_view(f"{author.mention}")
 	
-	COMMANDS = {**modules.Module.COMMANDS,
+	COMMANDS = {
 		"press": cmd_press
 	}

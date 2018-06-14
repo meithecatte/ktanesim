@@ -138,7 +138,7 @@ class TheButton(modules.Module):
 		else:
 			return {"blue": 4, "white": 1, "yellow": 5, "red": 1}[self.strip_color]
 	
-	COMMANDS = {**modules.Module.COMMANDS,
+	COMMANDS = {
 		"tap": cmd_tap,
 		"hold": cmd_hold,
 		"release": cmd_release

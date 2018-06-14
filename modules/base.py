@@ -24,7 +24,20 @@ def check_solve_cmd(func):
 			await func(self, author, parts)
 	return wrapper
 
-class Module:
+class CommandConsolidator(type):
+	def __new__(cls, clsname, superclasses, attributes):
+		commands = {}
+		for superclass in superclasses:
+			if hasattr(superclass, 'COMMANDS'):
+				commands.update(superclass.COMMANDS)
+
+		if 'COMMANDS' in attributes:
+			commands.update(attributes['COMMANDS'])
+
+		attributes['COMMANDS'] = commands
+		return type.__new__(cls, clsname, superclasses, attributes)
+
+class Module(metaclass=CommandConsolidator):
 	def __init__(self, bomb, ident):
 		self.bomb = bomb
 		self.ident = ident

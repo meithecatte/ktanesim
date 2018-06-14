@@ -213,6 +213,6 @@ class Wires(modules.Module):
 					self.log('rule: wildcard')
 					return 3
 	
-	COMMANDS = {**modules.Module.COMMANDS,
+	COMMANDS = {
 		"cut": cmd_cut
 	}
