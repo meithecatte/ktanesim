@@ -60,7 +60,7 @@ class Bomb:
 
 	@staticmethod
 	async def update_presence():
-		await Bomb.client.change_presence(activity=discord.Game(f"{len(Bomb.bombs)} bombs. {PREFIX}help for help"))
+		await Bomb.client.change_presence(activity=discord.Game(f"{len(Bomb.bombs)} bomb{'s' if len(Bomb.bombs) != 1 else ''}. {PREFIX}help for help"))
 
 	@staticmethod
 	async def cmd_shutdown(channel, author, parts):
@@ -86,7 +86,7 @@ class Bomb:
 			return
 
 		if Bomb.shutdown_mode:
-			await channel.send(f"{author.mention} The bot is in shutdown mode, no new bombs can be started.")
+			await channel.send(f"{author.mention} The bot is in shutdown mode. No new bombs can be started.")
 			return
 
 		usage = (
