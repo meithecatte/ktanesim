@@ -199,7 +199,7 @@ class Bomb:
 					logurl = f"Log upload failed with no error message: `{repr(decoded)}`"
 		except Exception:
 			logurl = f"Log upload failed with exception: ```\n{traceback.format_exc()}```"
-		await self.channel.send(f"{':boom:' if boom else ''} The bomb has been {'**detonated**' if boom else 'defused'} after {self.get_time_formatted()} and {self.strikes} strikes. {logurl}")
+		await self.channel.send(f"{':boom:' if boom else ''} The bomb has been {'**detonated**' if boom else 'defused'} after {self.get_time_formatted()} and {self.strikes} strike{'s' if self.strikes != 1 else ''}. {logurl}")
 		del Bomb.bombs[self.channel]
 		if Bomb.shutdown_mode and not Bomb.bombs:
 			Bomb.client.loop.stop()
