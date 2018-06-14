@@ -56,7 +56,8 @@ async def on_message(msg):
 		"leaderboard": leaderboard.cmd_leaderboard,
 		"lb": leaderboard.cmd_leaderboard,
 		"rank": leaderboard.cmd_rank,
-		"help": cmd_help
+		"help": cmd_help,
+		"shutdown": Bomb.cmd_shutdown
 	}
 
 	if command in GENERIC_COMMANDS:

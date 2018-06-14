@@ -1,5 +1,7 @@
+import sys
 import time
 import random
+import asyncio
 import aiohttp
 import discord
 import modules
@@ -39,6 +41,7 @@ class Bomb:
 	bombs = {}
 	hastebin_session = None
 	client = None
+	shutdown_mode = False
 
 	def __init__(self, channel, modules, hummus = False):
 		self.channel = channel
@@ -60,9 +63,32 @@ class Bomb:
 		await Bomb.client.change_presence(activity=discord.Game(f"{len(Bomb.bombs)} bombs. {PREFIX}help for help"))
 
 	@staticmethod
+	async def cmd_shutdown(channel, author, parts):
+		if parts:
+			await channel.send(f"{author.mention} Trailing arguments.")
+			return
+
+		if author.id != BOT_OWNER:
+			await channel.send(f"{author.mention} You don't have permission to use this command.")
+			return
+
+		Bomb.shutdown_mode = True
+
+		for bomb_channel in Bomb.bombs:
+			asyncio.ensure_future(bomb_channel.send(f"The bot is going into shutdown mode. No new bombs can be started, and the bot will go down in 15 minutes. All bombs running at that time will be detonated in an explosion-proof container. If you need more time, message <@{BOT_OWNER}>"))
+
+		await channel.send(f"{author.mention} Shutdown mode activated")
+		await asyncio.sleep(5)
+		Bomb.client.loop.stop()
+
+	@staticmethod
 	async def cmd_run(channel, author, parts):
 		if channel.id in Bomb.bombs:
 			await channel.send(f"{author.mention} A bomb is already ticking in this channel!")
+			return
+
+		if Bomb.shutdown_mode:
+			await channel.send(f"{author.mention} The bot is in shutdown mode, no new bombs can be started.")
 			return
 
 		usage = (
