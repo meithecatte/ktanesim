@@ -63,8 +63,8 @@ async def on_message(msg):
 	if command in GENERIC_COMMANDS:
 		await GENERIC_COMMANDS[command](channel, author, parts)
 	elif command.isdigit() or command in Bomb.COMMANDS:
-		if channel.id in Bomb.bombs:
-			await Bomb.bombs[channel.id].handle_command(command, author, parts)
+		if channel in Bomb.bombs:
+			await Bomb.bombs[channel].handle_command(command, author, parts)
 		else:
 			await channel.send(f"{author.mention} No bomb is currently ticking in this channel. Change this sad fact with `{PREFIX}run`.")
 	else:

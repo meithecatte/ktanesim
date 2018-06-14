@@ -85,7 +85,7 @@ class Bomb:
 
 	@staticmethod
 	async def cmd_run(channel, author, parts):
-		if channel.id in Bomb.bombs:
+		if channel in Bomb.bombs:
 			await channel.send(f"{author.mention} A bomb is already ticking in this channel!")
 			return
 
@@ -180,7 +180,7 @@ class Bomb:
 				chosen_modules.append(module_candidates[module])
 
 		bomb = Bomb(channel, chosen_modules, hummus)
-		Bomb.bombs[channel.id] = bomb
+		Bomb.bombs[channel] = bomb
 		await channel.send(f"A bomb with {len(bomb.modules)} modules has been armed!\nEdgework: `{bomb.get_edgework()}`")
 		await Bomb.update_presence()
 
@@ -200,7 +200,7 @@ class Bomb:
 		except Exception:
 			logurl = f"Log upload failed with exception: ```\n{traceback.format_exc()}```"
 		await self.channel.send(f"The bomb has been defused after {self.get_time_formatted()} and {self.strikes} strikes. {logurl}")
-		del Bomb.bombs[self.channel.id]
+		del Bomb.bombs[self.channel]
 		if Bomb.shutdown_mode and not Bomb.bombs:
 			Bomb.client.loop.stop()
 		else:
