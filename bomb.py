@@ -75,11 +75,9 @@ class Bomb:
 		Bomb.shutdown_mode = True
 
 		for bomb_channel in Bomb.bombs:
-			asyncio.ensure_future(bomb_channel.send(f"The bot is going into shutdown mode. No new bombs can be started, and the bot will go down in 15 minutes. All bombs running at that time will be detonated in an explosion-proof container. If you need more time, message <@{BOT_OWNER}>"))
+			asyncio.ensure_future(bomb_channel.send(f"The bot is going into shutdown mode. No new bombs can be started."))
 
 		await channel.send(f"{author.mention} Shutdown mode activated")
-		await asyncio.sleep(15*60)
-		Bomb.client.loop.stop()
 
 	@staticmethod
 	async def cmd_run(channel, author, parts):
@@ -199,7 +197,10 @@ class Bomb:
 			logurl = f"Log upload failed with exception: ```\n{traceback.format_exc()}```"
 		await self.channel.send(f"The bomb has been defused after {self.get_time_formatted()} and {self.strikes} strikes. {logurl}")
 		del Bomb.bombs[self.channel.id]
-		await Bomb.update_presence()
+		if Bomb.shutdown_mode and not Bomb.bombs:
+			Bomb.client.loop.stop()
+		else:
+			await Bomb.update_presence()
 
 	def get_log(self):
 		log = ["Edgework: {:s}".format(self.get_edgework())]
