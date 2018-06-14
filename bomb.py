@@ -281,7 +281,7 @@ class Bomb:
 			f"{self.get_solved_count()} out of {len(self.modules)} modules solved.")
 
 	def get_random_unclaimed(self):
-		return random.choice([module for module in self.modules if not module.solved])
+		return random.choice([module for module in self.modules if not module.solved and module.claim is None])
 	
 	async def cmd_claimany(self, author, parts):
 		await self.get_random_unclaimed().handle_command("claim", author, parts)
