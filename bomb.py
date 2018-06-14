@@ -148,7 +148,7 @@ class Bomb:
 					return
 
 				veto = veto[1:]
-				
+
 				if veto in module_candidates_vanilla:
 					del module_candidates_vanilla[veto]
 				elif veto in module_candidates_modded:
@@ -184,7 +184,7 @@ class Bomb:
 		await channel.send(f"A bomb with {len(bomb.modules)} modules has been armed!\nEdgework: `{bomb.get_edgework()}`")
 		await Bomb.update_presence()
 
-	async def bomb_defused(self):
+	async def bomb_end(self, boom=False):
 		if Bomb.hastebin_session is None:
 			Bomb.hastebin_session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5))
 
@@ -199,7 +199,7 @@ class Bomb:
 					logurl = f"Log upload failed with no error message: `{repr(decoded)}`"
 		except Exception:
 			logurl = f"Log upload failed with exception: ```\n{traceback.format_exc()}```"
-		await self.channel.send(f"The bomb has been defused after {self.get_time_formatted()} and {self.strikes} strikes. {logurl}")
+		await self.channel.send(f"{':boom:' if boom else ''} The bomb has been {'**detonated**' if boom else 'defused'} after {self.get_time_formatted()} and {self.strikes} strikes. {logurl}")
 		del Bomb.bombs[self.channel]
 		if Bomb.shutdown_mode and not Bomb.bombs:
 			Bomb.client.loop.stop()
@@ -316,12 +316,41 @@ class Bomb:
 
 	def get_random_unclaimed(self):
 		return random.choice([module for module in self.modules if not module.solved and module.claim is None])
-	
+
 	async def cmd_claimany(self, author, parts):
 		await self.get_random_unclaimed().handle_command("claim", author, parts)
 
 	async def cmd_claimanyview(self, author, parts):
 		await self.get_random_unclaimed().handle_command("claimview", author, parts)
+
+	async def cmd_detonate(self, author, parts):
+		if parts:
+			await self.channel.send(f"{author.mention} Trailing arguments.")
+			return
+		if author.id == BOT_OWNER or isinstance(self.channel, discord.channel.DMChannel):
+			await self.bomb_end(True)
+			return
+		else:
+			msg = await self.channel.send(f"{author.mention} wants to detonate this bomb in an explosion-proof container instead of defusing it and selling the parts for :dollar:. If you agree, react with {DETONATE_REACT}")
+			await msg.add_reaction(DETONATE_REACT)
+			start_time = time.monotonic()
+			while time.monotonic() < start_time + DETONATE_TIMEOUT:
+				try:
+					await self.client.wait_for('reaction_add', timeout=start_time+DETONATE_TIMEOUT-time.monotonic(),
+						check=lambda reaction, user: reaction.emoji == DETONATE_REACT and reaction.message.id == msg.id)
+				except asyncio.TimeoutError:
+					pass
+				msg = await self.channel.get_message(msg.id)
+				approval = 0
+				for reaction in msg.reactions:
+					if reaction.emoji == DETONATE_REACT:
+						async for user in reaction.users():
+							if user.id != author.id:
+								approval += 1
+				if approval >= DETONATE_APPROVAL:
+					await self.bomb_end(True)
+					return
+			await self.channel.send(f"Only {approval} out of {DETONATE_APPROVAL} needed people agreed. Not detonating.")
 
 	COMMANDS = {
 		"edgework": cmd_edgework,
@@ -331,4 +360,5 @@ class Bomb:
 		"claimany": cmd_claimany,
 		"claimanyview": cmd_claimanyview,
 		"cvany": cmd_claimanyview,
+		"detonate": cmd_detonate,
 	}

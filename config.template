@@ -13,3 +13,8 @@ MAX_UNCLAIMED_LIST_SIZE = 10
 MAX_CLAIMS_PER_PLAYER = 3
 TAKE_TIMEOUT = 60
 TAKE_REACT = "\u26D4"
+
+# how many people need to agree to use !detonate. Does not apply to the bot owner nor DMs
+DETONATE_APPROVAL = 3
+DETONATE_TIMEOUT = 60
+DETONATE_REACT = "\U0001F4A5"

@@ -30,6 +30,7 @@ async def cmd_help(channel, author, parts):
 		f"`{PREFIX}claimany`: Claim a randomly chosen module, except for a Souvenir, Forget Me Not or Forget Everything.\n"
 		f"`{PREFIX}claimanyview`, alias `{PREFIX}cvany`: `{PREFIX}claimany` and `view` combined.\n"
 		f"`{PREFIX}claims`: Show the list of modules you have claimed.\n"
+		f"`{PREFIX}detonate`: If other players agree, detonate the bomb.\n"
 		f"Message the bot in DMs for solo play!")
 
 logging.basicConfig(level=logging.INFO)
@@ -43,7 +44,7 @@ async def on_ready():
 
 @client.event
 async def on_message(msg):
-	if type(msg.channel) is not discord.channel.DMChannel and msg.channel.id not in ALLOWED_CHANNELS: return
+	if not isinstance(msg.channel, discord.channel.DMChannel) and msg.channel.id not in ALLOWED_CHANNELS: return
 	if not msg.content.startswith(PREFIX): return
 	parts = msg.content[len(PREFIX):].strip().split()
 	command = parts.pop(0)

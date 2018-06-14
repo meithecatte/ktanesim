@@ -79,7 +79,7 @@ class Module(metaclass=CommandConsolidator):
 		leaderboard.record_solve(author, self.module_score)
 		await self.do_view(f"{author.mention} solved {self}. {self.module_score} {'points have' if self.module_score > 1 else 'point has'} been awarded.")
 		if self.bomb.get_solved_count() == len(self.bomb.modules):
-			await self.bomb.bomb_defused()
+			await self.bomb.bomb_end()
 
 	async def handle_strike(self, author):
 		self.log('strike!')
