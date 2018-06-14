@@ -303,11 +303,11 @@ class Bomb:
 	async def cmd_claims(self, author, parts):
 		claims = list(map(str, self.get_claims(author)))
 		if len(claims) == 0:
-			await self.channel.send("{author.mention} You have not claimed any modules.")
+			await self.channel.send(f"{author.mention} You have not claimed any modules.")
 		elif len(claims) == 1:
-			await self.channel.send("{author.mention} You have only claimed {claims[0]}.")
+			await self.channel.send(f"{author.mention} You have only claimed {claims[0]}.")
 		else:
-			await self.channel.send("{author.mention} You have claimed {', '.join(claims[::-1])} and {claims[-1]}.")
+			await self.channel.send(f"{author.mention} You have claimed {', '.join(claims[::-1])} and {claims[-1]}.")
 
 	async def cmd_status(self, author, parts):
 		await self.channel.send(('Hummus mode on, ' if self.hummus else '') +
