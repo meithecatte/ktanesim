@@ -78,7 +78,7 @@ class Bomb:
 			asyncio.ensure_future(bomb_channel.send(f"The bot is going into shutdown mode. No new bombs can be started, and the bot will go down in 15 minutes. All bombs running at that time will be detonated in an explosion-proof container. If you need more time, message <@{BOT_OWNER}>"))
 
 		await channel.send(f"{author.mention} Shutdown mode activated")
-		await asyncio.sleep(5)
+		await asyncio.sleep(15*60)
 		Bomb.client.loop.stop()
 
 	@staticmethod
