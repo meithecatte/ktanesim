@@ -89,18 +89,18 @@ class Module(metaclass=CommandConsolidator):
 
 	def render(self):
 		# unsafe is needed to render images on, among others, the Keypad module, and does not pose a security risk since the user has no control over the SVG
-		return io.BytesIO(cairosvg.svg2png(self.get_svg().encode('utf-8'), unsafe=True)), 'render.png'
+		return cairosvg.svg2png(self.get_svg().encode('utf-8'), unsafe=True), 'render.png'
 
 	@noparts
 	async def cmd_view(self, author):
 		await self.do_view(author.mention)
 
 	async def do_view(self, text):
-		stream, filename = await self.bomb.client.loop.run_in_executor(None, self.render)
+		data, filename = await self.bomb.client.loop.run_in_executor(None, self.render)
 		descr = f"[Manual]({self.get_manual()}). {self.get_help()}" if not self.solved else ''
 		embed = discord.Embed(title=str(self), description=descr)
 		embed.set_image(url=f"attachment://{filename}")
-		file_ = discord.File(stream, filename=filename)
+		file_ = discord.File(io.BytesIO(data), filename=filename)
 		send_task = asyncio.ensure_future(self.bomb.channel.send(text, file=file_, embed=embed))
 		if self.last_img is not None:
 			delete_task = asyncio.ensure_future(self.last_img.delete())
