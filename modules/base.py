@@ -75,6 +75,7 @@ class Module(metaclass=CommandConsolidator):
 	async def handle_solved(self, author):
 		self.log('module solved')
 		self.solved = True
+		if self.claim is None: self.claim = author
 		leaderboard.record_solve(author, self.module_score)
 		await self.do_view(f"{author.mention} solved {self}. {self.module_score} {'points have' if self.module_score > 1 else 'point has'} been awarded.")
 		if self.bomb.get_solved_count() == len(self.bomb.modules):
