@@ -111,7 +111,7 @@ class Module(metaclass=CommandConsolidator):
 	@noparts
 	async def cmd_claim(self, author):
 		if await self.do_claim(author):
-			await self.channel.send("{author.mention} {self} is yours now.")
+			await self.bomb.channel.send(f"{author.mention} {self} is yours now.")
 
 	async def do_claim(self, author):
 		if self.solved:
