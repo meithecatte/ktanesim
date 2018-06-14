@@ -2,11 +2,13 @@ from modules.base import Module, noparts, check_solve_cmd
 from modules.wires import Wires
 from modules.button import Button
 from modules.keypad import Keypad
+from modules.simon import SimonSays
 
 VANILLA_MODULES = {
 	"wires": Wires,
 	"button": Button,
-	"keypad": Keypad
+	"keypad": Keypad,
+	"simonSays": SimonSays,
 }
 
 MODDED_MODULES = {

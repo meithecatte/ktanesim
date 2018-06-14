@@ -229,6 +229,13 @@ class Bomb:
 			if indicator.lit and indicator.code == code:
 				return True
 
+	def has_vowel(self):
+		for vowel in "AEIOU":
+			if vowel in self.serial:
+				return True
+
+		return False
+
 	def get_edgework(self):
 		edgework = [
 			'{:d}B {:d}H'.format(self.get_battery_count(), self.get_holder_count()),
