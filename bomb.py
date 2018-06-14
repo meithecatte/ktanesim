@@ -288,7 +288,7 @@ class Bomb:
 		if unclaimed:
 			if len(unclaimed) > MAX_UNCLAIMED_LIST_SIZE:
 				reply = f'{MAX_UNCLAIMED_LIST_SIZE} randomly chosen unclaimed modules:'
-				unclaimed = random.sample(modules, MAX_UNCLAIMED_LIST_SIZE)
+				unclaimed = random.sample(unclaimed, MAX_UNCLAIMED_LIST_SIZE)
 				unclaimed.sort(key=lambda module: module.ident)
 			else:
 				reply = 'Unclaimed modules:'
