@@ -52,10 +52,10 @@ class Keypad(modules.Module):
 		       f'<image xlink:href="img/keypad/{self.buttons[1]}.png" width="90" height="90" x="161" y="105"/>'
 		       f'<image xlink:href="img/keypad/{self.buttons[2]}.png" width="90" height="90" x="47" y="215"/>'
 		       f'<image xlink:href="img/keypad/{self.buttons[3]}.png" width="90" height="90" x="161" y="215"/>'
-		       f'<path stroke="{self.led[0]}" fill="{self.led[0]}" stroke-width="2" d="M82.102 102.05h19.748v5.638H82.102z"/>'
-		       f'<path stroke="{self.led[1]}" fill="{self.led[1]}" stroke-width="2" d="M196.213 102.05h19.748v5.638h-19.748z"/>'
-		       f'<path stroke="{self.led[2]}" fill="{self.led[2]}" stroke-width="2" d="M82.102 213.525h19.748v5.638H82.102z"/>'
-		       f'<path stroke="{self.led[3]}" fill="{self.led[3]}" stroke-width="2" d="M196.213 213.525h19.748v5.638h-19.748z"/>'
+		       f'<path stroke="#000" fill="{self.led[0]}" stroke-width="2" d="M82.102 102.05h19.748v5.638H82.102z"/>'
+		       f'<path stroke="#000" fill="{self.led[1]}" stroke-width="2" d="M196.213 102.05h19.748v5.638h-19.748z"/>'
+		       f'<path stroke="#000" fill="{self.led[2]}" stroke-width="2" d="M82.102 213.525h19.748v5.638H82.102z"/>'
+		       f'<path stroke="#000" fill="{self.led[3]}" stroke-width="2" d="M196.213 213.525h19.748v5.638h-19.748z"/>'
 		       f'</svg>')
 	
 	@modules.check_solve_cmd
