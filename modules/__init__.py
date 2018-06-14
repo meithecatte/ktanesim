@@ -1,11 +1,11 @@
 from modules.base import Module, noparts, check_solve_cmd
 from modules.wires import Wires
-from modules.the_button import TheButton
+from modules.button import Button
 from modules.keypad import Keypad
 
 VANILLA_MODULES = {
 	"wires": Wires,
-	"theButton": TheButton,
+	"button": Button,
 	"keypad": Keypad
 }
 
