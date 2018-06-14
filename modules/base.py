@@ -50,7 +50,7 @@ class Module:
 		return self.help_text.format(cmd=f"{PREFIX}{self.ident}")
 
 	async def usage(self, author):
-		await self.bomb.channel.send(f"{author.mention} {self.get_help()}")
+		await self.bomb.channel.send(f"{author.mention} {self.get_help()} Manual: {self.get_manual()}")
 
 	async def handle_command(self, command, author, parts):
 		if command not in self.COMMANDS:
