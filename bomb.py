@@ -280,15 +280,18 @@ class Bomb:
 	async def cmd_unclaimed(self, author, parts):
 		unclaimed = self.get_unclaimed()
 
-		if len(unclaimed) > MAX_UNCLAIMED_LIST_SIZE:
-			reply = f'{MAX_UNCLAIMED_LIST_SIZE} randomly chosen unclaimed modules:'
-			unclaimed = random.sample(modules, MAX_UNCLAIMED_LIST_SIZE)
-			unclaimed.sort(key=lambda module: module.ident)
-		else:
-			reply = 'Unclaimed modules:'
+		if unclaimed:
+			if len(unclaimed) > MAX_UNCLAIMED_LIST_SIZE:
+				reply = f'{MAX_UNCLAIMED_LIST_SIZE} randomly chosen unclaimed modules:'
+				unclaimed = random.sample(modules, MAX_UNCLAIMED_LIST_SIZE)
+				unclaimed.sort(key=lambda module: module.ident)
+			else:
+				reply = 'Unclaimed modules:'
 
-		for module in unclaimed:
-			reply += f"\n#{module.ident}: {module.display_name}"
+			for module in unclaimed:
+				reply += f"\n#{module.ident}: {module.display_name}"
+		else:
+			reply = "There are no unclaimed modules."
 
 		await self.channel.send(reply)
 
