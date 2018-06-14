@@ -62,6 +62,14 @@ class Module(metaclass=CommandConsolidator):
 	def get_help(self):
 		return self.help_text.format(cmd=f"{PREFIX}{self.ident}")
 
+	def get_status(self):
+		if self.solved:
+			return f'solved by {self.claim}'
+		elif self.claim:
+			return f'claimed by {self.claim}'
+		else:
+			return 'unclaimed'
+
 	async def usage(self, author):
 		await self.bomb.channel.send(f"{author.mention} {self.get_help()} Manual: {self.get_manual()}")
 

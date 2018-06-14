@@ -19,6 +19,7 @@ async def cmd_help(channel, author, parts):
 		f"`{PREFIX}run ...`: Start a bomb. Pass no parameters for usage.\n"
 		f"`{PREFIX}modules`: Show a list of implemented modules.\n"
 		f"`{PREFIX}unclaimed`: Shows {MAX_UNCLAIMED_LIST_SIZE} random unclaimed modules from the bomb.\n"
+		f"`{PREFIX}find ...`: List all modules on the bomb with `...` in their name.\n"
 		f"`{PREFIX}edgework`: Show the edgework string of the bomb.\n"
 		f"`{PREFIX}status`: Show the bomb status.\n"
 		f"`{PREFIX}<module number> view`: Show the module and link its manual.\n"

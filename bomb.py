@@ -359,10 +359,31 @@ class Bomb:
 					return
 			await self.channel.send(f"Only {approval} out of {DETONATE_APPROVAL} needed people agreed. Not detonating.")
 
+	async def cmd_find(self, author, parts):
+		if not parts:
+			await self.channel.send(f"{author.mention} What should I look for?")
+			return
+
+		needle = ' '.join(parts).lower()
+		found = []
+		for module in self.modules:
+			if needle in module.display_name.lower():
+				found.append(module)
+		if not found:
+			await self.channel.send(f"{author.mention} Sorry, I couldn't find anything.")
+			return
+		else:
+			found = [f"{module} - {module.get_status()}" for module in found]
+			if len(found) == 1:
+				await self.channel.send(f"{author.mention} I could only find {found[1]}")
+			else:
+				await self.channel.send(f"{author.mention} Here's what I could find:\n" + '\n'.join(found))
+
 	COMMANDS = {
 		"edgework": cmd_edgework,
-		"unclaimed": cmd_unclaimed,
 		"status": cmd_status,
+		"unclaimed": cmd_unclaimed,
+		"find": cmd_find,
 		"claims": cmd_claims,
 		"claimany": cmd_claimany,
 		"claimanyview": cmd_claimanyview,
