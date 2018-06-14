@@ -77,7 +77,11 @@ class Bomb:
 		for bomb_channel in Bomb.bombs:
 			asyncio.ensure_future(bomb_channel.send(f"The bot is going into shutdown mode. No new bombs can be started."))
 
-		await channel.send(f"{author.mention} Shutdown mode activated")
+		if not Bomb.bombs:
+			await channel.send(f"***oof***")
+			Bomb.client.loop.stop()
+		else:
+			await channel.send(f"{author.mention} Shutdown mode activated")
 
 	@staticmethod
 	async def cmd_run(channel, author, parts):
