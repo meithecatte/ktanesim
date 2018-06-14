@@ -97,7 +97,7 @@ class Module(metaclass=CommandConsolidator):
 
 	async def do_view(self, text):
 		stream, filename = await self.bomb.client.loop.run_in_executor(None, self.render)
-		descr = f"[Manual]({self.get_manual()}). {self.get_help()}" if self.solved else ''
+		descr = f"[Manual]({self.get_manual()}). {self.get_help()}" if not self.solved else ''
 		embed = discord.Embed(title=str(self), description=descr)
 		embed.set_image(url=f"attachment://{filename}")
 		file_ = discord.File(stream, filename=filename)
