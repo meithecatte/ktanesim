@@ -170,15 +170,10 @@ class Bomb:
 			elif not candidates_modded: vanilla_count = module_count
 			modded_count = module_count - vanilla_count
 
-			if candidates_vanilla:
-				chosen_modules.extend(candidates_vanilla * (vanilla_count // len(candidates_vanilla)))
-				for _ in range(vanilla_count % len(candidates_vanilla)):
-					chosen_modules.append(random.choice(candidates_vanilla))
-
-			if candidates_modded:
-				chosen_modules.extend(candidates_modded * (modded_count // len(candidates_modded)))
-				for _ in range(modded_count % len(candidates_modded)):
-					chosen_modules.append(random.choice(candidates_modded))
+			for candidate_group, group_count in (candidates_vanilla, vanilla_count), (candidates_modded, modded_count):
+				if candidate_group:
+					chosen_modules += candidate_group * (group_count // len(candidate_group))
+					chosen_modules += random.sample(candidate_group, group_count % len(candidate_group))
 		else:
 			chosen_modules = []
 			candidates = {**modules.VANILLA_MODULES, **modules.MODDED_MODULES}
