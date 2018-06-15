@@ -30,6 +30,29 @@ class SimonSays(modules.Module):
 	SOLVED_IMAGE = get_images(["solved"])["solved"]
 	del get_images
 
+	MAPPING = {
+	# strikes, vowel, hummus
+		(0, True, False):  {"red": "blue", "blue": "red", "green": "yellow", "yellow": "green"},
+		(1, True, False):  {"red": "yellow", "blue": "green", "green": "blue", "yellow": "red"},
+		(2, True, False):  {"red": "green", "blue": "red", "green": "yellow", "yellow": "blue"},
+		(0, False, False): {"red": "blue", "blue": "yellow", "green": "green", "yellow": "red"},
+		(1, False, False): {"red": "red", "blue": "blue", "green": "yellow", "yellow": "green"},
+		(2, False, False): {"red": "yellow", "blue": "green", "green": "blue", "yellow": "red"},
+		(0, True, True):   {"red": "yellow", "blue": "red", "green": "yellow", "yellow": "blue"},
+		(1, True, True):   {"red": "green", "blue": "red", "green": "green", "yellow": "green"},
+		(2, True, True):   {"red": "yellow", "blue": "yellow", "green": "yellow", "yellow": "green"},
+		(0, False, True):  {"red": "red", "blue": "yellow", "green": "red", "yellow": "red"},
+		(1, False, True):  {"red": "blue", "blue": "blue", "green": "blue", "yellow": "green"},
+		(2, False, True):  {"red": "yellow", "blue": "red", "green": "yellow", "yellow": "yellow"}
+	}
+
+	for strikes in range(3):
+		for vowel in True, False:
+			for hummus in True, False:
+				row = MAPPING[strikes, vowel, hummus]
+				assert set(row.keys()) == set(COLORS)
+				assert set(row.values()) - set(COLORS) == set()
+
 	def __init__(self, bomb, ident):
 		super().__init__(bomb, ident)
 		self.progress = 0
@@ -108,15 +131,7 @@ class SimonSays(modules.Module):
 		strikes = self.bomb.strikes
 		if strikes > 2: strikes = 2
 		vowel = self.bomb.has_vowel()
-		mapping = {
-		# strikes, vowel, hummus
-			(0, True, False):   {"red": "blue", "blue": "red", "green": "yellow", "yellow": "green"},
-			(1, True, False):   {"red": "yellow", "blue": "green", "green": "blue", "yellow": "red"},
-			(2, True, False):   {"red": "green", "blue": "red", "green": "yellow", "yellow": "blue"},
-			(0, False, False):  {"red": "blue", "blue": "yellow", "green": "green", "yellow": "red"},
-			(1, False, False):  {"red": "red", "blue": "blue", "green": "yellow", "yellow": "green"},
-			(2, False, False):  {"red": "yellow", "blue": "green", "green": "blue", "yellow": "red"}
-		}[strikes, vowel, self.bomb.hummus]
+		mapping = SimonSays.MAPPING[strikes, vowel, self.bomb.hummus]
 		self.log(f"Strikes: {strikes}. Vowel: {vowel}.")
 		return [mapping[color] for color in self.sequence]
 	
