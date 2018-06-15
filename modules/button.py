@@ -48,6 +48,9 @@ class Button(modules.Module):
 	@modules.check_solve_cmd
 	@modules.noparts
 	async def cmd_tap(self, author):
+		if self.strip_color is not None:
+			return await self.bomb.channel.send(f"{author.mention} I'm already holding the button. How am I supposed to tap it too? I could release it, but you need to tell me when.")
+
 		if self.should_hold():
 			self.log("tapping - should hold")
 			await self.handle_strike(author)
@@ -58,6 +61,9 @@ class Button(modules.Module):
 	@modules.check_solve_cmd
 	@modules.noparts
 	async def cmd_hold(self, author):
+		if self.strip_color is not None:
+			return await self.do_view(f"{author.mention} The button is already being held.")
+
 		self.strip_color = random.choice(list(Button.COLORS.keys()))
 		self.log('start holding, strip color: {:s}'.format(self.strip_color))
 		await self.do_view(f"{author.mention} The button is being held.")
