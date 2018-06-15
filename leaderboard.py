@@ -58,7 +58,7 @@ async def cmd_leaderboard(channel, author, parts):
 
 async def cmd_rank(channel, author, parts):
 	entry = conn.execute('SELECT (SELECT COUNT(1) FROM leaderboard AS i WHERE i.points > o.points) + 1 AS position, ' +
-		'o.solves, o.strikes, o.points FROM leaderboard AS o WHERE o.id = ?', (msg.author.id, )).fetchone()
+		'o.solves, o.strikes, o.points FROM leaderboard AS o WHERE o.id = ?', (author.id, )).fetchone()
 	if entry:
 		position, solves, strikes, points = entry
 		await channel.send(f"{author.mention} You're #{position} with {solves} solves, {strikes} strikes and {points} points")
