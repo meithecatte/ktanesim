@@ -401,13 +401,23 @@ class Bomb:
 			await self.channel.send(f"{author.mention} Sorry, I couldn't find anything.")
 			return
 		else:
-			found = [f"{module} - {module.get_status()}" for module in found]
-			if len(found) == 1:
-				await self.channel.send(f"{author.mention} I could only find {found[0]}")
-			elif len(found) < MAX_FOUND_LIST_SIZE:
-				await self.channel.send(f"{author.mention} Here's what I could find:\n" + '\n'.join(found))
+			trunc = False
+			if len(found) > MAX_FOUND_LIST_SIZE:
+				found = [module for module in found if not module.solved]
+
+				if len(found) > MAX_FOUND_LIST_SIZE:
+					found = random.sample(found, MAX_FOUND_LIST_SIZE)
+					found.sort(key=lambda module: module.ident)
+					trunc = True
+
+			found_str = [f"{module} - {module.get_status()}" for module in found]
+
+			if len(found_str) == 1:
+				await self.channel.send(f"{author.mention} I could only find {found_str[0]}")
+			elif not trunc:
+				await self.channel.send(f"{author.mention} Here's what I could find:\n" + '\n'.join(found_str))
 			else:
-				await self.channel.send(f"{author.mention} I've found a lot, but here are the first {MAX_FOUND_LIST_SIZE} modules:\n" + '\n'.join(found[:MAX_FOUND_LIST_SIZE]))
+				await self.channel.send(f"{author.mention} I've found a lot, so here are {MAX_FOUND_LIST_SIZE} randomly chosen modules:\n" + '\n'.join(found_str))
 
 	COMMANDS = {
 		"edgework": cmd_edgework,
