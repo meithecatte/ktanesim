@@ -6,7 +6,7 @@ class WhosOnFirst(modules.Module):
 	display_name = "Who's on First"
 	manual_name = "Who's on First"
 	supports_hummus = False
-	help_text = "`{cmd} push you're` to push a button. The phrase must match exactly."
+	help_text = "`{cmd} push you're` or `{cmd} press press` to push a button. The phrase must match exactly."
 	module_score = 4
 	strike_penalty = 6
 
@@ -119,5 +119,6 @@ class WhosOnFirst(modules.Module):
 		assert False, "The rules should prevent this"
 
 	COMMANDS = {
-		"push": cmd_push
+		"push": cmd_push,
+		"press": cmd_push,
 	}
