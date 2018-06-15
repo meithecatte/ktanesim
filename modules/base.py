@@ -93,18 +93,25 @@ class Module(metaclass=CommandConsolidator):
 		self.log('strike!')
 		self.bomb.strikes += 1
 		leaderboard.record_strike(author, self.strike_penalty)
-		await self.do_view(f"{self} got a strike. There {'has' if self.bomb.strikes == 1 else 'have'} been {self.bomb.strikes} {'strike' if self.bomb.strikes == 1 else 'strikes'} so far. -{self.strike_penalty} point{'s' if self.strike_penalty > 1 else ''} from {author.mention}")
+		await self.do_view(f"{self} got a strike. There {'has' if self.bomb.strikes == 1 else 'have'} been {self.bomb.strikes} {'strike' if self.bomb.strikes == 1 else 'strikes'} so far. -{self.strike_penalty} point{'s' if self.strike_penalty > 1 else ''} from {author.mention}", True)
 
-	def render(self):
+	def render(self, strike):
+		if self.solved:
+			led = '#0f0'
+		elif strike:
+			led = '#f00'
+		else:
+			led = '#fff'
+
 		# unsafe is needed to render images on, among others, the Keypad module, and does not pose a security risk since the user has no control over the SVG
-		return cairosvg.svg2png(self.get_svg().encode('utf-8'), unsafe=True), 'render.png'
+		return cairosvg.svg2png(self.get_svg(led).encode('utf-8'), unsafe=True), 'render.png'
 
 	@noparts
 	async def cmd_view(self, author):
 		await self.do_view(author.mention)
 
-	async def do_view(self, text):
-		data, filename = await self.bomb.client.loop.run_in_executor(None, self.render)
+	async def do_view(self, text, strike=False):
+		data, filename = await self.bomb.client.loop.run_in_executor(None, self.render, strike)
 		descr = f"[Manual]({self.get_manual()}). {self.get_help()}" if not self.solved else ''
 		embed = discord.Embed(title=str(self), description=descr)
 		embed.set_image(url=f"attachment://{filename}")

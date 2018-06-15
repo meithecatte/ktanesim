@@ -46,13 +46,12 @@ class Wires(modules.Module):
 			self.colors.append(random.choice(list(Wires.COLORS.keys())))
 		self.log(f"There are {len(self.colors)} wires: {' '.join(self.colors)}")
 
-	def get_svg(self):
-		solvelight = 'fill="#00ff00"' if self.solved else ''
+	def get_svg(self, led):
 		svg = (f'<svg viewBox="0.0 0.0 348.0 348.0" fill="#ffffff" stroke="none" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
 		       f'<path stroke="#000000" stroke-width="2.0" d="m5.07874 5.7758217l336.9134 0l0 337.66928l-336.9134 0z" fill-rule="nonzero" />'
 		       f'<path stroke="#000000" stroke-width="2.0" d="m47.026245 61.745407l29.16536 0l0 225.73228l-29.16536 0z" fill-rule="nonzero" />'
 		       f'<path stroke="#000000" stroke-width="2.0" d="m257.56955 106.58793l29.165344 0l0 178.20474l-29.165344 0z" fill-rule="nonzero" />'
-		       f'<path stroke="#000000" {solvelight} stroke-width="2.0" d="m282.73444 40.553925l0 0c0 -8.375591 6.966034 -15.165352 15.5590515 -15.165352l0 0c4.126526 0 8.084015 1.5977726 11.001923 4.441828c2.9178772 2.844057 4.557129 6.7014217 4.557129 10.723524l0 0c0 8.375595 -6.9660034 15.165356 -15.5590515 15.165356l0 0c-8.593018 0 -15.5590515 -6.7897606 -15.5590515 -15.165356z" fill-rule="nonzero" />')
+		       f'<path stroke="#000000" fill="{led}" stroke-width="2.0" d="m282.73444 40.553925l0 0c0 -8.375591 6.966034 -15.165352 15.5590515 -15.165352l0 0c4.126526 0 8.084015 1.5977726 11.001923 4.441828c2.9178772 2.844057 4.557129 6.7014217 4.557129 10.723524l0 0c0 8.375595 -6.9660034 15.165356 -15.5590515 15.165356l0 0c-8.593018 0 -15.5590515 -6.7897606 -15.5590515 -15.165356z" fill-rule="nonzero" />')
 		for pos, color, cut in zip(self.positions, self.colors, self.cut):
 			paths = Wires.PATHS_CUT if cut else Wires.PATHS_UNCUT
 			svg += f'<path fill="{Wires.COLORS[color]}" stroke="#000000" stroke-width="2.0" d="{paths[pos]}" />'

@@ -42,12 +42,11 @@ class Keypad(modules.Module):
 				self.solution.append(self.buttons.index(button))
 		self.log(f"Solution: {' '.join(map(str, self.solution))}")
 
-	def get_svg(self):
-		solvelight = 'fill="#00ff00"' if self.solved else ''
+	def get_svg(self, led):
 		return (f'<svg viewBox="0.0 0.0 348.0 348.0" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink">'
 		       f'<path stroke="#000" stroke-width="2" d="M5.079 5.776h336.913v337.67H5.08z"/>'
 		       f'<path stroke="#000" d="M38.37 95.737h107.213v100.189H38.37zM152.48 95.737h107.213v100.189H152.48zM38.37 206.52h107.213v100.19H38.37zM152.48 206.52h107.213v100.19H152.48z"/>'
-		       f'<path stroke="#000" {solvelight} stroke-width="2" d="M282.734 40.554c0-8.376 6.966-15.165 15.56-15.165 4.126 0 8.084 1.597 11.001 4.441 2.918 2.844 4.558 6.702 4.558 10.724 0 8.376-6.966 15.165-15.56 15.165-8.593 0-15.559-6.79-15.559-15.165z"/>'
+		       f'<path stroke="#000" fill="{led}" stroke-width="2" d="M282.734 40.554c0-8.376 6.966-15.165 15.56-15.165 4.126 0 8.084 1.597 11.001 4.441 2.918 2.844 4.558 6.702 4.558 10.724 0 8.376-6.966 15.165-15.56 15.165-8.593 0-15.559-6.79-15.559-15.165z"/>'
 		       f'<image xlink:href="img/keypad/{self.buttons[0]}.png" width="90" height="90" x="47" y="105"/>'
 		       f'<image xlink:href="img/keypad/{self.buttons[1]}.png" width="90" height="90" x="161" y="105"/>'
 		       f'<image xlink:href="img/keypad/{self.buttons[2]}.png" width="90" height="90" x="47" y="215"/>'

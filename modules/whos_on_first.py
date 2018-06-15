@@ -59,14 +59,13 @@ class WhosOnFirst(modules.Module):
 		self.stage = 0
 		self.randomize()
 	
-	def get_svg(self):
-		solvelight = 'fill="#00ff00"' if self.solved else ''
+	def get_svg(self, led):
 		svg = (
 			'<svg viewBox="0.0 0.0 348.0 348.0" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10" xmlns="http://www.w3.org/2000/svg">'
 			'<path stroke="#000" stroke-width="2" d="M5.079 5.776h336.913v337.67H5.08z"/>'
 			'<path fill="#000" stroke="#000" stroke-width="2" d="M34.772 25.39h232.41v67.559H34.771zM277.462 106.383h52.661v209.04h-52.661z"/>'
 			'<path stroke="#000" d="M34.772 125.226h106.645v44.82H34.772zM157.407 125.226h106.645v44.82H157.407zM34.772 202.318h106.645v44.819H34.772zM157.407 202.318h106.645v44.819H157.407zM34.772 270.604h106.645v44.819H34.772zM157.407 270.604h106.645v44.819H157.407z"/>' +
-			'<path {:s} stroke="#000" stroke-width="2" d="M282.734 40.554c0-8.376 6.966-15.165 15.56-15.165 4.126 0 8.084 1.597 11.001 4.441 2.918 2.844 4.558 6.702 4.558 10.724 0 8.376-6.966 15.165-15.56 15.165-8.593 0-15.559-6.79-15.559-15.165z"/>'.format(solvelight) +
+			f'<path fill="{led}" stroke="#000" stroke-width="2" d="M282.734 40.554c0-8.376 6.966-15.165 15.56-15.165 4.126 0 8.084 1.597 11.001 4.441 2.918 2.844 4.558 6.702 4.558 10.724 0 8.376-6.966 15.165-15.56 15.165-8.593 0-15.559-6.79-15.559-15.165z"/>' +
 			'<path fill="{color}" stroke="{color}" stroke-width="2" d="M290.06 208.903h27.465v16.472H290.06z"/>'.format(color='#0f0' if self.stage > 2 else '#fff') +
 			'<path fill="{color}" stroke="{color}" stroke-width="2" d="M290.06 245.113h27.465v16.472H290.06z"/>'.format(color='#0f0' if self.stage > 1 else '#fff') +
 			'<path fill="{color}" stroke="{color}" stroke-width="2" d="M290.06 281.323h27.465v16.472H290.06z"/>'.format(color='#0f0' if self.stage > 0 else '#fff') +

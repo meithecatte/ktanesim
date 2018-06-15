@@ -11,24 +11,8 @@ class SimonSays(modules.Module):
 	help_text = "`{cmd} press red green blue yellow`, `{cmd} press rgby`. You must include the input from any previous stages."
 	module_score = 3
 	strike_penalty = 6
-	def get_images(colors):
-		images = {}
-		for color in colors:
-			svg = ('<svg viewBox="0.0 0.0 348.0 348.0" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
-				'<path stroke="#000" stroke-width="2" d="M5.079 5.776h336.913v337.67H5.08z"/>' +
-				'<path fill="{:s}" stroke="#000" stroke-width="2" d="M282.734 40.554c0-8.376 6.966-15.165 15.56-15.165 4.126 0 8.084 1.597 11.001 4.441 2.918 2.844 4.558 6.702 4.558 10.724 0 8.376-6.966 15.165-15.56 15.165-8.593 0-15.559-6.79-15.559-15.165z"/>'.format("#0f0" if color == "solved" else "none") +
-				'<path fill="{:s}" stroke="#000" stroke-width="2" d="M68.695 174.611l52.567-52.567 52.566 52.567-52.566 52.567z"/>'.format('#f00' if color == "red" else '#300') +
-				'<path fill="{:s}" stroke="#000" stroke-width="2" d="M121.262 227.178l52.567-52.567 52.567 52.567-52.567 52.567z"/>'.format('#0f0' if color == "green" else '#030') +
-				'<path fill="{:s}" stroke="#000" stroke-width="2" d="M121.262 122.044l52.567-52.567 52.567 52.567-52.567 52.567z"/>'.format('#00f' if color == "blue" else '#003') +
-				'<path fill="{:s}" stroke="#000" stroke-width="2" d="M173.829 174.611l52.567-52.567 52.567 52.567-52.567 52.567z"/>'.format('#ff0' if color == "yellow" else '#330') +
-				'</svg>')
-			images[color] = cairosvg.svg2png(svg.encode('utf-8'))
-		return images
 
 	COLORS = ["red", "green", "blue", "yellow"]
-	IMAGES = {color: Image(blob=image, format='png') for color, image in get_images(COLORS + [None]).items()}
-	SOLVED_IMAGE = get_images(["solved"])["solved"]
-	del get_images
 
 	MAPPING = {
 	# strikes, vowel, hummus
@@ -62,23 +46,36 @@ class SimonSays(modules.Module):
 
 		self.log(f"Sequence: {' '.join(self.sequence)}")
 	
-	def add_frame(self, im, color, delay):
-		im.sequence.append(SimonSays.IMAGES[color])
+	def add_frame(self, im, color, delay, led):
+		im.sequence.append(Image(blob=self.get_image(color, led), format='png'))
 		with im.sequence[-1] as frame:
 			frame.delay = delay
 	
-	def render(self):
+	def get_image(self, color, led):
+		svg = ('<svg viewBox="0.0 0.0 348.0 348.0" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
+			'<path stroke="#000" stroke-width="2" d="M5.079 5.776h336.913v337.67H5.08z"/>' +
+			f'<path fill="{led}" stroke="#000" stroke-width="2" d="M282.734 40.554c0-8.376 6.966-15.165 15.56-15.165 4.126 0 8.084 1.597 11.001 4.441 2.918 2.844 4.558 6.702 4.558 10.724 0 8.376-6.966 15.165-15.56 15.165-8.593 0-15.559-6.79-15.559-15.165z"/>' +
+			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M68.695 174.611l52.567-52.567 52.566 52.567-52.566 52.567z"/>'.format('#f00' if color == "red" else '#300') +
+			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M121.262 227.178l52.567-52.567 52.567 52.567-52.567 52.567z"/>'.format('#0f0' if color == "green" else '#030') +
+			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M121.262 122.044l52.567-52.567 52.567 52.567-52.567 52.567z"/>'.format('#00f' if color == "blue" else '#003') +
+			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M173.829 174.611l52.567-52.567 52.567 52.567-52.567 52.567z"/>'.format('#ff0' if color == "yellow" else '#330') +
+			'</svg>')
+		return cairosvg.svg2png(svg.encode('utf-8'))
+
+	def render(self, strike):
 		if self.solved:
-			return SimonSays.SOLVED_IMAGE, 'render.png'
+			return self.get_image(None, '#0f0'), 'render.png'
+
+		led = '#f00' if strike else '#fff'
 
 		with Image() as im:
-			self.add_frame(im, None, 200)
+			self.add_frame(im, None, 200, led)
 
 			for color in self.sequence[:self.progress+1]:
-				self.add_frame(im, color, 60)
-				self.add_frame(im, None, 10)
+				self.add_frame(im, color, 60, led)
+				self.add_frame(im, None, 10, led)
 
-			self.add_frame(im, None, 140) # the delay in the original game is 5 seconds. I've reduced it to 3.5 seconds
+			self.add_frame(im, None, 140, led) # the delay in the original game is 5 seconds. I've reduced it to 3.5 seconds
 
 			im.type = 'optimize'
 			im.format = 'gif'
