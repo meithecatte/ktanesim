@@ -60,21 +60,23 @@ class Keypad(modules.Module):
 	@modules.check_solve_cmd
 	async def cmd_press(self, author, parts):
 		if not parts:
-			await self.usage(author)
-			return
+			return await self.usage(author)
 
 		input_ = []
 		for part in parts:
 			part = part.lower()
 			if part.isdigit():
 				self.log(f"Digit input: {part}")
-				input_ += [int(digit) - 1 for digit in part]
+				for digit in part:
+					button = int(digit)
+					if button not in range(1, 5):
+						return await self.bomb.channel.send(f"{author.mention} There is no button {button}! There are four buttons: 1-4.")
+					input_.append(button - 1)
 			elif part in Keypad.BUTTONS:
 				self.log(f"Named input: {part}")
 				input_.append(Keypad.BUTTONS.index(part))
 			else:
-				await self.usage(author)
-				return
+				return await self.bomb.channel.send(f"{author.mention} No such button: `{part}`")
 
 		self.log(f"Parsed input: {' '.join(map(str, input_))}")
 		while input_ and not self.solved:
