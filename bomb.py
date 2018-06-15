@@ -9,14 +9,16 @@ import traceback
 from config import *
 
 class BatteryWidget:
-	def __init__(self):
+	def __init__(self, bomb):
 		self.battery_count = random.randint(1, 2)
 
 class IndicatorWidget:
 	INDICATORS = ['SND', 'CLR', 'CAR', 'IND', 'FRQ', 'SIG', 'NSA', 'MSA', 'TRN', 'BOB', 'FRK']
 
-	def __init__(self):
-		self.code = random.choice(self.INDICATORS)
+	def __init__(self, bomb):
+		possible_indicators = list(set(self.INDICATORS) - set(ind.code for ind in bomb.edgework if isinstance(ind, IndicatorWidget)))
+		assert possible_indicators, "Somehow all 11 indicators were used even though 5 is the limit"
+		self.code = random.choice(possible_indicators)
 		self.lit = random.random() > 0.4
 
 	def __str__(self):
@@ -25,7 +27,7 @@ class IndicatorWidget:
 class PortPlateWidget:
 	PORT_GROUPS = [['Serial', 'Parallel'], ['DVI', 'PS2', 'RJ45', 'StereoRCA']]
 
-	def __init__(self):
+	def __init__(self, bomb):
 		group = random.choice(self.PORT_GROUPS)
 		self.ports = []
 		for port in group:
@@ -52,7 +54,7 @@ class Bomb:
 
 		self.edgework = []
 		for _ in range(5):
-			self.edgework.append(random.choice(Bomb.EDGEWORK_WIDGETS)())
+			self.edgework.append(random.choice(Bomb.EDGEWORK_WIDGETS)(self))
 
 		self.modules = []
 		random.shuffle(modules)
