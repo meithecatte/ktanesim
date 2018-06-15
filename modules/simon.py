@@ -69,6 +69,7 @@ class SimonSays(modules.Module):
 
 		parsed = []
 		for part in parts:
+			part = part.lower()
 			if part in SimonSays.COLORS:
 				parsed.append(part)
 			else:

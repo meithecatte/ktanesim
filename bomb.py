@@ -127,11 +127,11 @@ class Bomb:
 		if len(parts) < 1:
 			return await channel.send(usage.format(author.mention, prefix=PREFIX))
 
-		hummus = parts[0] == "hummus"
+		hummus = parts[0].lower() == "hummus"
 		if hummus: parts.pop(0)
 
 		if parts[0].isdigit():
-			if len(parts) < 2 or parts[1] not in distributions:
+			if len(parts) < 2 or parts[1].lower() not in distributions:
 				await channel.send(usage.format(author.mention, prefix=PREFIX))
 				return
 
@@ -158,7 +158,7 @@ class Bomb:
 
 			chosen_modules = []
 
-			vanilla_count = distributions[parts[1]] * module_count
+			vanilla_count = distributions[parts[1].lower() ]* module_count
 
 			if (not module_candidates_vanilla or vanilla_count == 0) and (not module_candidates_modded or vanilla_count == module_count):
 				return await channel.send(f"{author.mention} You've blacklisted all the modules! If you don't want to play, just say so!")
@@ -283,7 +283,7 @@ class Bomb:
 			elif not parts:
 				await self.channel.send("f{author.mention} What should I do with module {ident}? You need to give me a command!")
 			else:
-				command = parts.pop(0)
+				command = parts.pop(0).lower()
 				await self.modules[ident - 1].handle_command(command, author, parts)
 
 	async def cmd_edgework(self, author, parts):

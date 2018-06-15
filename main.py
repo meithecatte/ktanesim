@@ -48,7 +48,7 @@ async def on_message(msg):
 	if not isinstance(msg.channel, discord.channel.DMChannel) and msg.channel.id not in ALLOWED_CHANNELS: return
 	if not msg.content.startswith(PREFIX): return
 	parts = msg.content[len(PREFIX):].strip().split()
-	command = parts.pop(0)
+	command = parts.pop(0).lower()
 	channel = msg.channel
 	author = msg.author
 
