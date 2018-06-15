@@ -103,7 +103,7 @@ class Bomb:
 			f" - `{PREFIX}run marbleTumble*3` - three Marble Tumble modules and nothing else\n"
 			f" - `{PREFIX}run hummus complicatedWires morseCode 3Dmaze*2` - four modules: Complicated Wires and Morse Code, both using LtHummus's manual,"
 			f" and two 3D Mazes, using the normal manual since only vanilla modules support hummus."
-			f"Use `{PREFIX}modules` to see the implemented modules.\nAvailable distributions:")
+			f" Use `{PREFIX}modules` to see the implemented modules.\nAvailable distributions:")
 
 		distributions = {
 			"vanilla": 1,
