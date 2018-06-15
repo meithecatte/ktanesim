@@ -103,6 +103,7 @@ class WhosOnFirst(modules.Module):
 				self.randomize()
 				await self.do_view(f"{author.mention} Good! Next stage:")
 		else:
+			self.randomize()
 			await self.handle_strike(author)
 	
 	def get_solution(self):
