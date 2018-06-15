@@ -55,6 +55,7 @@ class Bomb:
 			self.edgework.append(random.choice(Bomb.EDGEWORK_WIDGETS)())
 
 		self.modules = []
+		random.shuffle(modules)
 		for index, module in enumerate(modules):
 			self.modules.append(module(self, index + 1))
 
@@ -135,8 +136,8 @@ class Bomb:
 				await channel.send(usage.format(author.mention, prefix=PREFIX))
 				return
 
-			module_candidates_vanilla = modules.VANILLA_MODULES.copy()
-			module_candidates_modded = modules.MODDED_MODULES.copy()
+			candidates_vanilla = modules.VANILLA_MODULES.copy()
+			candidates_modded = modules.MODDED_MODULES.copy()
 			module_count = int(parts[0])
 
 			if module_count == 0:
@@ -149,31 +150,38 @@ class Bomb:
 
 				veto = veto[1:]
 
-				if veto in module_candidates_vanilla:
-					del module_candidates_vanilla[veto]
-				elif veto in module_candidates_modded:
-					del module_candidates_modded[veto]
+				if veto in candidates_vanilla:
+					del candidates_vanilla[veto]
+				elif veto in candidates_modded:
+					del candidates_modded[veto]
 				else:
 					return await channel.send(f"{author.mention} No such module: `{veto}`")
 
 			chosen_modules = []
+			candidates_vanilla = list(candidates_vanilla.values())
+			candidates_modded = list(candidates_modded.values())
 
-			vanilla_count = distributions[parts[1].lower() ]* module_count
+			vanilla_count = distributions[parts[1].lower()] * module_count
 
-			if (not module_candidates_vanilla or vanilla_count == 0) and (not module_candidates_modded or vanilla_count == module_count):
+			if (not candidates_vanilla or vanilla_count == 0) and (not candidates_modded or vanilla_count == module_count):
 				return await channel.send(f"{author.mention} You've blacklisted all the modules! If you don't want to play, just say so!")
 
-			if not module_candidates_vanilla: vanilla_count = 0
-			elif not module_candidates_modded: vanilla_count = module_count
+			if not candidates_vanilla: vanilla_count = 0
+			elif not candidates_modded: vanilla_count = module_count
+			modded_count = module_count - vanilla_count
 
-			for _ in range(vanilla_count):
-				chosen_modules.append(random.choice(list(module_candidates_vanilla.values())))
+			if candidates_vanilla:
+				chosen_modules.extend(candidates_vanilla * (vanilla_count // len(candidates_vanilla)))
+				for _ in range(vanilla_count % len(candidates_vanilla)):
+					chosen_modules.append(random.choice(candidates_vanilla))
 
-			for _ in range(module_count - vanilla_count):
-				chosen_modules.append(random.choice(list(module_candidates_modded.values())))
+			if candidates_modded:
+				chosen_modules.extend(candidates_modded * (modded_count // len(candidates_modded)))
+				for _ in range(modded_count % len(candidates_modded)):
+					chosen_modules.append(random.choice(candidates_modded))
 		else:
 			chosen_modules = []
-			module_candidates = {**modules.VANILLA_MODULES, **modules.MODDED_MODULES}
+			candidates = {**modules.VANILLA_MODULES, **modules.MODDED_MODULES}
 			for module in parts:
 				if '*' in module:
 					if module.count('*') > 1:
@@ -189,9 +197,9 @@ class Bomb:
 						return await channel.send(f"{author.mention} `{module}`: which one is the module and which one is the count?")
 				else:
 					count = 1
-				if module not in module_candidates:
+				if module not in candidates:
 					return await channel.send(f"{author.mention} No such module: `{module}`")
-				chosen_modules.extend([module_candidates[module]] * count)
+				chosen_modules.extend([candidates[module]] * count)
 
 		bomb = Bomb(channel, chosen_modules, hummus)
 		Bomb.bombs[channel] = bomb
