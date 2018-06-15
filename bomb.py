@@ -68,12 +68,10 @@ class Bomb:
 	@staticmethod
 	async def cmd_shutdown(channel, author, parts):
 		if parts:
-			await channel.send(f"{author.mention} Trailing arguments.")
-			return
+			return await channel.send(f"{author.mention} Trailing arguments.")
 
 		if author.id != BOT_OWNER:
-			await channel.send(f"{author.mention} You don't have permission to use this command.")
-			return
+			return await channel.send(f"{author.mention} You don't have permission to use this command.")
 
 		Bomb.shutdown_mode = True
 
@@ -87,14 +85,27 @@ class Bomb:
 			await channel.send(f"{author.mention} Shutdown mode activated")
 
 	@staticmethod
+	async def cmd_bombs(channel, author, parts):
+		if parts:
+			return await channel.send(f"{author.mention} Trailing arguments.")
+
+		if not Bomb.bombs:
+			return await channel.send(f"{author.mention} No bombs are running.")
+
+		response = f"{author.mention} Currently running bombs:"
+
+		for bomb_channel, bomb in Bomb.bombs.items():
+			response += f"\n- {bomb.get_solved_count()} out of {len(bomb.modules)} modules solved after {bomb.get_time_formatted()} and {bomb.strikes} {'strike' if bomb.strikes == 1 else 'strikes'} in {bomb_channel}"
+
+		await channel.send(response)
+
+	@staticmethod
 	async def cmd_run(channel, author, parts):
 		if channel in Bomb.bombs:
-			await channel.send(f"{author.mention} A bomb is already ticking in this channel!")
-			return
+			return await channel.send(f"{author.mention} A bomb is already ticking in this channel!")
 
 		if Bomb.shutdown_mode:
-			await channel.send(f"{author.mention} The bot is in shutdown mode. No new bombs can be started.")
-			return
+			return await channel.send(f"{author.mention} The bot is in shutdown mode. No new bombs can be started.")
 
 		usage = (
 			f"{author.mention} Usage: `{PREFIX}run [hummus] <module count> <module distributon> [-<module 1> [-<module 2> [...]]]` or "
@@ -135,8 +146,7 @@ class Bomb:
 
 		if parts[0].isdigit():
 			if len(parts) < 2 or parts[1].lower() not in distributions:
-				await channel.send(usage.format(author.mention, prefix=PREFIX))
-				return
+				return await channel.send(usage.format(author.mention, prefix=PREFIX))
 
 			candidates_vanilla = modules.VANILLA_MODULES.copy()
 			candidates_modded = modules.MODDED_MODULES.copy()
@@ -147,8 +157,7 @@ class Bomb:
 
 			for veto in parts[2:]:
 				if not veto.startswith('-'):
-					await channel.send(usage)
-					return
+					return await channel.send(usage)
 
 				veto = veto[1:]
 

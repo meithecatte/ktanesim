@@ -12,10 +12,9 @@ import modules
 from bomb import Bomb
 
 async def cmd_help(channel, author, parts):
-	await channel.send(f"\u200b\n"
+	await channel.send(f"This bot simulates Keep Talking and Nobody Explodes bombs. Message the bot in DMs for solo play or collaborate in text channels.\n"
 		f"`{PREFIX}help`: Show this message\n"
-		f"`{PREFIX}leaderboard [<page number>]`, alias `{PREFIX}lb`: Show the leaderboard, {LEADERBOARD_PAGE_SIZE} items per page. Defaults to the first page.\n"
-		f"`{PREFIX}rank`: Shows your leaderboard entry.\n"
+		f"`{PREFIX}bombs`: List the currently running bombs.\n"
 		f"`{PREFIX}run ...`: Start a bomb. Pass no parameters for usage.\n"
 		f"`{PREFIX}modules`: Show a list of implemented modules.\n"
 		f"`{PREFIX}unclaimed`: Shows {MAX_UNCLAIMED_LIST_SIZE} random unclaimed modules from the bomb.\n"
@@ -32,7 +31,9 @@ async def cmd_help(channel, author, parts):
 		f"`{PREFIX}claimanyview`, alias `{PREFIX}cvany`: `{PREFIX}claimany` and `view` combined.\n"
 		f"`{PREFIX}claims`: Show the list of modules you have claimed.\n"
 		f"`{PREFIX}detonate`: If other players agree, detonate the bomb.\n"
-		f"Message the bot in DMs for solo play!")
+		f"`{PREFIX}leaderboard [<page number>]`, alias `{PREFIX}lb`: Show the leaderboard, {LEADERBOARD_PAGE_SIZE} items per page. Defaults to the first page.\n"
+		f"`{PREFIX}rank`: Shows your leaderboard entry.\n"
+		)
 
 logging.basicConfig(level=logging.INFO)
 client = discord.Client()
@@ -54,12 +55,13 @@ async def on_message(msg):
 
 	GENERIC_COMMANDS = {
 		"run": Bomb.cmd_run,
+		"bombs": Bomb.cmd_bombs,
+		"shutdown": Bomb.cmd_shutdown,
 		"modules": modules.cmd_modules,
 		"leaderboard": leaderboard.cmd_leaderboard,
 		"lb": leaderboard.cmd_leaderboard,
 		"rank": leaderboard.cmd_rank,
 		"help": cmd_help,
-		"shutdown": Bomb.cmd_shutdown
 	}
 
 	if command in GENERIC_COMMANDS:
