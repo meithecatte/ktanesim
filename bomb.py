@@ -209,7 +209,7 @@ class Bomb:
 
 		bomb = Bomb(channel, chosen_modules, hummus)
 		Bomb.bombs[channel] = bomb
-		await channel.send(f"A bomb with {len(bomb.modules)} modules has been armed!\nEdgework: `{bomb.get_edgework()}`")
+		await channel.send(f"A bomb with {len(bomb.modules)} {'modules' if len(bomb.modules) != 1 else 'module'} has been armed!\nEdgework: `{bomb.get_edgework()}`")
 		await Bomb.update_presence()
 
 	async def bomb_end(self, boom=False):
