@@ -296,9 +296,9 @@ class Bomb:
 		elif command.isdigit():
 			ident = int(command)
 			if ident not in range(1, len(self.modules) + 1):
-				await self.channel.send("f{author.mention} Double check the module number - there are only {len(self.modules)} modules on this bomb!")
+				await self.channel.send(f"{author.mention} Double check the module number - there are only {len(self.modules)} modules on this bomb!")
 			elif not parts:
-				await self.channel.send("f{author.mention} What should I do with module {ident}? You need to give me a command!")
+				await self.channel.send(f"{author.mention} What should I do with module {ident}? You need to give me a command!")
 			else:
 				command = parts.pop(0).lower()
 				await self.modules[ident - 1].handle_command(command, author, parts)
