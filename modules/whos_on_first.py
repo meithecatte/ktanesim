@@ -84,9 +84,9 @@ class WhosOnFirst(modules.Module):
 	
 	@modules.check_solve_cmd
 	async def cmd_push(self, author, parts):
-		if len(parts) != 1:
+		if not parts:
 			return await self.usage(author)
-		button = parts[0].upper()
+		button = ' '.join(parts).upper()
 
 		if button not in self.buttons:
 			return await self.do_view(f"{author.mention} There is no `{button}` button on the module!")
