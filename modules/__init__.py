@@ -3,12 +3,14 @@ from modules.wires import Wires
 from modules.button import Button
 from modules.keypad import Keypad
 from modules.simon import SimonSays
+from modules.whos_on_first import WhosOnFirst
 
 VANILLA_MODULES = {
 	"wires": Wires,
 	"button": Button,
 	"keypad": Keypad,
 	"simonSays": SimonSays,
+	"whosOnFirst": WhosOnFirst,
 }
 
 MODDED_MODULES = {
