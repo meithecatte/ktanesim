@@ -394,9 +394,11 @@ class Bomb:
 		else:
 			found = [f"{module} - {module.get_status()}" for module in found]
 			if len(found) == 1:
-				await self.channel.send(f"{author.mention} I could only find {found[1]}")
-			else:
+				await self.channel.send(f"{author.mention} I could only find {found[0]}")
+			elif len(found) < MAX_FOUND_LIST_SIZE:
 				await self.channel.send(f"{author.mention} Here's what I could find:\n" + '\n'.join(found))
+			else:
+				await self.channel.send(f"{author.mention} I've found a lot, but here are the first {MAX_FOUND_LIST_SIZE} modules:\n" + '\n'.join(found[:MAX_FOUND_LIST_SIZE]))
 
 	COMMANDS = {
 		"edgework": cmd_edgework,
