@@ -96,13 +96,13 @@ class Bomb:
 
 		usage = (
 			f"{author.mention} Usage: `{PREFIX}run [hummus] <module count> <module distributon> [-<module 1> [-<module 2> [...]]]` or "
-			f"`{PREFIX}run [hummus] <module 1> [<module 2> [...]]`.\n"
+			f"`{PREFIX}run [hummus] <module 1>[*<count>] [<module 2>[*<count>] [...]]`.\n"
 			f"For example:\n - `{PREFIX}run hummus 7 vanilla` - 7 vanilla modules that use the modified manual by LtHummus\n"
 			f" - `{PREFIX}run 12 mixed -souvenir -theCube` - 12 modules, half of which being vanilla. "
 			f"Souvenir and The Cube modules will not be generated\n"
-			f" - `{PREFIX}run marbleTumble` - a single Marble Tumble module and nothing else\n"
-			f" - `{PREFIX}run hummus complicatedWires morseCode 3Dmaze` - three modules: Complicated Wires and Morse Code, both using LtHummus's manual,"
-			f" and 3D Maze, using the normal manual since only vanilla modules support hummus."
+			f" - `{PREFIX}run marbleTumble*3` - three Marble Tumble modules and nothing else\n"
+			f" - `{PREFIX}run hummus complicatedWires morseCode 3Dmaze*2` - four modules: Complicated Wires and Morse Code, both using LtHummus's manual,"
+			f" and two 3D Mazes, using the normal manual since only vanilla modules support hummus."
 			f"Use `{PREFIX}modules` to see the implemented modules.\nAvailable distributions:")
 
 		distributions = {
