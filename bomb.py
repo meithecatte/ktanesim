@@ -175,9 +175,23 @@ class Bomb:
 			chosen_modules = []
 			module_candidates = {**modules.VANILLA_MODULES, **modules.MODDED_MODULES}
 			for module in parts:
+				if '*' in module:
+					if module.count('*') > 1:
+						return await channel.send(f"{author.mention} Don't you think there's too many stars in `{module}`?")
+					left, right = module.split('*')
+					if left.isdigit() and not right.isdigit():
+						count = int(left)
+						module = right
+					elif not left.isdigit() and right.isdigit():
+						count = int(right)
+						module = left
+					else:
+						return await channel.send(f"{author.mention} `{module}`: which one is the module and which one is the count?")
+				else:
+					count = 1
 				if module not in module_candidates:
 					return await channel.send(f"{author.mention} No such module: `{module}`")
-				chosen_modules.append(module_candidates[module])
+				chosen_modules.extend([module_candidates[module]] * count)
 
 		bomb = Bomb(channel, chosen_modules, hummus)
 		Bomb.bombs[channel] = bomb
