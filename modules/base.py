@@ -97,6 +97,13 @@ class Module(metaclass=CommandConsolidator):
 		leaderboard.record_strike(author, self.strike_penalty)
 		await self.do_view(f"{self} got a strike. There {'has' if self.bomb.strikes == 1 else 'have'} been {self.bomb.strikes} {'strike' if self.bomb.strikes == 1 else 'strikes'} so far. -{self.strike_penalty} point{'s' if self.strike_penalty > 1 else ''} from {author.mention}", True)
 
+	async def handle_unsubmittable(self, author):
+		self.log('unsubmittable')
+		penalty = self.module_score * 3 // 10
+		if penalty == 0: penalty = 1
+		leaderboard.record_penalty(author, penalty)
+		await self.do_view(f"{author.mention} Please do not submit invalid answers. {penalty} {'points have' if penalty != 1 else 'point has'} been deducted.")
+
 	async def handle_next_stage(self, author):
 		self.log('next stage')
 		await self.do_view(f"{author.mention} Good! Next stage:")

@@ -125,8 +125,11 @@ class WhosOnFirst(modules.Module):
 			return await self.usage(author)
 		button = ' '.join(parts).upper()
 
+		if button not in sum(WhosOnFirst.BUTTON_GROUPS, []):
+			return await self.bomb.channel.send(f"{author.mention} \"{button}\" isn't a valid word.")
+
 		if button not in self.buttons:
-			return await self.do_view(f"{author.mention} There is no `{button}` button on the module!")
+			return await self.handle_unsubmittable(author)
 
 		solution = self.get_solution()
 
