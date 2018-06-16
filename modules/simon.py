@@ -121,7 +121,11 @@ class SimonSays(modules.Module):
 						return
 				else:
 					small_progress += 1
-		await self.do_view(f"{author.mention} " + ("All of these inputs are correct, but the module expects more" if not success else "Good. Next stage:"))
+
+		if success:
+			await self.handle_next_stage(author)
+		else:
+			await self.do_view(f"{author.mention} All of these inputs are correct, but the module expects more")
 	
 	def get_solution(self):
 		strikes = self.bomb.strikes

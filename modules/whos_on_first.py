@@ -138,7 +138,7 @@ class WhosOnFirst(modules.Module):
 				await self.handle_solve(author)
 			else:
 				self.randomize()
-				await self.do_view(f"{author.mention} Good! Next stage:")
+				await self.handle_next_stage(author)
 		else:
 			self.randomize()
 			await self.handle_strike(author)
