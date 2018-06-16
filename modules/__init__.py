@@ -1,4 +1,4 @@
-from modules.base import Module, noparts, check_solve_cmd
+from modules.base import Module, noparts, check_solve_cmd, gif_append, gif_output
 from modules.wires import Wires
 from modules.button import Button
 from modules.keypad import Keypad

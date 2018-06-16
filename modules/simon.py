@@ -1,7 +1,7 @@
 import random
 import cairosvg
-import io
 import modules
+from functools import lru_cache
 from wand.image import Image
 
 class SimonSays(modules.Module):
@@ -45,12 +45,9 @@ class SimonSays(modules.Module):
 
 		self.log(f"Sequence: {' '.join(self.sequence)}")
 	
-	def add_frame(self, im, color, delay, led):
-		im.sequence.append(Image(blob=self.get_image(color, led), format='png'))
-		with im.sequence[-1] as frame:
-			frame.delay = delay
-	
-	def get_image(self, color, led):
+	@staticmethod
+	@lru_cache(maxsize=16)
+	def get_image(color, led):
 		svg = ('<svg viewBox="0.0 0.0 348.0 348.0" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
 			'<path stroke="#000" stroke-width="2" d="M5.079 5.776h336.913v337.67H5.08z"/>' +
 			f'<path fill="{led}" stroke="#000" stroke-width="2" d="M282.734 40.554c0-8.376 6.966-15.165 15.56-15.165 4.126 0 8.084 1.597 11.001 4.441 2.918 2.844 4.558 6.702 4.558 10.724 0 8.376-6.966 15.165-15.56 15.165-8.593 0-15.559-6.79-15.559-15.165z"/>' +
@@ -63,22 +60,25 @@ class SimonSays(modules.Module):
 
 	def render(self, strike):
 		if self.solved:
-			return self.get_image(None, '#0f0'), 'render.png'
+			return SimonSays.get_image(None, '#0f0'), 'render.png'
 
 		led = '#f00' if strike else '#fff'
 
 		with Image() as im:
-			self.add_frame(im, None, 200, led)
+			def add(color, delay):
+				modules.gif_append(im, SimonSays.get_image(color, led), delay)
 
+			add(None, 200)
+
+			first = True
 			for color in self.sequence[:self.progress+1]:
-				self.add_frame(im, color, 60, led)
-				self.add_frame(im, None, 10, led)
+				if not first:
+					add(None, 10)
 
-			self.add_frame(im, None, 140, led) # the delay in the original game is 5 seconds. I've reduced it to 3.5 seconds
+				add(color, 60)
+				first = False
 
-			im.type = 'optimize'
-			im.format = 'gif'
-			return im.make_blob(), 'render.gif'
+			return modules.gif_output(im)
 	
 	@modules.check_solve_cmd
 	async def cmd_press(self, author, parts):

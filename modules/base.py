@@ -4,6 +4,7 @@ import cairosvg
 import discord
 import asyncio
 import leaderboard
+from wand.image import Image
 from config import *
 
 def noparts(func):
@@ -23,6 +24,16 @@ def check_solve_cmd(func):
 		else:
 			await func(self, author, parts)
 	return wrapper
+
+def gif_append(im, blob, delay):
+	im.sequence.append(Image(blob=blob, format='png'))
+	with im.sequence[-1] as frame:
+		frame.delay = delay
+
+def gif_output(im):
+	im.type = 'optimize'
+	im.format = 'gif'
+	return im.make_blob(), 'render.gif'
 
 class CommandConsolidator(type):
 	def __new__(cls, clsname, superclasses, attributes):
