@@ -217,7 +217,7 @@ class Bomb:
 			Bomb.hastebin_session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5))
 
 		try:
-			async with self.hastebin_session.post('https://hastebin.com/documents', data=self.get_log().encode('utf-8')) as resp:
+			async with self.hastebin_session.post('https://hastebin.com/documents', data=self.get_log().encode()) as resp:
 				decoded = await resp.json()
 				if 'key' in decoded:
 					logurl = f"Log: https://hastebin.com/{decoded['key']}.txt"

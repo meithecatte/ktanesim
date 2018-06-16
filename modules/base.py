@@ -117,7 +117,7 @@ class Module(metaclass=CommandConsolidator):
 			led = '#fff'
 
 		# unsafe is needed to render images on, among others, the Keypad module, and does not pose a security risk since the user has no control over the SVG
-		return cairosvg.svg2png(self.get_svg(led).encode('utf-8'), unsafe=True), 'render.png'
+		return cairosvg.svg2png(self.get_svg(led).encode(), unsafe=True), 'render.png'
 
 	@noparts
 	async def cmd_view(self, author):

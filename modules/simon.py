@@ -59,7 +59,7 @@ class SimonSays(modules.Module):
 			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M121.262 122.044l52.567-52.567 52.567 52.567-52.567 52.567z"/>'.format('#00f' if color == "blue" else '#003') +
 			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M173.829 174.611l52.567-52.567 52.567 52.567-52.567 52.567z"/>'.format('#ff0' if color == "yellow" else '#330') +
 			'</svg>')
-		return cairosvg.svg2png(svg.encode('utf-8'))
+		return cairosvg.svg2png(svg.encode())
 
 	def render(self, strike):
 		if self.solved:
