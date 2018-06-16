@@ -4,6 +4,7 @@ from modules.button import Button
 from modules.keypad import Keypad
 from modules.simon import SimonSays
 from modules.whos_on_first import WhosOnFirst
+from modules.memory import Memory
 
 VANILLA_MODULES = {
 	"wires": Wires,
@@ -11,6 +12,7 @@ VANILLA_MODULES = {
 	"keypad": Keypad,
 	"simonSays": SimonSays,
 	"whosOnFirst": WhosOnFirst,
+	"memory": Memory,
 }
 
 MODDED_MODULES = {
