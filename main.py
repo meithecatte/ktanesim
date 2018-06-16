@@ -9,6 +9,7 @@ import logging
 import random
 import leaderboard
 import modules
+import traceback
 from bomb import Bomb
 
 async def cmd_help(channel, author, parts):
@@ -48,30 +49,35 @@ async def on_ready():
 async def on_message(msg):
 	if not isinstance(msg.channel, discord.channel.DMChannel) and msg.channel.id not in ALLOWED_CHANNELS: return
 	if not msg.content.startswith(PREFIX): return
+
 	parts = msg.content[len(PREFIX):].strip().split()
 	command = parts.pop(0).lower()
 	channel = msg.channel
 	author = msg.author
 
-	GENERIC_COMMANDS = {
-		"run": Bomb.cmd_run,
-		"bombs": Bomb.cmd_bombs,
-		"shutdown": Bomb.cmd_shutdown,
-		"modules": modules.cmd_modules,
-		"leaderboard": leaderboard.cmd_leaderboard,
-		"lb": leaderboard.cmd_leaderboard,
-		"rank": leaderboard.cmd_rank,
-		"help": cmd_help,
-	}
+	try:
+		GENERIC_COMMANDS = {
+			"run": Bomb.cmd_run,
+			"bombs": Bomb.cmd_bombs,
+			"shutdown": Bomb.cmd_shutdown,
+			"modules": modules.cmd_modules,
+			"leaderboard": leaderboard.cmd_leaderboard,
+			"lb": leaderboard.cmd_leaderboard,
+			"rank": leaderboard.cmd_rank,
+			"help": cmd_help,
+		}
 
-	if command in GENERIC_COMMANDS:
-		await GENERIC_COMMANDS[command](channel, author, parts)
-	elif command.isdigit() or command in Bomb.COMMANDS:
-		if channel in Bomb.bombs:
-			await Bomb.bombs[channel].handle_command(command, author, parts)
+		if command in GENERIC_COMMANDS:
+			await GENERIC_COMMANDS[command](channel, author, parts)
+		elif command.isdigit() or command in Bomb.COMMANDS:
+			if channel in Bomb.bombs:
+				await Bomb.bombs[channel].handle_command(command, author, parts)
+			else:
+				await channel.send(f"{author.mention} No bomb is currently ticking in this channel. Change this sad fact with `{PREFIX}run`.")
 		else:
-			await channel.send(f"{author.mention} No bomb is currently ticking in this channel. Change this sad fact with `{PREFIX}run`.")
-	else:
-		await channel.send(f"{author.mention} No such command: `{PREFIX}{command}`. Try `{PREFIX}help` for help.")
+			await channel.send(f"{author.mention} No such command: `{PREFIX}{command}`. Try `{PREFIX}help` for help.")
+	except Exception:
+		await channel.send(f"{author.mention} An unidentified ~~flying object~~ error has occured during handling of this command. Please get this blob of undecipherable text to one of our code monkeys, along with a description of what you did to cause this and the log from this bomb, if applicable: ```\n{traceback.format_exc()}```")
+		print(f"Exception in {channel}")
 
 client.run(TOKEN)
