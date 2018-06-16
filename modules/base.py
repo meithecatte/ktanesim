@@ -82,7 +82,7 @@ class Module(metaclass=CommandConsolidator):
 			self.log(f"command: {command} {' '.join(parts)}")
 			await self.COMMANDS[command](self, author, parts)
 
-	async def handle_solved(self, author):
+	async def handle_solve(self, author):
 		self.log('module solved')
 		self.solved = True
 		if self.claim is None: self.claim = author

@@ -88,7 +88,7 @@ class Keypad(modules.Module):
 				self.led[press] = '#0f0'
 				self.progress += 1
 				if self.progress == 4:
-					await self.handle_solved(author)
+					await self.handle_solve(author)
 					return
 			else:
 				if self.led[press] == '#0f0':

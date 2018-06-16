@@ -55,7 +55,7 @@ class Button(modules.Module):
 			await self.handle_strike(author)
 		else:
 			self.log("tapping - correct")
-			await self.handle_solved(author)
+			await self.handle_solve(author)
 	
 	@modules.check_solve_cmd
 	@modules.noparts
@@ -89,7 +89,7 @@ class Button(modules.Module):
 			should_hold = self.should_hold()
 			self.log("should{:s} hold".format("n't" if not should_hold else ''))
 			if should_hold and str(expected) in time:
-				await self.handle_solved(author)
+				await self.handle_solve(author)
 			else:
 				await self.handle_strike(author)
 		

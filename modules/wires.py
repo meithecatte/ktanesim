@@ -73,7 +73,7 @@ class Wires(modules.Module):
 				self.log(f"correct solution: {expected}")
 				self.cut[wire] = True
 				if expected == wire:
-					await self.handle_solved(author)
+					await self.handle_solve(author)
 				else:
 					await self.handle_strike(author)
 

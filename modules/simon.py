@@ -117,7 +117,7 @@ class SimonSays(modules.Module):
 					small_progress = 0
 					success = True
 					if self.progress >= len(self.sequence):
-						await self.handle_solved(author)
+						await self.handle_solve(author)
 						return
 				else:
 					small_progress += 1

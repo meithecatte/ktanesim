@@ -135,7 +135,7 @@ class WhosOnFirst(modules.Module):
 		if button == solution:
 			self.stage += 1
 			if self.stage == 3:
-				await self.handle_solved(author)
+				await self.handle_solve(author)
 			else:
 				self.randomize()
 				await self.do_view(f"{author.mention} Good! Next stage:")
