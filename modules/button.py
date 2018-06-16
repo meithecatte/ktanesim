@@ -1,7 +1,6 @@
 import random
 import asyncio
 import modules
-from config import *
 
 class Button(modules.Module):
 	display_name = "The Button"
@@ -9,7 +8,6 @@ class Button(modules.Module):
 	supports_hummus = True
 	help_text = "`{cmd} tap` to tap, `{cmd} hold` to hold, `{cmd} release 7` to release when any digit of the timer is 7."
 	module_score = 1
-	strike_penalty = 6
 
 	LABELS = ["ABORT", "DETONATE", "HOLD", "PRESS"]
 	COLORS = {

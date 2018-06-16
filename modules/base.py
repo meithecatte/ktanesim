@@ -38,6 +38,8 @@ class CommandConsolidator(type):
 		return type.__new__(cls, clsname, superclasses, attributes)
 
 class Module(metaclass=CommandConsolidator):
+	strike_penalty = 6
+
 	def __init__(self, bomb, ident):
 		self.bomb = bomb
 		self.ident = ident

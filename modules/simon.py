@@ -10,7 +10,6 @@ class SimonSays(modules.Module):
 	supports_hummus = True
 	help_text = "`{cmd} press red green blue yellow`, `{cmd} press rgby`. You must include the input from any previous stages."
 	module_score = 3
-	strike_penalty = 6
 
 	COLORS = ["red", "green", "blue", "yellow"]
 

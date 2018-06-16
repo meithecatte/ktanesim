@@ -1,6 +1,5 @@
 import random
 import modules
-from config import *
 
 class WhosOnFirst(modules.Module):
 	display_name = "Who's on First"
@@ -8,7 +7,6 @@ class WhosOnFirst(modules.Module):
 	supports_hummus = True
 	help_text = "`{cmd} push you're` or `{cmd} press press` to push a button. The phrase must match exactly."
 	module_score = 4
-	strike_penalty = 6
 
 	BUTTON_GROUPS = [
 		["READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS"],

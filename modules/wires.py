@@ -7,7 +7,6 @@ class Wires(modules.Module):
 	supports_hummus = True
 	help_text = "`{cmd} cut 3` to cut the third wire. Empty spaces are not counted."
 	module_score = 1
-	strike_penalty = 6
 
 	COLORS = {
 		"black": "#000000",
