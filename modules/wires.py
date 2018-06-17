@@ -69,8 +69,7 @@ class Wires(modules.Module):
 				await self.bomb.channel.send(f"There are only {len(self.colors)} wires. How on earth am I supposed to cut wire {parts[0]}?")
 			else:
 				expected = self.get_solution()
-				self.log(f"player's solution: {wire}")
-				self.log(f"correct solution: {expected}")
+				self.log(f"player cut wire {wire+1}. expected wire {expected+1}")
 				self.cut[wire] = True
 				if expected == wire:
 					await self.handle_solve(author)

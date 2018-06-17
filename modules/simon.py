@@ -105,9 +105,8 @@ class SimonSays(modules.Module):
 		self.log(f"Solution: {' '.join(solution)}")
 		success = False # whether the input advanced the stage of the module
 		for press in parsed:
-			self.log(f"Pressing {press}")
 			expected = solution[small_progress]
-			self.log(f"Expected {expected}")
+			self.log(f"Pressing {press}, expected {expected}")
 			if expected != press:
 				await self.handle_strike(author)
 				return

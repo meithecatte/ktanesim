@@ -116,7 +116,7 @@ class Module(metaclass=CommandConsolidator):
 		await self.do_view(f"{author.mention} Please do not submit invalid answers. {penalty} {'points have' if penalty != 1 else 'point has'} been deducted.")
 
 	async def handle_next_stage(self, author):
-		self.log('next stage')
+		self.log('rendering next stage')
 		await self.do_view(f"{author.mention} Good! Next stage:")
 
 	def render(self, strike):
