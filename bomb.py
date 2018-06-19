@@ -274,6 +274,14 @@ class Bomb:
 
 		return False
 
+	def has_port(self, port_type):
+		assert port_type in sum(PortPlateWidget.PORT_GROUPS, []), "Bomb.has_port: unknown port type"
+		for plate in self.get_widgets(PortPlateWidget):
+			if port_type in plate.ports:
+				return True
+
+		return False
+
 	def has_vowel(self):
 		for vowel in "AEIOU":
 			if vowel in self.serial:
