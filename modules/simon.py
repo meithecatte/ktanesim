@@ -103,7 +103,6 @@ class SimonSays(modules.Module):
 		self.log(f"Parsed: {' '.join(parsed)}")
 		small_progress = 0
 		solution = self.get_solution()
-		self.log(f"Solution: {' '.join(solution)}")
 		success = False # whether the input advanced the stage of the module
 		for press in parsed:
 			expected = solution[small_progress]
@@ -132,8 +131,9 @@ class SimonSays(modules.Module):
 		if strikes > 2: strikes = 2
 		vowel = self.bomb.has_vowel()
 		mapping = SimonSays.MAPPING[strikes, vowel, self.bomb.hummus]
-		self.log(f"Strikes: {strikes}. Vowel: {vowel}.")
-		return [mapping[color] for color in self.sequence]
+		solution = [mapping[color] for color in self.sequence]
+		self.log(f"Strikes: {strikes}. Vowel: {vowel}. Solution: {' '.join(solution)}")
+		return solution
 	
 	COMMANDS = {
 		"press": cmd_press
