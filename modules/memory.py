@@ -26,9 +26,9 @@ class Memory(modules.Module):
 	
 	def get_svg(self, led):
 		svg = (
-			f'<svg viewBox="0.0 0.0 348.0 348.0" fill="#fff" stroke="none" stroke-linejoin="round" stroke-linecap="butt" stroke-miterlimit="10" fill-rule="nonzero" xmlns="http://www.w3.org/2000/svg">'
-			f'<path stroke="#000" stroke-width="2.0" d="M5.07874 5.7758217l336.9134 0l0 337.6693l-336.9134 0z"/>'
-			f'<path fill="{led}" stroke="#000" stroke-width="2.0" d="M282.73444 40.553925l0 0c0 -8.375591 6.966034 -15.165352 15.5590515 -15.165352l0 0c4.126526 0 8.084015 1.5977726 11.001923 4.441828c2.9178772 2.844057 4.557129 6.7014217 4.557129 10.723524l0 0c0 8.375595 -6.9660034 15.165356 -15.5590515 15.165356l0 0c-8.593018 0 -15.5590515 -6.7897606 -15.5590515 -15.165356z"/>'
+			f'<svg viewBox="0 0 348 348" fill="#fff" stroke="none" stroke-linejoin="round" stroke-linecap="butt" stroke-miterlimit="10">'
+			f'<path stroke="#000" stroke-width="2" d="M5 5h338v338h-338z"/>'
+			f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>'
 			f'<path fill="#000" stroke="#000" d="M30 70h225v129h-225z"/>'
 			f'<path stroke="#000" d="M30 210h48v70h-48zm59 0h48v70h-48zm59 0h48v70h-48zm59 0h48v70h-48z"/>'
 			f'<path fill="#000" stroke="#000" d="M276 70h52v210h-52z"/>'

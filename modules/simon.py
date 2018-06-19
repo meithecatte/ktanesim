@@ -48,13 +48,14 @@ class SimonSays(modules.Module):
 	@staticmethod
 	@lru_cache(maxsize=16)
 	def get_image(color, led):
-		svg = ('<svg viewBox="0.0 0.0 348.0 348.0" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
-			'<path stroke="#000" stroke-width="2" d="M5.079 5.776h336.913v337.67H5.08z"/>' +
-			f'<path fill="{led}" stroke="#000" stroke-width="2" d="M282.734 40.554c0-8.376 6.966-15.165 15.56-15.165 4.126 0 8.084 1.597 11.001 4.441 2.918 2.844 4.558 6.702 4.558 10.724 0 8.376-6.966 15.165-15.56 15.165-8.593 0-15.559-6.79-15.559-15.165z"/>' +
-			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M68.695 174.611l52.567-52.567 52.566 52.567-52.566 52.567z"/>'.format('#f00' if color == "red" else '#300') +
-			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M121.262 227.178l52.567-52.567 52.567 52.567-52.567 52.567z"/>'.format('#0f0' if color == "green" else '#030') +
-			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M121.262 122.044l52.567-52.567 52.567 52.567-52.567 52.567z"/>'.format('#00f' if color == "blue" else '#003') +
-			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M173.829 174.611l52.567-52.567 52.567 52.567-52.567 52.567z"/>'.format('#ff0' if color == "yellow" else '#330') +
+		svg = (
+			f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
+			f'<path stroke="#000" stroke-width="2" d="M5 5h338v338h-338z"/>'
+			f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>'
+			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M68 174l52-52 52 52-52 52z"/>'.format('#f00' if color == "red" else '#300') +
+			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M120 226l52-52 52 52-52 52z"/>'.format('#0f0' if color == "green" else '#030') +
+			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M120 122l52-52 52 52-52 52z"/>'.format('#00f' if color == "blue" else '#003') +
+			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M172 174l52-52 52 52-52 52z"/>'.format('#ff0' if color == "yellow" else '#330') +
 			'</svg>')
 		return cairosvg.svg2png(svg.encode())
 

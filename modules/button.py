@@ -27,23 +27,24 @@ class Button(modules.Module):
 		self.release_pending = None
 
 	def get_svg(self, led):
-		svg = '<svg viewBox="0.0 0.0 348.0 348.0" fill="none" stroke="none" strike-linejoin="round" stroke-linecap="butt" stroke-miterlimit="1">'
-		svg += '<path stroke="#000" fill="#fff" stroke-width="2" d="M5.079 5.776h336.913v337.67H5.08z"/>'
-		svg += '<path stroke="#000" fill="#000" fill-opacity="0.1" stroke-width="2" d="M54 59.178h26v12h-26zM181 59.178h26v12h-26zM84 63.178h92v8h-92z"/>'
-		svg += f'<path stroke="#000" stroke-width="2" d="M273.456 109.96h46.268v196.567h-46.268z" fill="{Button.COLORS[self.strip_color] if self.strip_color is not None else "#000"}"/>'
-		svg += f'<path stroke="#000" fill="{led}" stroke-width="2" d="M282.734 40.554c0-8.376 6.966-15.165 15.56-15.165 4.126 0 8.084 1.597 11.001 4.441 2.918 2.844 4.558 6.702 4.558 10.724 0 8.376-6.966 15.165-15.56 15.165-8.593 0-15.559-6.79-15.559-15.165z"/>'
+		svg = (
+			f'<svg viewBox="0 0 348 348" fill="none" stroke="none" strike-linejoin="round" stroke-linecap="butt" stroke-miterlimit="1">'
+			f'<path stroke="#000" fill="#fff" stroke-width="2" d="M5 5h338v338h-338z"/>'
+			f'<path stroke="#000" fill="#000" fill-opacity="0.1" stroke-width="2" d="M54 59h26v12h-26zm127 0h26v12h-26zm-97 4h92v8h-92z"/>'
+			f'<path stroke="#000" stroke-width="2" d="M273 110h45v196h-45z" fill="{Button.COLORS[self.strip_color] if self.strip_color is not None else "#000"}"/>'
+			f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>')
 		if self.strip_color is None:
-			svg += '<path fill="#000" fill-opacity="0.1" stroke="#000" stroke-width="2" d="M17.037 71.178h225.386v235.339H17.037z"/>'
+			svg += '<path fill="#000" fill-opacity="0.1" stroke="#000" stroke-width="2" d="M17 71h225v235H17z"/>'
 		else:
-			svg += '<path stroke-width="1.5" stroke="#000" fill="#000" fill-opacity="0.1" d="M17.037 63.178l24 -36h177.386l24 36z"/>'
-			svg += '<path stroke-width="1.5" stroke="#000" fill="#000" fill-opacity="0.1" d="M17.037 63.178l16 -8l20 -20l-12 -8zm36 -28l-12 -8h177.386l-12 8zm153.386 0l12 -8l24 36l-16 -8z"/>'
-			svg += '<path stroke-width="2" stroke="#000" fill="#000" fill-opacity="0.1" d="M33.037 55.178l20 -20h153.386l20 20z"/>'
+			svg += ('<path stroke-width="1.5" stroke="#000" fill="#000" fill-opacity="0.1" d="M17 63l24-36h177l24 36z"/>'
+				'<path stroke-width="1.5" stroke="#000" fill="#000" fill-opacity="0.1" d="M17 63l16-8l20-20l-12-8zm36-28l-12-8h177l-12 8zm153 0l12-8l24 36l-16-8z"/>'
+				'<path stroke-width="2" stroke="#000" fill="#000" fill-opacity="0.1" d="M33 55l20-20h153l20 20z"/>')
 
-		svg += f'<path fill="{Button.COLORS[self.button_color]}" stroke="#000" stroke-width="2" d="M31.556 188.848c0-54.95 43.954-99.496 98.174-99.496 26.037 0 51.008 10.482 69.419 29.141 18.41 18.66 28.754 43.967 28.754 70.355 0 54.95-43.954 99.496-98.173 99.496-54.22 0-98.174-44.546-98.174-99.496z"/>'
+		svg += f'<circle fill="{Button.COLORS[self.button_color]}" stroke="#000" stroke-width="2" r="100" cx="130" cy="189"/>'
 		text_color = '#fff' if self.button_color in ['red', 'blue'] else '#000'
 		svg += f'<text x="130" y="200" fill="{text_color}" style="font-size:24pt;font-family:sans-serif;" text-anchor="middle">{self.button_label}</text>'
 		if self.strip_color is None:
-			svg += '<path stroke-width="1.5" stroke="#000" d="M17.037 71.178l24 24h177.386l24 -24M17.037 306.517l24 -24h177.386l24 24M41.037 95.178v187.339M218.423 95.178v187.339"/>'
+			svg += '<path stroke-width="1.5" stroke="#000" d="M17 71l24 24h177l24-24M17 306l24-24h177l24 24M41 95v187M218 95v187"/>'
 		svg += '</svg>'
 		return svg
 

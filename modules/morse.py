@@ -92,13 +92,13 @@ class MorseCode(modules.Module):
 	def get_image(self, rx_led, solve_led):
 		svg = (
 			f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
-			f'<path stroke="#000" stroke-width="2" d="M5.079 5.776h336.913v337.67H5.08zM43.346 139.811h252.756v30.33H43.346zM59.22 170.948v-9.764M84.055 139.811v12.819M133.725 139.408v12.819M108.89 170.545v-9.764M233.065 139.407v12.819M208.23 170.543v-9.763M282.735 139.407v12.819M257.9 170.543v-9.763M158.56 170.545v-9.764M183.395 139.408v12.819M154.46 50.575l119.054.094M36.633 50.575L6.113 6.7M117.832 290.612h87.906v34.803h-87.906zM16.483 118.441h302.835v157.543H16.483z"/>'
-			f'<path fill="{solve_led}" stroke="#000" stroke-width="2" d="M282.734 40.554c0-8.376 6.966-15.165 15.56-15.165 4.126 0 8.084 1.597 11.001 4.441 2.918 2.844 4.558 6.702 4.558 10.724 0 8.376-6.966 15.165-15.56 15.165-8.593 0-15.559-6.79-15.559-15.165z"/>'
-			f'<path fill="#000" d="M58.661 187.43H277.34v72.032H58.66z"/>'
-			f'<path fill="{"#ff0" if rx_led else "#fff"}" stroke="#000" stroke-width="2" d="M36.633 50.575c0-8.376 26.376-15.166 58.913-15.166 32.537 0 58.913 6.79 58.913 15.166 0 8.375-26.376 15.165-58.913 15.165-32.537 0-58.913-6.79-58.913-15.165z"/>'
-			f'<path fill="#000" stroke="#000" stroke-width="2" d="M45.79 23.2h12.882v53.354H45.79zM132.357 23.2h12.882v53.354h-12.882zM48.307 196.769l-22.866 26.677 22.866 26.677zM287.693 196.769l22.866 26.677-22.866 26.677zM{(self.last_frequency - 500) * 236 / 100 + 47} 136.147h8.535v40.283h-8.535z"/>'
-			f'<text x="161.785" y="318" text-anchor="middle" fill="#000" style="font-size:20pt;font-family:sans-serif;">TX</text>'
-			f'<text x="168" y="237" text-anchor="middle" style="font-size:28pt;font-family:sans-serif;">3.{self.last_frequency} MHz</text>'
+			f'<path stroke="#000" stroke-width="2" d="M5 5h338v338h-338zM48 139h252v30h-252zm41 0v14m50-14v14m50-14v14m50-14v14m50-14v14m-225 16v-10m50 10v-10m50 10v-10m50 10v-10m50 10v-10M155 50h120M5 5l30 45M129 290h90v35h-90zM24 120h300v160h-300z"/>'
+			f'<circle fill="{solve_led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>'
+			f'<path fill="#000" d="M64 187h220v72h-220z"/>'
+			f'<ellipse cx="95" cy="50" rx="60" ry="15" fill="{"#ff0" if rx_led else "#fff"}" stroke="#000" stroke-width="2"/>'
+			f'<path fill="#000" stroke="#000" stroke-width="2" d="M46 23h12v54h-12zM132 23h12v54h-12zM55 197l-22 26 22 26zM293 197l22 26-22 26zM{(self.last_frequency - 500) * 236 / 100 + 52} 134h9v40h-9z"/>'
+			f'<text x="174" y="318" text-anchor="middle" fill="#000" style="font-size:20pt;font-family:sans-serif;">TX</text>'
+			f'<text x="174" y="237" text-anchor="middle" style="font-size:28pt;font-family:sans-serif;">3.{self.last_frequency} MHz</text>'
 			f'</svg>')
 		return cairosvg.svg2png(svg.encode())
 
