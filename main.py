@@ -17,7 +17,7 @@ async def cmd_help(channel, author, parts):
 		f"`{PREFIX}help`: Show this message\n"
 		f"`{PREFIX}bombs`: List the currently running bombs.\n"
 		f"`{PREFIX}run ...`: Start a bomb. Pass no parameters for usage.\n"
-		f"`{PREFIX}modules`: Show a list of implemented modules.\n"
+		f"`{PREFIX}modules`: When a bomb is running, show the modules that have not been solved yet. When a bomb is not running, show a list of implemented modules.\n"
 		f"`{PREFIX}unclaimed`: Shows {MAX_UNCLAIMED_LIST_SIZE} random unclaimed modules from the bomb.\n"
 		f"`{PREFIX}find ...`: List all modules on the bomb with `...` in their name.\n"
 		f"`{PREFIX}edgework`: Show the edgework string of the bomb.\n"
@@ -60,14 +60,18 @@ async def on_message(msg):
 			"run": Bomb.cmd_run,
 			"bombs": Bomb.cmd_bombs,
 			"shutdown": Bomb.cmd_shutdown,
-			"modules": modules.cmd_modules,
 			"leaderboard": leaderboard.cmd_leaderboard,
 			"lb": leaderboard.cmd_leaderboard,
 			"rank": leaderboard.cmd_rank,
 			"help": cmd_help,
 		}
 
-		if command in GENERIC_COMMANDS:
+		if command == "modules":
+			if channel in Bomb.bombs:
+				await Bomb.bombs[channel].cmd_modules(author, parts)
+			else:
+				await modules.cmd_modules(channel, author, parts)
+		elif command in GENERIC_COMMANDS:
 			await GENERIC_COMMANDS[command](channel, author, parts)
 		elif command.isdigit() or command in Bomb.COMMANDS:
 			if channel in Bomb.bombs:
@@ -75,7 +79,7 @@ async def on_message(msg):
 			else:
 				await channel.send(f"{author.mention} No bomb is currently ticking in this channel. Change this sad fact with `{PREFIX}run`.")
 		else:
-			await channel.send(f"{author.mention} No such command: `{PREFIX}{command}`. Try `{PREFIX}help` for help.")
+			await channel.send(f"{author.mention} No such command: `{PREFIX}{command}`. Did you miss the module number? Try `{PREFIX}help` for help.")
 	except Exception:
 		await channel.send(f"{author.mention} An unidentified ~~flying object~~ error has occured during handling of this command. Please get this blob of undecipherable text to one of our code monkeys, along with a description of what you did to cause this and the log from this bomb, if applicable: ```\n{traceback.format_exc()}```")
 		print(f"Exception in {channel}")

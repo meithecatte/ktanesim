@@ -299,6 +299,9 @@ class Bomb:
 
 	def get_unclaimed(self):
 		return [module for module in self.modules if module.claim is None and not module.solved]
+	
+	def get_claimed(self):
+		return [module for module in self.modules if module.claim is not None and not module.solved]
 
 	def get_time(self):
 		return time.monotonic() - self.start_time
@@ -340,9 +343,15 @@ class Bomb:
 				await self.modules[ident - 1].handle_command(command, author, parts)
 
 	async def cmd_edgework(self, author, parts):
+		if parts:
+			return await self.channel.send(f"{author.mention} Trailing arguments.")
+
 		await self.channel.send(f"{author.mention} Edgework: `{self.get_edgework()}`")
 
 	async def cmd_unclaimed(self, author, parts):
+		if parts:
+			return await self.channel.send(f"{author.mention} Trailing arguments.")
+
 		unclaimed = self.get_unclaimed()
 
 		if unclaimed:
@@ -360,7 +369,29 @@ class Bomb:
 
 		await self.channel.send(reply)
 
+	async def cmd_modules(self, author, parts):
+		if parts:
+			return await self.channel.send(f"{author.mention} Trailing arguments.")
+
+		claimed = self.get_claimed()
+		if not claimed:
+			return await self.cmd_unclaimed(author, parts)
+
+		reply = f'Here are the modules that have currently been claimed by someone. Check `{PREFIX}unclaimed` for unclaimed modules:'
+
+		if len(claimed) > MAX_CLAIMED_LIST_SIZE:
+			claimed = random.sample(claimed, MAX_CLAIMED_LIST_SIZE)
+			unclaimed.sort(key=lambda module: module.ident)
+
+		for module in claimed:
+			reply += f"\n{module} - claimed by {module.claim}"
+
+		await self.channel.send(reply)
+
 	async def cmd_claims(self, author, parts):
+		if parts:
+			return await self.channel.send(f"{author.mention} Trailing arguments.")
+
 		claims = list(map(str, self.get_claims(author)))
 		if len(claims) == 0:
 			await self.channel.send(f"{author.mention} You have not claimed any modules.")
@@ -370,6 +401,9 @@ class Bomb:
 			await self.channel.send(f"{author.mention} You have claimed {', '.join(claims[::-1])} and {claims[-1]}.")
 
 	async def cmd_status(self, author, parts):
+		if parts:
+			return await self.channel.send(f"{author.mention} Trailing arguments.")
+
 		await self.channel.send(('Hummus mode on, ' if self.hummus else '') +
 			f"Zen mode on, time: {self.get_time_formatted()}, {self.strikes} strikes, "
 			f"{self.get_solved_count()} out of {len(self.modules)} modules solved.")
@@ -389,11 +423,9 @@ class Bomb:
 
 	async def cmd_detonate(self, author, parts):
 		if parts:
-			await self.channel.send(f"{author.mention} Trailing arguments.")
-			return
+			return await self.channel.send(f"{author.mention} Trailing arguments.")
 		if author.id == BOT_OWNER or isinstance(self.channel, discord.channel.DMChannel):
-			await self.bomb_end(True)
-			return
+			return await self.bomb_end(True)
 		else:
 			msg = await self.channel.send(f"{author.mention} wants to detonate this bomb in an explosion-proof container instead of defusing it and selling the parts for :dollar:. If you agree, react with {DETONATE_REACT}")
 			await msg.add_reaction(DETONATE_REACT)
@@ -412,14 +444,12 @@ class Bomb:
 							if user.id != author.id:
 								approval += 1
 				if approval >= DETONATE_APPROVAL:
-					await self.bomb_end(True)
-					return
+					return await self.bomb_end(True)
 			await self.channel.send(f"Only {approval} out of {DETONATE_APPROVAL} needed people agreed. Not detonating.")
 
 	async def cmd_find(self, author, parts):
 		if not parts:
-			await self.channel.send(f"{author.mention} What should I look for?")
-			return
+			return await self.channel.send(f"{author.mention} What should I look for?")
 
 		needle = ' '.join(parts).lower()
 		found = []
@@ -427,8 +457,7 @@ class Bomb:
 			if needle in module.display_name.lower():
 				found.append(module)
 		if not found:
-			await self.channel.send(f"{author.mention} Sorry, I couldn't find anything.")
-			return
+			return await self.channel.send(f"{author.mention} Sorry, I couldn't find anything.")
 		else:
 			trunc = False
 			if len(found) > MAX_FOUND_LIST_SIZE:
@@ -452,6 +481,7 @@ class Bomb:
 		"edgework": cmd_edgework,
 		"status": cmd_status,
 		"unclaimed": cmd_unclaimed,
+		"modules": cmd_modules,
 		"find": cmd_find,
 		"claims": cmd_claims,
 		"claimany": cmd_claimany,
