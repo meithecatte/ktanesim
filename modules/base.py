@@ -90,7 +90,7 @@ class Module(metaclass=CommandConsolidator):
 		if command not in self.COMMANDS:
 			await self.usage(author)
 		else:
-			self.log(f"command: {command} {' '.join(parts)}")
+			self.log(f"COMMAND: {command} {' '.join(parts)}")
 			await self.COMMANDS[command](self, author, parts)
 
 	async def handle_solve(self, author):
