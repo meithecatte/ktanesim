@@ -1,3 +1,4 @@
+import io
 import sys
 import time
 import random
@@ -220,18 +221,27 @@ class Bomb:
 		if Bomb.hastebin_session is None:
 			Bomb.hastebin_session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5))
 
+		discord_upload = True
+		log = self.get_log()
 		try:
-			async with self.hastebin_session.post('https://hastebin.com/documents', data=self.get_log().encode()) as resp:
+			async with self.hastebin_session.post('https://hastebin.com/documents', data=log.encode()) as resp:
 				decoded = await resp.json()
 				if 'key' in decoded:
 					logurl = f"Log: https://hastebin.com/{decoded['key']}.txt"
+					discord_upload = False
 				elif 'message' in decoded:
-					logurl = f"Log upload failed with error message: `{decoded['message']}`"
+					logurl = f"Hastebin log upload failed with error message, uploading to discord: `{decoded['message']}`"
 				else:
-					logurl = f"Log upload failed with no error message: `{repr(decoded)}`"
+					logurl = f"Hastebin log upload failed with no error message, uploading to discord: `{repr(decoded)}`"
 		except Exception:
-			logurl = f"Log upload failed with exception: ```\n{traceback.format_exc()}```"
-		await self.channel.send(f"{':boom:' if boom else ''} The bomb has been {'**detonated**' if boom else 'defused'} after {self.get_time_formatted()} and {self.strikes} strike{'s' if self.strikes != 1 else ''}. {logurl}")
+			logurl = f"Hastebin log upload failed with exception, uploading to discord: ```\n{traceback.format_exc()}```"
+
+		if discord_upload:
+			file_ = discord.File(io.StringIO(log), filename='ktanesim.log')
+		else:
+			file_ = None
+
+		await self.channel.send(f"{':boom:' if boom else ''} The bomb has been {'**detonated**' if boom else 'defused'} after {self.get_time_formatted()} and {self.strikes} strike{'s' if self.strikes != 1 else ''}. {logurl}", file=file_)
 		del Bomb.bombs[self.channel]
 		if Bomb.shutdown_mode and not Bomb.bombs:
 			Bomb.client.loop.stop()
