@@ -267,9 +267,12 @@ class Bomb:
 		return len(self.get_widgets(BatteryWidget))
 
 	def has_lit_indicator(self, code):
+		assert code in IndicatorWidget.INDICATORS, "Bomb.has_lit_indicator: unknown indicator code"
 		for indicator in self.get_widgets(IndicatorWidget):
 			if indicator.lit and indicator.code == code:
 				return True
+
+		return False
 
 	def has_vowel(self):
 		for vowel in "AEIOU":
