@@ -349,14 +349,18 @@ class Bomb:
 			f"Zen mode on, time: {self.get_time_formatted()}, {self.strikes} strikes, "
 			f"{self.get_solved_count()} out of {len(self.modules)} modules solved.")
 
-	def get_random_unclaimed(self):
-		return random.choice([module for module in self.modules if not module.solved and module.claim is None])
+	async def run_command_on_unclaimed(self, author, parts, command):
+		unclaimed = [module for module in self.modules if not module.solved and module.claim is None]
+		if not unclaimed:
+			return await self.channel.send(f"{author.mention} Sorry, there are no unclaimed modules.")
+		module = random.choice([module for module in self.modules if not module.solved and module.claim is None])
+		await module.handle_command(command, author, parts)
 
 	async def cmd_claimany(self, author, parts):
-		await self.get_random_unclaimed().handle_command("claim", author, parts)
+		await self.run_command_on_unclaimed(author, parts, "claim")
 
 	async def cmd_claimanyview(self, author, parts):
-		await self.get_random_unclaimed().handle_command("claimview", author, parts)
+		await self.run_command_on_unclaimed(author, parts, "claimview")
 
 	async def cmd_detonate(self, author, parts):
 		if parts:
