@@ -207,6 +207,10 @@ class Bomb:
 					return await channel.send(f"{author.mention} No such module: `{module}`")
 				chosen_modules.extend([candidates[module]] * count)
 
+		if len(chosen_modules) > 101:
+			print(f"{author} has requested a bomb with {len(chosen_modules)} modules. Wut?")
+			return await channel.send(f"{author.mention} Nope.")
+
 		bomb = Bomb(channel, chosen_modules, hummus)
 		Bomb.bombs[channel] = bomb
 		await channel.send(f"A bomb with {len(bomb.modules)} {'modules' if len(bomb.modules) != 1 else 'module'} has been armed!\nEdgework: `{bomb.get_edgework()}`")
