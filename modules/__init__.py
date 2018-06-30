@@ -1,5 +1,5 @@
 from modules.base import Module, noparts, check_solve_cmd, gif_append, gif_output
-from modules.wires import Wires, ComplicatedWires
+from modules.wires import Wires, ComplicatedWires, WireSequence
 from modules.button import Button
 from modules.keypad import Keypad
 from modules.simon import SimonSays
@@ -16,6 +16,7 @@ VANILLA_MODULES = {
 	"memory": Memory,
 	"morseCode": MorseCode,
 	"complicatedWires": ComplicatedWires,
+	"wireSequence": WireSequence,
 }
 
 MODDED_MODULES = {
