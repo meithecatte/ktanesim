@@ -1,5 +1,6 @@
 import random
 import cairosvg
+import enum
 import modules
 from functools import lru_cache
 from wand.image import Image
@@ -11,39 +12,37 @@ class SimonSays(modules.Module):
 	help_text = "`{cmd} press red green blue yellow`, `{cmd} press rgby`. You must include the input from any previous stages."
 	module_score = 3
 
-	COLORS = ["red", "green", "blue", "yellow"]
+	@enum.unique
+	class Color(enum.Enum):
+		red = enum.auto()
+		green = enum.auto()
+		blue = enum.auto()
+		yellow = enum.auto()
 
 	MAPPING = {
 	# strikes, vowel, hummus
-		(0, True, False):  {"red": "blue", "blue": "red", "green": "yellow", "yellow": "green"},
-		(1, True, False):  {"red": "yellow", "blue": "green", "green": "blue", "yellow": "red"},
-		(2, True, False):  {"red": "green", "blue": "red", "green": "yellow", "yellow": "blue"},
-		(0, False, False): {"red": "blue", "blue": "yellow", "green": "green", "yellow": "red"},
-		(1, False, False): {"red": "red", "blue": "blue", "green": "yellow", "yellow": "green"},
-		(2, False, False): {"red": "yellow", "blue": "green", "green": "blue", "yellow": "red"},
-		(0, True, True):   {"red": "yellow", "blue": "red", "green": "yellow", "yellow": "blue"},
-		(1, True, True):   {"red": "green", "blue": "red", "green": "green", "yellow": "green"},
-		(2, True, True):   {"red": "yellow", "blue": "yellow", "green": "yellow", "yellow": "green"},
-		(0, False, True):  {"red": "red", "blue": "yellow", "green": "red", "yellow": "red"},
-		(1, False, True):  {"red": "blue", "blue": "blue", "green": "blue", "yellow": "green"},
-		(2, False, True):  {"red": "yellow", "blue": "red", "green": "yellow", "yellow": "yellow"}
+		(0, True, False):  {Color.red: Color.blue, Color.blue: Color.red, Color.green: Color.yellow, Color.yellow: Color.green},
+		(1, True, False):  {Color.red: Color.yellow, Color.blue: Color.green, Color.green: Color.blue, Color.yellow: Color.red},
+		(2, True, False):  {Color.red: Color.green, Color.blue: Color.red, Color.green: Color.yellow, Color.yellow: Color.blue},
+		(0, False, False): {Color.red: Color.blue, Color.blue: Color.yellow, Color.green: Color.green, Color.yellow: Color.red},
+		(1, False, False): {Color.red: Color.red, Color.blue: Color.blue, Color.green: Color.yellow, Color.yellow: Color.green},
+		(2, False, False): {Color.red: Color.yellow, Color.blue: Color.green, Color.green: Color.blue, Color.yellow: Color.red},
+		(0, True, True):   {Color.red: Color.yellow, Color.blue: Color.red, Color.green: Color.yellow, Color.yellow: Color.blue},
+		(1, True, True):   {Color.red: Color.green, Color.blue: Color.red, Color.green: Color.green, Color.yellow: Color.green},
+		(2, True, True):   {Color.red: Color.yellow, Color.blue: Color.yellow, Color.green: Color.yellow, Color.yellow: Color.green},
+		(0, False, True):  {Color.red: Color.red, Color.blue: Color.yellow, Color.green: Color.red, Color.yellow: Color.red},
+		(1, False, True):  {Color.red: Color.blue, Color.blue: Color.blue, Color.green: Color.blue, Color.yellow: Color.green},
+		(2, False, True):  {Color.red: Color.yellow, Color.blue: Color.red, Color.green: Color.yellow, Color.yellow: Color.yellow}
 	}
-
-	for strikes in range(3):
-		for vowel in True, False:
-			for hummus in True, False:
-				row = MAPPING[strikes, vowel, hummus]
-				assert set(row.keys()) == set(COLORS)
-				assert set(row.values()) - set(COLORS) == set()
 
 	def __init__(self, bomb, ident):
 		super().__init__(bomb, ident)
 		self.progress = 0
 		self.sequence = []
 		for _ in range(random.randint(3, 5)):
-			self.sequence.append(random.choice(["red", "green", "blue", "yellow"]))
+			self.sequence.append(random.choice(list(SimonSays.Color)))
 
-		self.log(f"Sequence: {' '.join(self.sequence)}")
+		self.log(f"Sequence: {' '.join(color.name for color in self.sequence)}")
 	
 	@staticmethod
 	@lru_cache(maxsize=16)
@@ -52,10 +51,10 @@ class SimonSays(modules.Module):
 			f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
 			f'<path stroke="#000" stroke-width="2" d="M5 5h338v338h-338z"/>'
 			f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>'
-			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M68 174l52-52 52 52-52 52z"/>'.format('#f00' if color == "red" else '#300') +
-			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M120 226l52-52 52 52-52 52z"/>'.format('#0f0' if color == "green" else '#030') +
-			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M120 122l52-52 52 52-52 52z"/>'.format('#00f' if color == "blue" else '#003') +
-			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M172 174l52-52 52 52-52 52z"/>'.format('#ff0' if color == "yellow" else '#330') +
+			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M68 174l52-52 52 52-52 52z"/>'.format('#f00' if color == SimonSays.Color.red else '#300') +
+			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M120 226l52-52 52 52-52 52z"/>'.format('#0f0' if color == SimonSays.Color.green else '#030') +
+			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M120 122l52-52 52 52-52 52z"/>'.format('#00f' if color == SimonSays.Color.blue else '#003') +
+			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M172 174l52-52 52 52-52 52z"/>'.format('#ff0' if color == SimonSays.Color.yellow else '#330') +
 			'</svg>')
 		return cairosvg.svg2png(svg.encode())
 
@@ -90,23 +89,23 @@ class SimonSays(modules.Module):
 		parsed = []
 		for part in parts:
 			part = part.lower()
-			if part in SimonSays.COLORS:
-				parsed.append(part)
-			else:
+			try:
+				parsed.append(SimonSays.Color[part])
+			except KeyError:
+				short_names = {x.name[:1]: x for x in SimonSays.Color}
 				for letter in part:
-					short_names = {x[:1]: x for x in SimonSays.COLORS}
 					if letter in short_names:
 						parsed.append(short_names[letter])
 					else:
 						await self.bomb.channel.send(f"{author.mention} Neither `{part}` nor `{letter}` is a color.")
 						return
-		self.log(f"Parsed: {' '.join(parsed)}")
+		self.log(f"Parsed: {' '.join(color.name for color in parsed)}")
 		small_progress = 0
 		solution = self.get_solution()
 		success = False # whether the input advanced the stage of the module
 		for press in parsed:
 			expected = solution[small_progress]
-			self.log(f"Pressing {press}, expected {expected}")
+			self.log(f"Pressing {press.name}, expected {expected.name}")
 			if expected != press:
 				await self.handle_strike(author)
 				return
@@ -132,7 +131,7 @@ class SimonSays(modules.Module):
 		vowel = self.bomb.has_vowel()
 		mapping = SimonSays.MAPPING[strikes, vowel, self.bomb.hummus]
 		solution = [mapping[color] for color in self.sequence]
-		self.log(f"Strikes: {strikes}. Vowel: {vowel}. Solution: {' '.join(solution)}")
+		self.log(f"Strikes: {strikes}. Vowel: {vowel}. Solution: {' '.join(color.name for color in solution)}")
 		return solution
 	
 	COMMANDS = {

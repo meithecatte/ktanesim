@@ -1,6 +1,8 @@
 import random
-import modules
 import itertools
+import enum
+import modules
+import edgework
 
 class Wires(modules.Module):
 	display_name = "Wires"
@@ -9,13 +11,13 @@ class Wires(modules.Module):
 	help_text = "`{cmd} cut 3` to cut the third wire. Empty spaces are not counted."
 	module_score = 1
 
-	COLORS = {
-		"black": "#000000",
-		"blue":  "#0000ff",
-		"red":   "#ff0000",
-		"white": "#ffffff",
-		"yellow":"#ffff00"
-	}
+	@enum.unique
+	class Color(enum.Enum):
+		black =  "#000"
+		blue =   "#00f"
+		red =    "#f00"
+		white =  "#fff"
+		yellow = "#ff0"
 
 	PATHS_UNCUT = [
 		"M65.898438,90.912109 c -1.576082,-0.198603 -3.215872,-0.156976 -4.921876,0.208985 l 1.259766,5.867187 c 4.023083,-0.863006 8.043492,1.43865 12.857422,4.818359 4.81393,3.37971 10.054968,7.72643 16.78125,8.39844 25.11869,2.50953 49.92935,-2.81228 73.95508,-1.40039 4.85979,0.28558 9.41352,3.04832 14.34375,6.45117 4.93022,3.40285 10.13574,7.40432 16.6289,8.98828 25.2538,6.16046 51.03948,9.12443 76.47266,12.75195 l 0.8457,-5.93945 c -25.54045,-3.64283 -51.1276,-6.59845 -75.89648,-12.64062 -4.88126,-1.19075 -9.58377,-4.60606 -14.64258,-8.09766 -5.05881,-3.4916 -10.57237,-7.1007 -17.40039,-7.50195 -25.1198,-1.47619 -49.84318,3.80252 -73.710937,1.41797 -4.31262,-0.43087 -8.931655,-3.82893 -13.929687,-7.337896 -3.748525,-2.631722 -7.914333,-5.388564 -12.642578,-5.984375 z",
@@ -43,8 +45,8 @@ class Wires(modules.Module):
 		self.cut = [False] * wire_count
 		self.colors = []
 		for _ in range(wire_count):
-			self.colors.append(random.choice(list(Wires.COLORS.keys())))
-		self.log(f"There are {len(self.colors)} wires: {' '.join(self.colors)}")
+			self.colors.append(random.choice(list(Wires.Color)))
+		self.log(f"There are {len(self.colors)} wires: {' '.join(color.name for color in self.colors)}")
 
 	def get_svg(self, led):
 		svg = (
@@ -53,7 +55,7 @@ class Wires(modules.Module):
 			f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>')
 		for pos, color, cut in zip(self.positions, self.colors, self.cut):
 			paths = Wires.PATHS_CUT if cut else Wires.PATHS_UNCUT
-			svg += f'<path fill="{Wires.COLORS[color]}" stroke="#000" d="{paths[pos]}" />'
+			svg += f'<path fill="{color.value}" stroke="#000" d="{paths[pos]}" />'
 		svg += '</svg>'
 		return svg
 
@@ -95,58 +97,58 @@ class Wires(modules.Module):
 				self.log('the serial number does not start with a letter')
 
 			if len(self.colors) == 3:
-				if count("white") == 0 and serial_letter:
+				if count(Wires.Color.white) == 0 and serial_letter:
 					self.log('rule: there are no white wires and the serial number starts with a letter')
 					return 1
-				elif count("red") == 1:
+				elif count(Wires.Color.red) == 1:
 					self.log('rule: there is exactly one red wire')
 					return 0
-				elif count("blue") > 1:
+				elif count(Wires.Color.blue) > 1:
 					self.log('rule: there is more than one blue wire')
-					return first("blue")
-				elif self.colors[-1] == "red":
+					return first(Wires.Color.blue)
+				elif self.colors[-1] == Wires.Color.red:
 					self.log('rule: the last wire is red')
 					return 2
 				else:
 					self.log('rule: wildcard')
 					return 1
 			elif len(self.colors) == 4:
-				if count("yellow") == 1 and self.colors[-1] == "red":
+				if count(Wires.Color.yellow) == 1 and self.colors[-1] == Wires.Color.red:
 					self.log('rule: there is exactly one yellow wire and the last wire is red')
 					return 2
-				elif self.colors[-1] == "white":
+				elif self.colors[-1] == Wires.Color.white:
 					self.log('rule: the last wire is white')
 					return 1
-				elif count("yellow") == 0:
+				elif count(Wires.Color.yellow) == 0:
 					self.log('rule: there are no yellow wires')
 					return 0
 				else:
 					self.log('rule: wildcard')
 					return 3
 			elif len(self.colors) == 5:
-				if count("black") > 1 and serial_letter:
+				if count(Wires.Color.black) > 1 and serial_letter:
 					self.log('rule: there is more than one black wire and the serial number starts with a letter')
 					return 1
-				elif self.colors[-1] == "blue" and count("red") == 1:
+				elif self.colors[-1] == Wires.Color.blue and count(Wires.Color.red) == 1:
 					self.log('rule: the last wire is blue and there is exactly one red wire')
 					return 0
-				elif self.colors[-1] == "red":
+				elif self.colors[-1] == Wires.Color.red:
 					self.log('rule: the last wire is red')
 					return 3
-				elif count("red") == 0:
+				elif count(Wires.Color.red) == 0:
 					self.log('rule: there are no red wires')
 					return 2
 				else:
 					self.log('rule: wildcard')
 					return 0
 			elif len(self.colors) == 6:
-				if count("red") == 1:
+				if count(Wires.Color.red) == 1:
 					self.log('rule: there is exactly one red wire')
-					return first("red")
-				elif self.colors[-1] == "red":
+					return first(Wires.Color.red)
+				elif self.colors[-1] == Wires.Color.red:
 					self.log('rule: the last wire is red')
 					return 5
-				elif count("yellow") == 0:
+				elif count(Wires.Color.yellow) == 0:
 					self.log('rule: there are no yellow wires')
 					return 3
 				else:
@@ -157,55 +159,55 @@ class Wires(modules.Module):
 			self.log('the last digit of the serial number is {:s}'.format('odd' if serial_odd else 'even'))
 
 			if len(self.colors) == 3:
-				if count("red") == 0:
+				if count(Wires.Color.red) == 0:
 					self.log('rule: there are no red wires')
 					return 1
-				elif self.colors[-1] == "white":
+				elif self.colors[-1] == Wires.Color.white:
 					self.log('rule: the last wire is white')
 					return 2
-				elif count("blue") > 1:
+				elif count(Wires.Color.blue) > 1:
 					self.log('rule: there is more than one blue wire')
-					return last("blue")
+					return last(Wires.Color.blue)
 				else:
 					self.log('rule: wildcard')
 					return 2
 			elif len(self.colors) == 4:
-				if count("red") > 1 and serial_odd:
+				if count(Wires.Color.red) > 1 and serial_odd:
 					self.log('rule: there is more than one red wire')
-					return last("red")
-				elif self.colors[-1] == "yellow" and count("red") == 0:
+					return last(Wires.Color.red)
+				elif self.colors[-1] == Wires.Color.yellow and count(Wires.Color.red) == 0:
 					self.log('rule: the last wire is yellow and there are no red wires')
 					return 0
-				elif count("blue") == 1:
+				elif count(Wires.Color.blue) == 1:
 					self.log('rule: there is exactly one blue wire')
 					return 0
-				elif count("yellow") > 1:
+				elif count(Wires.Color.yellow) > 1:
 					self.log('rule: there is more than one yellow wire')
 					return 3
 				else:
 					self.log('rule: wildcard')
 					return 1
 			elif len(self.colors) == 5:
-				if self.colors[-1] == "black" and serial_odd:
+				if self.colors[-1] == Wires.Color.black and serial_odd:
 					self.log('rule: the last wire is black and the last digit of the serial number is odd')
 					return 3
-				elif count("red") == 1 and count("yellow") > 1:
+				elif count(Wires.Color.red) == 1 and count(Wires.Color.yellow) > 1:
 					self.log('rule: there is exactly one red wire and there is more than one yellow wire')
 					return 0
-				elif count("black") == 0:
+				elif count(Wires.Color.black) == 0:
 					self.log('rule: there are no black wires')
 					return 1
 				else:
 					self.log('rule: wildcard')
 					return 0
 			else:
-				if count("yellow") == 0 and serial_odd:
+				if count(Wires.Color.yellow) == 0 and serial_odd:
 					self.log('rule: there are no yellow wires and the last digit of the serial number is odd')
 					return 2
-				elif count("yellow") == 1 and count("white") > 1:
+				elif count(Wires.Color.yellow) == 1 and count(Wires.Color.white) > 1:
 					self.log('rule: there is exactly one yellow wire and there is more than one white wire')
 					return 3
-				elif count("red") == 0:
+				elif count(Wires.Color.red) == 0:
 					self.log('rule: there are no red wires')
 					return 5
 				else:
@@ -223,11 +225,11 @@ class ComplicatedWires(modules.Module):
 	help_text = "`{cmd} cut 3` - cut the third wire. `{cmd} cut 1 4 6` - cut multiple wires. `{cmd} cut 146` - cut multiple wires, shorter. Wires are counted left to right, empty spaces excluded."
 	module_score = 3
 
-	COLORS = {
-		"blue":  "#0000ff",
-		"red":   "#ff0000",
-		"white": "#ffffff",
-	}
+	@enum.unique
+	class Color(enum.Enum):
+		blue = "#00f"
+		red = "#f00"
+		white = "#fff"
 
 	PATHS_UNCUT = [
 		"m55.183594,73.0625 -5.96875,0.597656 c 1.652446,16.509105 -6.128906,33.805904 -6.128906,52.371094 0,21.07678 0.568469,43.28739 8.185546,63.59961 1.331273,3.55006 3.701096,6.19525 5.539063,8.61523 1.837967,2.41999 3.074391,4.46932 3.210937,6.51953 1.225156,18.39563 -10.351562,37.1942 -10.351562,58.11719 h 6 c 0,-18.56083 11.738513,-37.5147 10.339844,-58.51562 -0.269181,-4.04172 -2.428071,-7.1274 -4.419922,-9.75 -1.991852,-2.6226 -3.886727,-4.92711 -4.699219,-7.09375 -7.142932,-19.04783 -7.804688,-40.53241 -7.804687,-61.49219 0,-16.78337 7.965763,-34.305048 6.097656,-52.96875z",
@@ -257,7 +259,7 @@ class ComplicatedWires(modules.Module):
 		return False
 
 	def condP(self):
-		return self.bomb.has_port('Parallel')
+		return self.bomb.has_port(edgework.PortType.Parallel)
 
 	def condS(self):
 		return int(self.bomb.serial[-1]) % 2 == 0
@@ -310,7 +312,7 @@ class ComplicatedWires(modules.Module):
 		self.cut = [False] * wire_count
 		self.should_cut = [False] * wire_count
 
-		colorings = list(itertools.chain(ComplicatedWires.COLORS, itertools.combinations(ComplicatedWires.COLORS, 2)))
+		colorings = list(itertools.chain(ComplicatedWires.Color, itertools.combinations(ComplicatedWires.Color, 2)))
 		self.wire_colors = []
 		self.leds = []
 		self.stars = []
@@ -321,10 +323,10 @@ class ComplicatedWires(modules.Module):
 			self.wire_colors.append(random.choice(colorings))
 			self.leds.append(random.random() > 0.5)
 			self.stars.append(random.random() > 0.5)
-			self.log(f'Adding wire: {self.wire_to_string(-1)}')
 			if self.wire_to_rules(index) in cut_combinations:
 				encountered_cut = True
 				self.should_cut[index] = True
+			self.log(f'Adding wire: {self.wire_to_string(-1)} - {"should cut" if self.should_cut[index] else "should NOT cut"}')
 
 		if not encountered_cut:
 			self.log('No wires to cut, overwriting a random wire...')
@@ -334,16 +336,21 @@ class ComplicatedWires(modules.Module):
 		return ComplicatedWires.RULES_HUMMUS if self.bomb.hummus else ComplicatedWires.RULES
 
 	def wire_to_string(self, index):
-		return f'{self.wire_colors[index]}, {"LED" if self.leds[-1] else "no LED"}, {"star" if self.stars[-1] else "no star"}'
+		color = self.wire_colors[index]
+		if isinstance(color, tuple):
+			color = f'{color[0].name}-{color[1].name}'
+		else:
+			color = color.name
+		return f'{color}, {"LED" if self.leds[-1] else "no LED"}, {"star" if self.stars[-1] else "no star"}'
 
 	def wire_to_rules(self, index):
 		colors = self.wire_colors[index]
 		if isinstance(colors, tuple):
-			red = 'red' in colors
-			blue = 'blue' in colors
+			red = ComplicatedWires.Color.red in colors
+			blue = ComplicatedWires.Color.blue in colors
 		else:
-			red = colors == 'red'
-			blue = colors == 'blue'
+			red = colors == ComplicatedWires.Color.red
+			blue = colors == ComplicatedWires.Color.blue
 		return (red, blue, self.leds[index], self.stars[index])
 
 	def set_wire_rules(self, index, rules):
@@ -371,37 +378,40 @@ class ComplicatedWires(modules.Module):
 		return combinations
 
 	def get_svg(self, led):
-		needed_gradients = []
-
-		for coloring in self.wire_colors:
-			if isinstance(coloring, tuple) and coloring not in needed_gradients:
-				needed_gradients.append(coloring)
+		needed_gradients = {coloring for coloring in self.wire_colors if isinstance(coloring, tuple)}
 
 		svg = '<svg viewBox="0 0 348 348" fill="#fff" stroke="none" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
 		if needed_gradients:
 			svg += '<defs>'
 			for gradient in needed_gradients:
-				svg += f'<linearGradient id="{gradient[0]}-{gradient[1]}" x1="0%" x2="5%" y1="0%" y2="100%">'
+				svg += f'<linearGradient id="{gradient[0].name}-{gradient[1].name}" x1="0%" x2="5%" y1="0%" y2="100%">'
 				for percent in range(0, 100, 20):
-					svg += (f'<stop offset="{percent}%" stop-color="{ComplicatedWires.COLORS[gradient[0]]}"/>'
-						f'<stop offset="{percent + 10}%" stop-color="{ComplicatedWires.COLORS[gradient[0]]}"/>'
-						f'<stop offset="{percent + 10}%" stop-color="{ComplicatedWires.COLORS[gradient[1]]}"/>'
-						f'<stop offset="{percent + 20}%" stop-color="{ComplicatedWires.COLORS[gradient[1]]}"/>')
+					svg += (f'<stop offset="{percent}%" stop-color="{gradient[0].value}"/>'
+						f'<stop offset="{percent + 10}%" stop-color="{gradient[0].value}"/>'
+						f'<stop offset="{percent + 10}%" stop-color="{gradient[1].value}"/>'
+						f'<stop offset="{percent + 20}%" stop-color="{gradient[1].value}"/>')
 				svg += '</linearGradient>'
 			svg += '</defs>'
 		svg += ('<path stroke="#000" stroke-width="2" d="M5 5h338v388h-338z"/>'
-			'<path stroke="#000" stroke-width="2" d="M29 29v58h224v-58zm0 29h224M29 250h274v73h-274zm0 29h274M39 284h29l5 5v29h-29l-5 -5zM83 284h29l5 5v29h-29l-5 -5zM127 284h29l5 5v29h-29l-5 -5zM171 284h29l5 5v29h-29l-5 -5zM215 284h29l5 5v29h-29l-5 -5zM259 284h29l5 5v29h-29l-5 -5z"/>'
+			'<path stroke="#000" stroke-width="2" fill="#888" d="M29 29v58h224v-58zM29 250h274v74h-274z"/>'
+			'<path stroke="#000" stroke-width="2" d="M29 58h224M29 279h274M39 284h29l5 5v29h-29l-5 -5zM83 284h29l5 5v29h-29l-5 -5zM127 284h29l5 5v29h-29l-5 -5zM171 284h29l5 5v29h-29l-5 -5zM215 284h29l5 5v29h-29l-5 -5zM259 284h29l5 5v29h-29l-5 -5z"/>'
 			f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>')
 
-		for color, led, star, cut, position in zip(self.wire_colors, self.leds, self.stars, self.cut, self.positions):
+		for position in range(6):
+			if position in self.positions:
+				color = "#fec" if self.leds[self.positions.index(position)] else "#444"
+			else:
+				color = "#444"
+			svg += f'<circle fill="{color}" r="8.5" cx="{50 + position * 35}" cy="43" stroke="#000" stroke-width="2"/>'
+
+		for color, star, cut, position in zip(self.wire_colors, self.stars, self.cut, self.positions):
 			path = (ComplicatedWires.PATHS_CUT if cut else ComplicatedWires.PATHS_UNCUT)[position]
 			if isinstance(color, tuple):
-				color_str = f'url(#{color[0]}-{color[1]})'
+				color_str = f'url(#{color[0].name}-{color[1].name})'
 			else:
-				color_str = ComplicatedWires.COLORS[color]
+				color_str = color.value
 
-			svg += (f'<path stroke="#000" stroke-width="2" fill="{color_str}" d="{path}"/>'
-				f'<circle fill="{"#ffc" if led else "#444"}" r="8.5" cx="{50 + position * 35}" cy="43" stroke="#000" stroke-width="2"/>')
+			svg += f'<path stroke="#000" stroke-width="2" fill="{color_str}" d="{path}"/>'
 			if star:
 				svg += f'<path fill="#000" d="M{39 + position * 44} 284m6.5 15h8l2.5-8l2.5 8h8l-6.5 4.5l2.5 7.5l-6.5 -4.5l-6.5 4.5l2.5-7.5z"/>'
 		svg += '</svg>'
@@ -455,22 +465,22 @@ class WireSequence(modules.Module):
 	help_text = "`{cmd} cut 7` - cut wire 7. `{cmd} down`, `{cmd} d` - go to the next panel. `{cmd} up`, `{cmd} u` - go back to the previous panel. `{cmd} cut 1 3 d` - cut mutiple wires and continue."
 	module_score = 4
 
-	COLORS = {
-		"red":   "#ff0000",
-		"blue":  "#0000ff",
-		"black": "#000000",
-	}
+	@enum.unique
+	class Color(enum.Enum):
+		red = "#f00"
+		blue = "#00f"
+		black = "#000"
 
 	RULES = {
-		"red": [{2}, {1}, {0}, {0, 2}, {1}, {0, 2}, {0, 1, 2}, {0, 1}, {1}],
-		"blue": [{1}, {0, 2}, {1}, {0}, {1}, {1, 2}, {2}, {0, 2}, {0}],
-		"black": [{0, 1, 2}, {0, 2}, {1}, {0, 2}, {1}, {1, 2}, {0, 1}, {2}, {2}],
+		Color.red: [{2}, {1}, {0}, {0, 2}, {1}, {0, 2}, {0, 1, 2}, {0, 1}, {1}],
+		Color.blue: [{1}, {0, 2}, {1}, {0}, {1}, {1, 2}, {2}, {0, 2}, {0}],
+		Color.black: [{0, 1, 2}, {0, 2}, {1}, {0, 2}, {1}, {1, 2}, {0, 1}, {2}, {2}],
 	}
 
 	RULES_HUMMUS = {
-		"red": [{0, 2}, {1}, {0, 2}, {0, 1, 2}, {1}, set(), {1, 2}, {1, 2}, {0, 1, 2}],
-		"blue": [{2}, set(), {0, 2}, {0, 1, 2}, set(), {1, 2}, {0}, {2}, {0, 1}],
-		"black": [{0, 2}, set(), {1, 2}, {0}, set(), {1}, {2}, {2}, {2}],
+		Color.red: [{0, 2}, {1}, {0, 2}, {0, 1, 2}, {1}, set(), {1, 2}, {1, 2}, {0, 1, 2}],
+		Color.blue: [{2}, set(), {0, 2}, {0, 1, 2}, set(), {1, 2}, {0}, {2}, {0, 1}],
+		Color.black: [{0, 2}, set(), {1, 2}, {0}, set(), {1}, {2}, {2}, {2}],
 	}
 
 	PATHS_UNCUT = {
@@ -508,7 +518,7 @@ class WireSequence(modules.Module):
 
 		# This is how the game generates these wires. Please don't ask me about this code.
 		self.wires = []
-		for color in WireSequence.COLORS:
+		for color in WireSequence.Color:
 			for _ in range(9):
 				self.wires.append((color, random.randint(0, 2)))
 		self.wires = random.sample(self.wires, 10) # replicating an off-by-one error
@@ -534,7 +544,7 @@ class WireSequence(modules.Module):
 			counts[color] += 1
 
 			should_cut = "cut" if self.should_cut[index] else "don't count"
-			self.log(f"Wire {index + 1} to {'ABC'[to]} is the {counts[color]}. {color} wire - {should_cut}")
+			self.log(f"Wire {index + 1} to {'ABC'[to]} is the {counts[color]}. {color.name} wire - {should_cut}")
 
 	def get_svg(self, led):
 		svg = (
@@ -563,7 +573,7 @@ class WireSequence(modules.Module):
 				if wire is not None:
 					color, to = wire
 					path = WireSequence.PATHS_CUT[i, to] if self.cut[wire_index] else WireSequence.PATHS_UNCUT[i, to]
-					svg += f'<path fill="{WireSequence.COLORS[color]}" stroke="#000" stroke-width="2" d="{path}"/>'
+					svg += f'<path fill="{color.value}" stroke="#000" stroke-width="2" d="{path}"/>'
 
 		svg += f'</svg>'
 		return svg

@@ -1,5 +1,7 @@
 import random
+import enum
 import asyncio
+import edgework
 import modules
 
 class Button(modules.Module):
@@ -9,20 +11,42 @@ class Button(modules.Module):
 	help_text = "`{cmd} tap` to tap, `{cmd} hold` to hold, `{cmd} release 7` to release when any digit of the timer is 7."
 	module_score = 1
 
-	LABELS = ["ABORT", "DETONATE", "HOLD", "PRESS"]
-	COLORS = {
-		"red": "#ff0000",
-		"blue": "#0000ff",
-		"yellow": "#ffff00",
-		"white": "#ffffff"
+	@enum.unique
+	class Color(enum.Enum):
+		red = "#f00"
+		blue = "#00f"
+		yellow = "#ff0"
+		white = "#fff"
+
+	@enum.unique
+	class Label(enum.Enum):
+		ABORT = enum.auto()
+		DETONATE = enum.auto()
+		HOLD = enum.auto()
+		PRESS = enum.auto()
+
+	WHITE_TEXT = [Color.red, Color.blue]
+
+	RELEASE_RULES = {
+		Color.blue: 4,
+		Color.white: 1,
+		Color.yellow: 5,
+		Color.red: 1,
+	}
+
+	RELEASE_RULES_HUMMUS = {
+		Color.white: 3,
+		Color.yellow: 3,
+		Color.red: 5,
+		Color.blue: 4,
 	}
 
 	def __init__(self, bomb, ident):
 		super().__init__(bomb, ident)
-		self.button_label = random.choice(Button.LABELS)
-		self.button_color = random.choice(list(Button.COLORS.keys()))
-		self.log("button label: {:s}".format(self.button_label))
-		self.log("button color: {:s}".format(self.button_color))
+		self.button_label = random.choice(list(Button.Label))
+		self.button_color = random.choice(list(Button.Color))
+		self.log(f"button label: {self.button_label.name}")
+		self.log(f"button color: {self.button_color.name}")
 		self.strip_color = None
 		self.release_pending = None
 
@@ -31,7 +55,7 @@ class Button(modules.Module):
 			f'<svg viewBox="0 0 348 348" fill="none" stroke="none" strike-linejoin="round" stroke-linecap="butt" stroke-miterlimit="1">'
 			f'<path stroke="#000" fill="#fff" stroke-width="2" d="M5 5h338v338h-338z"/>'
 			f'<path stroke="#000" fill="#000" fill-opacity="0.1" stroke-width="2" d="M54 59h26v12h-26zm127 0h26v12h-26zm-97 4h92v8h-92z"/>'
-			f'<path stroke="#000" stroke-width="2" d="M273 110h45v196h-45z" fill="{Button.COLORS[self.strip_color] if self.strip_color is not None else "#000"}"/>'
+			f'<path stroke="#000" stroke-width="2" d="M273 110h45v196h-45z" fill="{self.strip_color.value if self.strip_color is not None else "#000"}"/>'
 			f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>')
 		if self.strip_color is None:
 			svg += '<path fill="#000" fill-opacity="0.1" stroke="#000" stroke-width="2" d="M17 71h225v235H17z"/>'
@@ -40,9 +64,9 @@ class Button(modules.Module):
 				'<path stroke-width="1.5" stroke="#000" fill="#000" fill-opacity="0.1" d="M17 63l16-8l20-20l-12-8zm36-28l-12-8h177l-12 8zm153 0l12-8l24 36l-16-8z"/>'
 				'<path stroke-width="2" stroke="#000" fill="#000" fill-opacity="0.1" d="M33 55l20-20h153l20 20z"/>')
 
-		svg += f'<circle fill="{Button.COLORS[self.button_color]}" stroke="#000" stroke-width="2" r="100" cx="130" cy="189"/>'
-		text_color = '#fff' if self.button_color in ['red', 'blue'] else '#000'
-		svg += f'<text x="130" y="200" fill="{text_color}" style="font-size:24pt;font-family:sans-serif;" text-anchor="middle">{self.button_label}</text>'
+		svg += f'<circle fill="{self.button_color.value}" stroke="#000" stroke-width="2" r="100" cx="130" cy="189"/>'
+		text_color = '#fff' if self.button_color in Button.WHITE_TEXT else '#000'
+		svg += f'<text x="130" y="200" fill="{text_color}" style="font-size:24pt;font-family:sans-serif;" text-anchor="middle">{self.button_label.name}</text>'
 		if self.strip_color is None:
 			svg += '<path stroke-width="1.5" stroke="#000" d="M17 71l24 24h177l24-24M17 306l24-24h177l24 24M41 95v187M218 95v187"/>'
 		svg += '</svg>'
@@ -60,17 +84,17 @@ class Button(modules.Module):
 		else:
 			self.log("tapping - correct")
 			await self.handle_solve(author)
-	
+
 	@modules.check_solve_cmd
 	@modules.noparts
 	async def cmd_hold(self, author):
 		if self.strip_color is not None:
 			return await self.do_view(f"{author.mention} The button is already being held.")
 
-		self.strip_color = random.choice(list(Button.COLORS.keys()))
+		self.strip_color = random.choice(list(Button.Color))
 		self.log('start holding, strip color: {:s}'.format(self.strip_color))
 		await self.do_view(f"{author.mention} The button is being held.")
-	
+
 	@modules.check_solve_cmd
 	async def cmd_release(self, author, parts):
 		if not parts or not parts[0].isdigit() or len(parts[0]) != 1:
@@ -96,22 +120,22 @@ class Button(modules.Module):
 				await self.handle_solve(author)
 			else:
 				await self.handle_strike(author)
-		
+
 	def should_hold(self):
 		if self.bomb.hummus:
-			if self.button_color == "yellow" and self.button_label == "PRESS":
+			if self.button_color == Button.Color.yellow and self.button_label == Button.Label.PRESS:
 				self.log('rule: yellow PRESS')
 				return True
-			elif self.button_color == "white" and self.bomb.has_lit_indicator("BOB"):
+			elif self.button_color == Button.Color.white and self.bomb.get_indicator(edgework.Indicator.BOB) is True:
 				self.log('rule: white with lit BOB')
 				return False
 			elif self.bomb.get_battery_count() > 1:
 				self.log('rule: more than one battery')
 				return True
-			elif self.button_color == "red":
+			elif self.button_color == Button.Color.red:
 				self.log('rule: red')
 				return False
-			elif self.button_color == "blue":
+			elif self.button_color == Button.Color.blue:
 				self.log('rule: blue')
 				return True
 			elif self.bomb.get_battery_count() > 2:
@@ -122,22 +146,22 @@ class Button(modules.Module):
 				self.log('rule: wildcard')
 				return True
 		else:
-			if self.button_color == "blue" and self.button_label == "ABORT":
+			if self.button_color == Button.Color.blue and self.button_label == Button.Label.ABORT:
 				self.log('rule: blue ABORT')
 				return True
-			elif self.bomb.get_battery_count() > 1 and self.button_label == "DETONATE":
+			elif self.bomb.get_battery_count() > 1 and self.button_label == Button.Label.DETONATE:
 				self.log('rule: more than one battery and DETONATE')
 				return False
-			elif self.button_color == "white" and self.bomb.has_lit_indicator("CAR"):
+			elif self.button_color == Button.Color.white and self.bomb.get_indicator(edgework.Indicator.CAR) is True:
 				self.log('rule: white with lit CAR')
 				return True
-			elif self.bomb.get_battery_count() > 2 and self.bomb.has_lit_indicator("FRK"):
+			elif self.bomb.get_battery_count() > 2 and self.bomb.get_indicator(edgework.Indicator.FRK) is True:
 				self.log('rule: more than two batteries and lit FRK')
 				return False
-			elif self.button_color == "yellow":
+			elif self.button_color == Button.Color.yellow:
 				self.log('rule: yellow')
 				return True
-			elif self.button_color == "red" and self.button_label == "HOLD":
+			elif self.button_color == Button.Color.red and self.button_label == Button.Label.HOLD:
 				self.log('rule: red HOLD')
 				return False
 			else:
@@ -146,10 +170,10 @@ class Button(modules.Module):
 
 	def get_release_digit(self):
 		if self.bomb.hummus:
-			return {"white": 3, "yellow": 3, "red": 5, "blue": 4}[self.strip_color]
+			return Button.RELEASE_RULES_HUMMUS[self.strip_color]
 		else:
-			return {"blue": 4, "white": 1, "yellow": 5, "red": 1}[self.strip_color]
-	
+			return Button.RELEASE_RULES[self.strip_color]
+
 	COMMANDS = {
 		"tap": cmd_tap,
 		"hold": cmd_hold,

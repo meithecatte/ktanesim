@@ -6,41 +6,12 @@ import asyncio
 import aiohttp
 import discord
 import modules
+import edgework
 import traceback
 from config import *
 
-class BatteryWidget:
-	def __init__(self, bomb):
-		self.battery_count = random.randint(1, 2)
-
-class IndicatorWidget:
-	INDICATORS = ['SND', 'CLR', 'CAR', 'IND', 'FRQ', 'SIG', 'NSA', 'MSA', 'TRN', 'BOB', 'FRK']
-
-	def __init__(self, bomb):
-		possible_indicators = list(set(self.INDICATORS) - set(ind.code for ind in bomb.edgework if isinstance(ind, IndicatorWidget)))
-		assert possible_indicators, "Somehow all 11 indicators were used even though 5 is the limit"
-		self.code = random.choice(possible_indicators)
-		self.lit = random.random() > 0.4
-
-	def __str__(self):
-		return ('*' if self.lit else '') + self.code
-
-class PortPlateWidget:
-	PORT_GROUPS = [['Serial', 'Parallel'], ['DVI', 'PS2', 'RJ45', 'StereoRCA']]
-
-	def __init__(self, bomb):
-		group = random.choice(self.PORT_GROUPS)
-		self.ports = []
-		for port in group:
-			if random.random() > 0.5:
-				self.ports.append(port)
-
-	def __str__(self):
-		return '[' + (', '.join(self.ports) if self.ports else 'Empty') + ']'
-
 class Bomb:
 	SERIAL_NUMBER_CHARACTERS = "ABCDEFGHIJKLMNEPQRSTUVWXZ0123456789"
-	EDGEWORK_WIDGETS = [BatteryWidget, IndicatorWidget, PortPlateWidget]
 	bombs = {}
 	hastebin_session = None
 	client = None
@@ -55,7 +26,7 @@ class Bomb:
 
 		self.edgework = []
 		for _ in range(5):
-			self.edgework.append(random.choice(Bomb.EDGEWORK_WIDGETS)(self))
+			self.edgework.append(random.choice(edgework.WIDGETS)(self))
 
 		self.modules = []
 		random.shuffle(modules)
@@ -261,25 +232,23 @@ class Bomb:
 		return list(filter(lambda widget: type(widget) is type_, self.edgework))
 
 	def get_battery_count(self):
-		return sum(widget.battery_count for widget in self.get_widgets(BatteryWidget))
+		return sum(widget.battery_count for widget in self.get_widgets(edgework.BatteryWidget))
 
 	def get_holder_count(self):
-		return len(self.get_widgets(BatteryWidget))
+		return len(self.get_widgets(edgework.BatteryWidget))
 
-	def has_lit_indicator(self, code):
-		assert code in IndicatorWidget.INDICATORS, "Bomb.has_lit_indicator: unknown indicator code"
-		for indicator in self.get_widgets(IndicatorWidget):
-			if indicator.lit and indicator.code == code:
-				return True
-
-		return False
+	def get_indicator(self, code):
+		assert isinstance(code, edgework.Indicator)
+		for indicator in self.get_widgets(edgework.IndicatorWidget):
+			if indicator.code == code:
+				return indicator.lit
+		return None
 
 	def has_port(self, port_type):
-		assert port_type in sum(PortPlateWidget.PORT_GROUPS, []), "Bomb.has_port: unknown port type"
-		for plate in self.get_widgets(PortPlateWidget):
+		assert isinstance(port_type, edgework.PortType)
+		for plate in self.get_widgets(edgework.PortPlateWidget):
 			if port_type in plate.ports:
 				return True
-
 		return False
 
 	def has_vowel(self):
@@ -290,16 +259,16 @@ class Bomb:
 		return False
 
 	def get_edgework(self):
-		edgework = [
+		widgets = [
 			'{:d}B {:d}H'.format(self.get_battery_count(), self.get_holder_count()),
-			' '.join(map(str, self.get_widgets(IndicatorWidget))),
-			' '.join(map(str, self.get_widgets(PortPlateWidget))),
+			' '.join(map(str, self.get_widgets(edgework.IndicatorWidget))),
+			' '.join(map(str, self.get_widgets(edgework.PortPlateWidget))),
 			self.serial]
-		return ' // '.join(widget for widget in edgework if widget != '')
+		return ' // '.join(widget for widget in widgets if widget != '')
 
 	def get_unclaimed(self):
 		return [module for module in self.modules if module.claim is None and not module.solved]
-	
+
 	def get_claimed(self):
 		return [module for module in self.modules if module.claim is not None and not module.solved]
 
