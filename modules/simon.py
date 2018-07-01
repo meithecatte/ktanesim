@@ -82,22 +82,21 @@ class SimonSays(modules.Module):
 	@modules.check_solve_cmd
 	async def cmd_press(self, author, parts):
 		if not parts:
-			await self.bomb.channel.send(f"{author.mention} What should I press?")
-			return
+			return await self.bomb.channel.send(f"{author.mention} What should I press?")
 
 		parsed = []
+		short_names = {x.name[:1]: x for x in SimonSays.Color}
 		for part in parts:
 			part = part.lower()
 			try:
 				parsed.append(SimonSays.Color[part])
 			except KeyError:
-				short_names = {x.name[:1]: x for x in SimonSays.Color}
 				for letter in part:
-					if letter in short_names:
+					try:
 						parsed.append(short_names[letter])
-					else:
-						await self.bomb.channel.send(f"{author.mention} Neither `{part}` nor `{letter}` is a color.")
-						return
+					except KeyError:
+						return await self.bomb.channel.send(f"{author.mention} Neither `{part}` nor `{letter}` is a color.")
+
 		self.log(f"Parsed: {' '.join(color.name for color in parsed)}")
 		small_progress = 0
 		solution = self.get_solution()
