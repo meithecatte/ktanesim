@@ -11,14 +11,12 @@ class Button(modules.Module):
 	help_text = "`{cmd} tap` to tap, `{cmd} hold` to hold, `{cmd} release 7` to release when any digit of the timer is 7."
 	module_score = 1
 
-	@enum.unique
 	class Color(enum.Enum):
 		red = "#f00"
 		blue = "#00f"
 		yellow = "#ff0"
 		white = "#fff"
 
-	@enum.unique
 	class Label(enum.Enum):
 		ABORT = enum.auto()
 		DETONATE = enum.auto()

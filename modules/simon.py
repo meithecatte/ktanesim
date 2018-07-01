@@ -12,7 +12,6 @@ class SimonSays(modules.Module):
 	help_text = "`{cmd} press red green blue yellow`, `{cmd} press rgby`. You must include the input from any previous stages."
 	module_score = 3
 
-	@enum.unique
 	class Color(enum.Enum):
 		red = enum.auto()
 		green = enum.auto()

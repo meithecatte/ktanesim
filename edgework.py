@@ -5,7 +5,6 @@ class BatteryWidget:
 	def __init__(self, bomb):
 		self.battery_count = random.randint(1, 2)
 
-@enum.unique
 class Indicator(enum.Enum):
 	SND = enum.auto()
 	CLR = enum.auto()
@@ -29,7 +28,6 @@ class IndicatorWidget:
 	def __str__(self):
 		return ('*' if self.lit else '') + self.code.name
 
-@enum.unique
 class PortType(enum.Enum):
 	Serial = enum.auto()
 	Parallel = enum.auto()
