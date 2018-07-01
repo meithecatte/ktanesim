@@ -98,7 +98,7 @@ class Keypad(modules.Module):
 					await self.handle_strike(author)
 					self.led[press] = '#000'
 					return
-		await self.do_view(f"{author.mention}")
+		await self.do_view(author.mention)
 	
 	COMMANDS = {
 		"press": cmd_press

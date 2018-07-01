@@ -584,7 +584,7 @@ class WireSequence(modules.Module):
 		if self.current_page == 0:
 			return await self.do_view(f"{author.mention} This is the first panel already!")
 		self.current_page -= 1
-		return await self.do_view(f"{author.mention}")
+		return await self.do_view(author.mention)
 
 	@modules.check_solve_cmd
 	@modules.noparts
@@ -605,7 +605,7 @@ class WireSequence(modules.Module):
 		if self.current_page >= 4:
 			self.solved = True
 
-		return await self.do_view(f"{author.mention}")
+		return await self.do_view(author.mention)
 
 	@modules.check_solve_cmd
 	async def cmd_cut(self, author, parts):
@@ -652,7 +652,7 @@ class WireSequence(modules.Module):
 		if go_to_next_page:
 			return await self.cmd_down(author, [])
 		else:
-			return await self.do_view(f"{author.mention}")
+			return await self.do_view(author.mention)
 
 	COMMANDS = {
 		'cut': cmd_cut,
