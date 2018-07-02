@@ -142,7 +142,7 @@ class Module(metaclass=CommandConsolidator):
 		else:
 			led = '#fff'
 
-		# unsafe is needed to render images on, among others, the Keypad module, and does not pose a security risk since the user has no control over the SVG
+		# unsafe is needed to include bitmaps, and does not pose a security risk since the user has no control over the SVG
 		return cairosvg.svg2png(self.get_svg(led).encode(), unsafe=True), 'render.png'
 
 	@noparts
