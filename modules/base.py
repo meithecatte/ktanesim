@@ -17,14 +17,13 @@ def noparts(func):
 
 def check_solve_cmd(func):
 	async def wrapper(self, author, parts):
-		await self.lock.acquire()
-		if self.solved:
-			await self.bomb.channel.send(f"{author.mention} {self} has already been solved.")
-		elif self.claim and self.claim.id != author.id:
-			await self.bomb.channel.send(f"{author.mention} {self} has been claimed by {self.claim}.")
-		else:
-			await func(self, author, parts)
-		self.lock.release()
+		with await self.lock.acquire():
+			if self.solved:
+				await self.bomb.channel.send(f"{author.mention} {self} has already been solved.")
+			elif self.claim and self.claim.id != author.id:
+				await self.bomb.channel.send(f"{author.mention} {self} has been claimed by {self.claim}.")
+			else:
+				await func(self, author, parts)
 	return wrapper
 
 def gif_append(im, blob, delay):

@@ -81,7 +81,7 @@ async def on_message(msg):
 		else:
 			await channel.send(f"{author.mention} No such command: `{PREFIX}{command}`. Did you miss the module number? Try `{PREFIX}help` for help.")
 	except Exception:
-		await channel.send(f"{author.mention} An unidentified ~~flying object~~ error has occured during handling of this command. Please get this blob of undecipherable text to one of our code monkeys, along with a description of what you did to cause this and the log from this bomb, if applicable: ```\n{traceback.format_exc()}```")
-		print(f"Exception in {channel}")
+		await channel.send(f"{author.mention} An unidentified ~~flying object~~ error has occured during handling of this command. Please get the log for this bomb to one of our code monkeys, along with a description of what you did to cause this")
+		print(f"Exception in {channel}:\n{traceback.format_exec()}")
 
 client.run(TOKEN)
