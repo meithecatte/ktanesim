@@ -358,11 +358,11 @@ class ComplicatedWires(modules.Module):
 		if red and blue:
 			self.wire_colors[index] = ('red', 'blue')
 		elif red:
-			self.wire_colors[index] = 'red'
+			self.wire_colors[index] = ComplicatedWires.Color.red
 		elif blue:
-			self.wire_colors[index] = 'blue'
+			self.wire_colors[index] = ComplicatedWires.Color.blue
 		else:
-			self.wire_colors[index] = 'white'
+			self.wire_colors[index] = ComplicatedWires.Color.white
 		self.leds[index] = led
 		self.stars[index] = star
 		self.log(f'Overwrote wire {index + 1} with {self.wire_to_string(index)}')
