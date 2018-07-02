@@ -52,20 +52,32 @@ class Module(metaclass=CommandConsolidator):
 	strike_penalty = 6
 
 	def __init__(self, bomb, ident):
-		self.bomb = bomb
-		self.ident = ident
-		self.solved = False
+		self._bomb = bomb
+		self._ident = ident
+		self._solved = False
 		self.claim = None
 		self.take_pending = None
 		self.last_img = None
 		self.log_data = []
+
+	@property
+	def bomb(self):
+		return self._bomb
+
+	@property
+	def ident(self):
+		return self._ident
+
+	@property
+	def solved(self):
+		return self._solved
 
 	def __str__(self):
 		return f'{self.display_name} (#{self.ident})'
 
 	def log(self, msg):
 		self.log_data.append((self.bomb.get_time_formatted(), msg))
-	
+
 	def get_log(self):
 		return '\n'.join('[{:s}@{:s}] {:s}'.format(x[0], str(self), x[1]) for x in self.log_data)
 
@@ -95,7 +107,7 @@ class Module(metaclass=CommandConsolidator):
 
 	async def handle_solve(self, author):
 		self.log('module solved')
-		self.solved = True
+		self._solved = True
 		if self.claim is None: self.claim = author
 		leaderboard.record_solve(author, self.module_score)
 		await self.do_view(f"{author.mention} solved {self}. {self.module_score} {'points have' if self.module_score > 1 else 'point has'} been awarded.")
@@ -166,7 +178,7 @@ class Module(metaclass=CommandConsolidator):
 			self.claim = author
 			return True
 		return False
-	
+
 	@noparts
 	async def cmd_claimview(self, author):
 		if await self.do_claim(author):
