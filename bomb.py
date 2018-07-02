@@ -48,7 +48,7 @@ class Bomb:
 		Bomb.shutdown_mode = True
 
 		for bomb_channel in Bomb.bombs:
-			asyncio.ensure_future(bomb_channel.send(f"The bot is going into shutdown mode. No new bombs can be started."))
+			asyncio.ensure_future(bomb_channel.send(f"The bot is going into shutdown mode. No new bombs can be started and the bot will go offline when all currently running bombs are solved or detonated."))
 
 		if not Bomb.bombs:
 			await channel.send(f"***oof***")
