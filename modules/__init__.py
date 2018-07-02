@@ -7,6 +7,7 @@ from modules.whos_on_first import WhosOnFirst
 from modules.memory import Memory
 from modules.morse import MorseCode
 from modules.maze import Maze
+from modules.password import Password
 
 VANILLA_MODULES = {
 	"wires": Wires,
@@ -19,6 +20,7 @@ VANILLA_MODULES = {
 	"complicatedWires": ComplicatedWires,
 	"wireSequence": WireSequence,
 	"maze": Maze,
+	"password": Password,
 }
 
 MODDED_MODULES = {
