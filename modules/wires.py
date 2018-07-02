@@ -589,6 +589,9 @@ class WireSequence(modules.Module):
 	@modules.check_solve_cmd
 	@modules.noparts
 	async def cmd_down(self, author):
+		return await self.do_down(author)
+
+	async def do_down(self, author):
 		begin = 3 * self.current_page
 		end = begin + 3
 		page_should_cut = self.should_cut[begin:end]
@@ -650,7 +653,7 @@ class WireSequence(modules.Module):
 				return await self.handle_strike(author)
 
 		if go_to_next_page:
-			return await self.cmd_down(author, [])
+			return await self.do_down(author)
 		else:
 			return await self.do_view(author.mention)
 

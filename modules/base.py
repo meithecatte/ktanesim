@@ -17,7 +17,7 @@ def noparts(func):
 
 def check_solve_cmd(func):
 	async def wrapper(self, author, parts):
-		with await self.lock.acquire():
+		with await self.lock:
 			if self.solved:
 				await self.bomb.channel.send(f"{author.mention} {self} has already been solved.")
 			elif self.claim and self.claim.id != author.id:
