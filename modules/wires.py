@@ -603,9 +603,9 @@ class WireSequence(modules.Module):
 			self.solved_pages = self.current_page
 
 		if self.current_page >= 4:
-			self.solved = True
-
-		return await self.do_view(author.mention)
+			return await self.handle_solve(author)
+		else:
+			return await self.do_view(author.mention)
 
 	@modules.check_solve_cmd
 	async def cmd_cut(self, author, parts):
