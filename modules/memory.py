@@ -72,7 +72,7 @@ class Memory(modules.Module):
 			elif self.stage == 1:
 				if self.display == 2:   return self.buttons.index(4)
 				elif self.display == 4: return 0
-				else:                   return self.pressed_position[0]
+				else:                   return self.pressed_positions[0]
 			elif self.stage == 2:
 				if self.display == 1:   return self.buttons.index(self.pressed_labels[0])
 				elif self.display == 2: return 1
