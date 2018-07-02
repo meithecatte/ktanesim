@@ -215,6 +215,11 @@ class Bomb:
 		await self.channel.send(f"{':boom:' if boom else ''} The bomb has been {'**detonated**' if boom else 'defused'} after {self.get_time_formatted()} and {self.strikes} strike{'s' if self.strikes != 1 else ''}. {logurl}", file=file_)
 		del Bomb.bombs[self.channel]
 		if Bomb.shutdown_mode and not Bomb.bombs:
+			owner_user = discord.utils.find(lambda u: u.id == BOT_OWNER, Bomb.client.users)
+			owner_dm = owner_user.dm_channel
+			if owner_dm is None:
+				owner_dm = await owner_user.create_dm()
+			await owner_dm.send('Shutdown complete.')
 			Bomb.client.loop.stop()
 		else:
 			await Bomb.update_presence()
