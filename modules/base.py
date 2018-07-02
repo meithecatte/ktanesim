@@ -17,12 +17,14 @@ def noparts(func):
 
 def check_solve_cmd(func):
 	async def wrapper(self, author, parts):
+		await self.lock.acquire()
 		if self.solved:
 			await self.bomb.channel.send(f"{author.mention} {self} has already been solved.")
 		elif self.claim and self.claim.id != author.id:
 			await self.bomb.channel.send(f"{author.mention} {self} has been claimed by {self.claim}.")
 		else:
 			await func(self, author, parts)
+		self.lock.release()
 	return wrapper
 
 def gif_append(im, blob, delay):
@@ -59,6 +61,7 @@ class Module(metaclass=CommandConsolidator):
 		self.take_pending = None
 		self.last_img = None
 		self.log_data = []
+		self.lock = asyncio.Lock()
 
 	@property
 	def bomb(self):

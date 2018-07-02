@@ -46,7 +46,6 @@ class Button(modules.Module):
 		self.log(f"button label: {self.button_label.name}")
 		self.log(f"button color: {self.button_color.name}")
 		self.strip_color = None
-		self.release_pending = None
 
 	def get_svg(self, led):
 		svg = (
@@ -99,11 +98,8 @@ class Button(modules.Module):
 			await self.usage(author)
 		elif self.strip_color is None:
 			await self.bomb.channel.send(f"{author.mention} The button is not being held. Hold it with `!{PREFIX}{self.ident} hold` first.")
-		elif self.release_pending is not None:
-			await self.bomb.channel.send(f"{author.mention} I'm already releasing the button when I see a {self.release_pending}.")
 		else:
 			answer = parts[0]
-			self.release_pending = answer
 			time = self.bomb.get_time_formatted()
 			while answer not in time:
 				await asyncio.sleep(0.5)
@@ -111,7 +107,6 @@ class Button(modules.Module):
 			expected = self.get_release_digit()
 			self.log("Releasing at {:s}, expected {:d}, player answered {:s}".format(time, expected, answer))
 			self.strip_color = None
-			self.release_pending = None
 			should_hold = self.should_hold()
 			self.log("should{:s} hold".format("n't" if not should_hold else ''))
 			if should_hold and str(expected) in time:
