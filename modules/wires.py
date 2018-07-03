@@ -343,7 +343,7 @@ class ComplicatedWires(modules.Module):
 			color = f'{color[0].name}-{color[1].name}'
 		else:
 			color = color.name
-		return f'{color}, {"LED" if self.leds[-1] else "no LED"}, {"star" if self.stars[-1] else "no star"}'
+		return f'{color}, {"LED" if self.leds[index] else "no LED"}, {"star" if self.stars[index] else "no star"}'
 
 	def wire_to_rules(self, index):
 		colors = self.wire_colors[index]
