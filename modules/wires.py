@@ -330,7 +330,9 @@ class ComplicatedWires(modules.Module):
 
 		if not encountered_cut:
 			self.log('No wires to cut, overwriting a random wire...')
-			self.set_wire_rules(random.randint(0, wire_count - 1), random.choice(cut_combinations))
+			index = random.randint(0, wire_count - 1)
+			self.set_wire_rules(index, random.choice(cut_combinations))
+			self.should_cut[index] = True
 
 	def get_rules(self):
 		return ComplicatedWires.RULES_HUMMUS if self.bomb.hummus else ComplicatedWires.RULES
