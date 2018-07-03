@@ -196,7 +196,7 @@ class Bomb:
 
 	async def bomb_end(self, boom=False):
 		if Bomb.hastebin_session is None:
-			Bomb.hastebin_session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5))
+			Bomb.hastebin_session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10))
 
 		discord_upload = True
 		log = self.get_log()
@@ -315,7 +315,7 @@ class Bomb:
 		elif command.isdigit():
 			ident = int(command)
 			if ident not in range(1, len(self.modules) + 1):
-				await self.channel.send(f"{author.mention} Double check the module number - there are only {len(self.modules)} modules on this bomb!")
+				await self.channel.send(f"{author.mention} Double check the module number - there {'are' if len(self.modules) != 1 else 'is'} only {len(self.modules)} {'modules' if len(self.modules) != 1 else 'module'} on this bomb!")
 			elif not parts:
 				await self.channel.send(f"{author.mention} What should I do with module {ident}? You need to give me a command!")
 			else:
