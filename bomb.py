@@ -124,6 +124,9 @@ class Bomb:
 			candidates_modded = modules.MODDED_MODULES.copy()
 			module_count = int(parts[0])
 
+			if module_count > 101:
+				return await channel.send(f"{author.mention} Nope.")
+
 			if module_count == 0:
 				return await channel.send(f"{author.mention} What would it even mean for a bomb to have no modules? :thinking:")
 
@@ -177,11 +180,14 @@ class Bomb:
 					count = 1
 				if module not in candidates:
 					return await channel.send(f"{author.mention} No such module: `{module}`")
+
+				if count > 101:
+					return await channel.send(f"{author.mention} Nope.")
+
 				chosen_modules.extend([candidates[module]] * count)
 
-		if len(chosen_modules) > 101:
-			print(f"{author} has requested a bomb with {len(chosen_modules)} modules. Wut?")
-			return await channel.send(f"{author.mention} Nope.")
+				if len(chosen_modules) > 101:
+					return await channel.send(f"{author.mention} Nope.")
 
 		bomb = Bomb(channel, chosen_modules, hummus)
 		Bomb.bombs[channel] = bomb
