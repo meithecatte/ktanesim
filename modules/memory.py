@@ -81,7 +81,7 @@ class Memory(modules.Module):
 			elif self.stage == 3:
 				return self.pressed_positions[[2, 0, 1, 2][self.display - 1]]
 			else:
-				return self.buttons.index(self.pressed_labels([[1, 3, 0, 2][self.display - 1]]))
+				return self.buttons.index(self.pressed_labels[[1, 3, 0, 2][self.display - 1]])
 		else:
 			if self.stage == 0:
 				return [1, 1, 2, 3][self.display - 1]
