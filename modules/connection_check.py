@@ -105,12 +105,13 @@ class ConnectionCheck(modules.Module):
 						else:
 							return await self.bomb.channel.send(f"{author.mention} What does `{char}` mean? Or did you mean `{part}`? Either way, please use `green`, `true`, `yes`, `red`, `false`, `no`, `g`, `t`, `y`, `r`, `f`, or `n`.")
 		self.log(f"Parsed: {parsed!r}")
-		if len(parsed) > 4:
-			return await self.bomb.channel.send(f"{author.mention} I need only 4 answers, and you gave me {len(parsed)}! That's way too much!")
-		elif parsed and len(parsed) < 4:
-			return await self.bomb.channel.send(f"{author.mention} Sorry, I only got {len(parsed)} out of 4 answers. Could you please repeat your solution to me?")
-		else:
-			self.on = parsed
+		if parsed:
+			if len(parsed) > 4:
+				return await self.bomb.channel.send(f"{author.mention} I need only 4 answers, and you gave me {len(parsed)}! That's way too much!")
+			elif len(parsed) < 4:
+				return await self.bomb.channel.send(f"{author.mention} Sorry, I only got {len(parsed)} out of 4 answers. Could you please repeat your solution to me?")
+			else:
+				self.on = parsed
 
 		if self.on == self.expected:
 			return await self.handle_solve(author)
