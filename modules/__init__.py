@@ -1,4 +1,5 @@
 from modules.base import Module, noparts, check_solve_cmd, gif_append, gif_output
+
 from modules.wires import Wires, ComplicatedWires, WireSequence
 from modules.button import Button
 from modules.keypad import Keypad
@@ -8,6 +9,8 @@ from modules.memory import Memory
 from modules.morse import MorseCode
 from modules.maze import Maze
 from modules.password import Password
+
+from modules.connection_check import ConnectionCheck
 
 VANILLA_MODULES = {
 	"wires": Wires,
@@ -24,6 +27,7 @@ VANILLA_MODULES = {
 }
 
 MODDED_MODULES = {
+	"connectionCheck": ConnectionCheck,
 }
 
 async def cmd_modules(channel, author, parts):
