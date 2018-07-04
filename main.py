@@ -45,12 +45,14 @@ async def on_ready():
 	print('Logged in:', client.user.id, client.user.name)
 	await Bomb.update_presence()
 
+UNICODE_TRANSLATION_TABLE = {ord(x): "'" for x in "`\u2018\u2019\u2032"}
+
 @client.event
 async def on_message(msg):
 	if not isinstance(msg.channel, discord.channel.DMChannel) and msg.channel.id not in ALLOWED_CHANNELS: return
 	if not msg.content.startswith(PREFIX): return
 
-	parts = msg.content[len(PREFIX):].strip().split()
+	parts = msg.content[len(PREFIX):].translate(UNICODE_TRANSLATION_TABLE).strip().split()
 	command = parts.pop(0).lower()
 	channel = msg.channel
 	author = msg.author
