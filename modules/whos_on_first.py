@@ -126,6 +126,8 @@ class WhosOnFirst(modules.Module):
 		button = ' '.join(parts).upper()
 		button = button.replace("‘", "'");
 		button = button.replace("`", "'");
+		button = button.replace("’", "'");
+		button = button.replace("′", "'");
 
 		if button not in sum(WhosOnFirst.BUTTON_GROUPS, []):
 			return await self.bomb.channel.send(f"{author.mention} \"{button}\" isn't a valid word.")
