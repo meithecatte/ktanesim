@@ -187,10 +187,16 @@ class Hexamaze(modules.Module):
 		self.maze_center = q, r
 		self.maze_rotation = random.randint(0, 5)
 		self.pawn_color = random.randint(0, 5)
-		position_options = set(Hexamaze.grid_iterate())
-		self.log(f"{len(position_options)} options")
 		self.solution_edge = Hexamaze.EDGES[(self.maze_rotation + self.pawn_color) % 6]
 		self.solution_directions = [(self.pawn_color + self.maze_rotation + x) % 6 for x in range(2)]
+
+		position_options = set()
+
+		for cell in Hexamaze.grid_iterate():
+			if self.small2big(cell) not in Hexamaze.MARKINGS:
+				position_options.add(cell)
+
+		self.log(f"{len(position_options)} options")
 		floodfill_queue = []
 		floodfill_distances = {}
 
