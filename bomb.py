@@ -196,7 +196,9 @@ class Bomb:
 
 	async def bomb_end(self, boom=False):
 		if Bomb.hastebin_session is None:
-			Bomb.hastebin_session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10))
+			Bomb.hastebin_session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=HASTEBIN_TIMEOUT))
+
+		send_first_message_coro = asyncio.ensure_future(self.channel.send(f"{':boom:' if boom else ''} The bomb has been {'**detonated**' if boom else 'defused'} after {self.get_time_formatted()} and {self.strikes} strike{'s' if self.strikes != 1 else ''}."))
 
 		discord_upload = True
 		log = self.get_log()
@@ -210,6 +212,8 @@ class Bomb:
 					logurl = f"Hastebin log upload failed with error message, uploading to discord: `{decoded['message']}`"
 				else:
 					logurl = f"Hastebin log upload failed with no error message, uploading to discord: `{repr(decoded)}`"
+		except asyncio.TimeoutError:
+			logurl = f"Hastebin log upload failed with timeout, uploading to discord:"
 		except Exception:
 			logurl = f"Hastebin log upload failed with exception, uploading to discord: ```\n{traceback.format_exc()}```"
 
@@ -218,7 +222,8 @@ class Bomb:
 		else:
 			file_ = None
 
-		await self.channel.send(f"{':boom:' if boom else ''} The bomb has been {'**detonated**' if boom else 'defused'} after {self.get_time_formatted()} and {self.strikes} strike{'s' if self.strikes != 1 else ''}. {logurl}", file=file_)
+		await asyncio.gather(send_first_message_coro)
+		await self.channel.send(logurl, file=file_)
 		del Bomb.bombs[self.channel]
 		if Bomb.shutdown_mode and not Bomb.bombs:
 			owner_user = discord.utils.find(lambda u: u.id == BOT_OWNER, Bomb.client.users)
