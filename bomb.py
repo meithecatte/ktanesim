@@ -202,20 +202,24 @@ class Bomb:
 
 		discord_upload = True
 		log = self.get_log()
-		try:
-			async with self.hastebin_session.post('https://hastebin.com/documents', data=log.encode()) as resp:
-				decoded = await resp.json()
-				if 'key' in decoded:
-					logurl = f"Log: https://hastebin.com/{decoded['key']}.txt"
-					discord_upload = False
-				elif 'message' in decoded:
-					logurl = f"Hastebin log upload failed with error message, uploading to discord: `{decoded['message']}`"
-				else:
-					logurl = f"Hastebin log upload failed with no error message, uploading to discord: `{repr(decoded)}`"
-		except asyncio.TimeoutError:
-			logurl = f"Hastebin log upload failed with timeout, uploading to discord:"
-		except Exception:
-			logurl = f"Hastebin log upload failed with exception, uploading to discord: ```\n{traceback.format_exc()}```"
+
+		if DEBUG_MODE:
+			logurl = f"Debug mode enabled - uploading log to discord instead of hastebin"
+		else:
+			try:
+				async with self.hastebin_session.post('https://hastebin.com/documents', data=log.encode()) as resp:
+					decoded = await resp.json()
+					if 'key' in decoded:
+						logurl = f"Log: https://hastebin.com/{decoded['key']}.txt"
+						discord_upload = False
+					elif 'message' in decoded:
+						logurl = f"Hastebin log upload failed with error message, uploading to discord: `{decoded['message']}`"
+					else:
+						logurl = f"Hastebin log upload failed with no error message, uploading to discord: `{repr(decoded)}`"
+			except asyncio.TimeoutError:
+				logurl = f"Hastebin log upload failed with timeout, uploading to discord:"
+			except Exception:
+				logurl = f"Hastebin log upload failed with exception, uploading to discord: ```\n{traceback.format_exc()}```"
 
 		if discord_upload:
 			file_ = discord.File(io.StringIO(log), filename='ktanesim.log')

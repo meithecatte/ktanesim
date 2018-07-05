@@ -79,10 +79,17 @@ class Module(metaclass=CommandConsolidator):
 		return f'{self.display_name} (#{self.ident})'
 
 	def log(self, msg):
-		self.log_data.append((self.bomb.get_time_formatted(), msg))
+		entry = self.bomb.get_time_formatted(), msg
+		self.log_data.append(entry)
+		if DEBUG_MODE:
+			print(self.log_entry_str(entry))
 
 	def get_log(self):
-		return '\n'.join('[{:s}@{:s}] {:s}'.format(x[0], str(self), x[1]) for x in self.log_data)
+		return '\n'.join(self.log_entry_str(entry) for entry in self.log_data)
+
+	def log_entry_str(self, entry):
+		time, message = entry
+		return f'[{time}@{self}] {message}'
 
 	def get_manual(self):
 		return f"https://ktane.timwi.de/manual/{urlencode(self.manual_name)}.html" + ('?VanillaRuleSeed=2' if self.supports_hummus and self.bomb.hummus else '')
