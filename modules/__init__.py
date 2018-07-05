@@ -11,6 +11,7 @@ from modules.maze import Maze
 from modules.password import Password
 
 from modules.connection_check import ConnectionCheck
+from modules.hexamaze import Hexamaze
 
 VANILLA_MODULES = {
 	"wires": Wires,
@@ -28,6 +29,7 @@ VANILLA_MODULES = {
 
 MODDED_MODULES = {
 	"connectionCheck": ConnectionCheck,
+	"hexamaze": Hexamaze,
 }
 
 async def cmd_modules(channel, author, parts):
