@@ -189,6 +189,7 @@ class Hexamaze(modules.Module):
 		self.pawn_color = random.randint(0, 5)
 		self.solution_edge = Hexamaze.EDGES[(self.maze_rotation + self.pawn_color) % 6]
 		self.solution_directions = [(self.pawn_color + self.maze_rotation + x) % 6 for x in range(2)]
+		self.visible_walls = set()
 
 		position_options = set()
 
@@ -289,7 +290,7 @@ class Hexamaze(modules.Module):
 		UL = f"l-{EDGE / 2}-{YSCALE}"
 		DR = f"l{EDGE / 2} {YSCALE}"
 		DL = f"l-{EDGE / 2} {YSCALE}"
-		return f"M{sx} {sy}" + f"{R}{UR}" * 3 + f"{R}{DR}" * 4 + f"{DL}{DR}" * 3 + f"{DL}{L}" * 4 + f"{UL}{L}" * 3 + f"{UL}{UR}" * 4
+		return f"M{sx} {sy}" + f"{R}{UR}" * 3 + f"{R}{DR}" * 4 + f"{DL}{DR}" * 3 + f"{DL}{L}" * 4 + f"{UL}{L}" * 3 + f"{UL}{UR}" * 3 + f"{UL}z"
 	BORDER_PATH = generate_border(EDGE, XSCALE, YSCALE)
 	del generate_border
 
@@ -311,20 +312,26 @@ class Hexamaze(modules.Module):
 	del generate_buttons
 
 	def get_svg(self, led):
-		svg = ('<svg viewBox="0 0 348 348" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="butt" stroke-miterlimit="10">'
+		def to_image_coords(cell):
+			q, r = cell
+			return 174 + q * Hexamaze.XSCALE, 174 + (q + 2 * r) * Hexamaze.YSCALE
+
+		svg = ('<svg viewBox="0 0 348 348" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="butt" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink">'
 			'<path stroke="#000" fill="#fff" d="M5 5h338v338h-338z"/>'
 			f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15"/>'
-			f'<path stroke="#ccc" stroke-width="18" d="{Hexamaze.BORDER_PATH}"/>'
+			f'<path id="display" stroke="#ccc" stroke-width="18" d="{Hexamaze.BORDER_PATH}"/>'
 			f'<path stroke="#ccc" stroke-width="12" d="{Hexamaze.BUTTON_PATH}"/>'
-			f'<path fill="#000" d="{Hexamaze.BORDER_PATH}{Hexamaze.BUTTON_PATH}"/>')
+			f'<path fill="#000" d="{Hexamaze.BORDER_PATH}{Hexamaze.BUTTON_PATH}"/>'
+			'<clipPath id="clip">'
+			'<use xlink:href="#display"/>'
+			'</clipPath>'
+			'<g clip-path="url(#clip)">')
 
 		for cell in Hexamaze.grid_iterate():
-			q, r = cell
-			x = 174 + q * Hexamaze.XSCALE
-			y = 174 + (q + 2 * r) * Hexamaze.YSCALE
+			x, y = to_image_coords(cell)
 			pawn = self.position == cell
 			big_maze_coords = self.small2big(cell)
-			MARKING_SCALE = 0.8
+			MARKING_SCALE = 0.7
 			if big_maze_coords in Hexamaze.MARKINGS:
 				marking = Hexamaze.MARKINGS[big_maze_coords]
 				# All markings have 120-degrees rotational symmetry
@@ -351,13 +358,28 @@ class Hexamaze(modules.Module):
 					svg += (f'<path stroke="#fff" d="M{x - Hexamaze.YSCALE * MARKING_SCALE} {y}'
 						f'l{Hexamaze.YSCALE * MARKING_SCALE * 3 / 2} {Hexamaze.EDGE * MARKING_SCALE * 3 / 4}'
 						f'v-{Hexamaze.EDGE * MARKING_SCALE * 3 / 2}z"/>')
-				else:
-					assert marking == Hexamaze.Marking.triangle_right
+				elif marking == Hexamaze.Marking.triangle_right:
 					svg += (f'<path stroke="#fff" d="M{x + Hexamaze.YSCALE * MARKING_SCALE} {y}'
 						f'l-{Hexamaze.YSCALE * MARKING_SCALE * 3 / 2} {Hexamaze.EDGE * MARKING_SCALE * 3 / 4}'
 						f'v-{Hexamaze.EDGE * MARKING_SCALE * 3 / 2}z"/>')
+				else:
+					assert False
 			svg += f'<circle cx="{x}" cy="{y}" r="{6 if pawn else 4}" fill="{Hexamaze.PAWN_COLORS[self.pawn_color] if pawn else "#ccc"}"/>'
-		svg += '</svg>'
+
+		wall_path = ""
+		for cell, direction in self.visible_walls:
+			x, y = to_image_coords(cell)
+			if direction == 0:
+				wall_path += f'M{x - Hexamaze.EDGE} {y}l{Hexamaze.EDGE / 2}-{Hexamaze.YSCALE}'
+			elif direction == 1:
+				wall_path += f'M{x - Hexamaze.EDGE / 2} {y - Hexamaze.YSCALE}h{Hexamaze.EDGE}'
+			elif direction == 2:
+				wall_path += f'M{x + Hexamaze.EDGE} {y}l-{Hexamaze.EDGE / 2}-{Hexamaze.YSCALE}'
+			else:
+				assert False
+		svg += (f'<path stroke-linecap="round" stroke-width="4" stroke="#fff" d="{wall_path}"/>'
+			'</g>'
+			'</svg>')
 		return svg
 
 	MOVE_STRINGS = {
@@ -393,6 +415,8 @@ class Hexamaze(modules.Module):
 					self.position = new_position
 			else:
 				self.log("WALL!")
+				if not Hexamaze.is_oob(Hexamaze.get_neighbor(self.position, move)):
+					self.visible_walls.add(Hexamaze.normalize_wall(self.position, move))
 				return await self.handle_strike(author)
 			self.log(f"Position: {self.position}")
 
