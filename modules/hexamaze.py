@@ -149,11 +149,16 @@ class Hexamaze(modules.Module):
 		return q, r
 
 	@staticmethod
-	def big_has_wall(coords, direction):
+	def normalize_wall(coords, direction):
 		if direction < 3:
-			return Hexamaze.WALLS[coords][direction]
+			return coords, direction
 		else:
-			return Hexamaze.WALLS[Hexamaze.get_neighbor(coords, direction)][direction % 3]
+			return Hexamaze.get_neighbor(coords, direction), direction % 3
+
+	@staticmethod
+	def big_has_wall(coords, direction):
+		coords, direction = Hexamaze.normalize_wall(coords, direction)
+		return Hexamaze.WALLS[coords][direction]
 
 	@staticmethod
 	def vertical_range(q, original):
