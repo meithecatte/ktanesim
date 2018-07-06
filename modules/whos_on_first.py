@@ -105,10 +105,12 @@ class WhosOnFirst(modules.Module):
 			f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>'
 			'<path fill="#000" stroke="#000" stroke-width="2" d="M34 25h230v67h-232zM277 106h52v208h-52z"/>'
 			'<path stroke="#000" d="M34 125h106v44h-106zM158 125h106v44h-106zM34 202h106v44h-106zM158 202h106v44h-106zM34 270h106v44h-106zM158 270h106v44h-106z"/>' +
-			'<path fill="{color}" stroke="{color}" stroke-width="2" d="M290 208h28v16h-28z"/>'.format(color='#0f0' if self.stage > 2 else '#fff') +
-			'<path fill="{color}" stroke="{color}" stroke-width="2" d="M290 245h28v16h-28z"/>'.format(color='#0f0' if self.stage > 1 else '#fff') +
-			'<path fill="{color}" stroke="{color}" stroke-width="2" d="M290 281h28v16h-28z"/>'.format(color='#0f0' if self.stage > 0 else '#fff') +
 			'<text x="150" y="72" text-anchor="middle" style="font-family:sans-serif;font-size:28pt;">{:s}</text>'.format(self.display))
+
+		for i in range(3):
+			color = '#0f0' if self.stage > i else '#fff'
+			svg += f'<path fill="{color}" stroke="{color}" stroke-width="2" d="M288 {257 - 57 * i}h30v20h-30z"/>'
+
 		for index, text in enumerate(self.buttons):
 			x = [87, 211][index % 2]
 			y = [156, 233, 301][index // 2]
