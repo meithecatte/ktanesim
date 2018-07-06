@@ -147,7 +147,7 @@ class Bomb:
 			candidates_vanilla = list(candidates_vanilla.values())
 			candidates_modded = list(candidates_modded.values())
 
-			vanilla_count = distributions[parts[1].lower()] * module_count
+			vanilla_count = int(distributions[parts[1].lower()] * module_count)
 
 			if (not candidates_vanilla or vanilla_count == 0) and (not candidates_modded or vanilla_count == module_count):
 				return await channel.send(f"{author.mention} You've blacklisted all the modules! If you don't want to play, just say so!")
