@@ -4,7 +4,7 @@ from modules.wires import Wires, ComplicatedWires, WireSequence
 from modules.button import Button
 from modules.keypad import Keypad
 from modules.simon import SimonSays
-from modules.whos_on_first import WhosOnFirst
+from modules.whos_on_first import WhosOnFirst, ThirdBase
 from modules.memory import Memory
 from modules.morse import MorseCode
 from modules.maze import Maze
@@ -30,6 +30,7 @@ VANILLA_MODULES = {
 MODDED_MODULES = {
 	"connectionCheck": ConnectionCheck,
 	"hexamaze": Hexamaze,
+	"thirdBase": ThirdBase,
 }
 
 async def cmd_modules(channel, author, parts):
