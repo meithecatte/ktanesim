@@ -550,19 +550,19 @@ class WireSequence(modules.Module):
 
 	def get_svg(self, led):
 		svg = (
-			f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linejoin="round" stroke-linecap="butt" stroke-miterlimit="10" xmlns="http://www.w3.org/2000/svg">'
-			f'<path stroke="#000" stroke-width="2" d="M5 5h338v338h-338z"/>'
-			f'<path stroke="#000" stroke-width="2" d="M74 74h200v200h-200zM129 19h90v40h-90zM129 288h90v40h-90z"/>'
-			f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>'
+			f'<svg viewBox="0 0 348 348" fill="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="butt" stroke-miterlimit="10" xmlns="http://www.w3.org/2000/svg">'
+			f'<path stroke="#000" d="M5 5h338v338h-338z"/>'
+			f'<path stroke="#000" d="M74 74h200v200h-200zM129 19h90v40h-90zM129 288h90v40h-90z"/>'
+			f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15"/>'
 			f'<path fill="#000" d="M158 39l16-10 16 10h-8v10h-16v-10zM158 308l16 10 16-10h-8v-10h-16v10z"/>'
-			f'<path fill="#000" stroke="#000" stroke-width="2" stroke-linejoin="round" stroke-linecap="butt" d="M283 74h52v254h-52z"/>')
+			f'<path fill="#000" stroke="#000" d="M283 74h52v254h-52z"/>')
 
 		for i in range(4):
 			color = "#0f0" if self.solved_pages > i else "#fff"
-			svg += f'<path fill="{color}" stroke="{color}" stroke-width="2" d="M294 {273 - 55 * i}h30v21h-30z"/>'
+			svg += f'<path fill="{color}" stroke="{color}" d="M294 {273 - 55 * i}h30v21h-30z"/>'
 
 		if self.solved:
-			svg += f'<path stroke="#000" stroke-width="2" d="M74 174h200"/>'
+			svg += f'<path stroke="#000" d="M74 174h200"/>'
 		else:
 			for i in range(3):
 				wire_index = self.current_page * 3 + i
@@ -575,7 +575,7 @@ class WireSequence(modules.Module):
 				if wire is not None:
 					color, to = wire
 					path = WireSequence.PATHS_CUT[i, to] if self.cut[wire_index] else WireSequence.PATHS_UNCUT[i, to]
-					svg += f'<path fill="{color.value}" stroke="#000" stroke-width="2" d="{path}"/>'
+					svg += f'<path fill="{color.value}" stroke="#000" d="{path}"/>'
 
 		svg += f'</svg>'
 		return svg
