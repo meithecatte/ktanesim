@@ -358,7 +358,7 @@ class ComplicatedWires(modules.Module):
 	def set_wire_rules(self, index, rules):
 		red, blue, led, star = rules
 		if red and blue:
-			self.wire_colors[index] = ('red', 'blue')
+			self.wire_colors[index] = (ComplicatedWires.Color.red, ComplicatedWires.Color.blue)
 		elif red:
 			self.wire_colors[index] = ComplicatedWires.Color.red
 		elif blue:
