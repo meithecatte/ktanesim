@@ -1,10 +1,12 @@
 from urllib.parse import quote as urlencode
 import io
-import cairosvg
+import time
+import imageio
 import discord
 import asyncio
+import cairosvg
+import functools
 import leaderboard
-from wand.image import Image
 from config import *
 
 def noparts(func):
@@ -26,15 +28,10 @@ def check_solve_cmd(func):
 				await func(self, author, parts)
 	return wrapper
 
-def gif_append(im, blob, delay):
-	im.sequence.append(Image(blob=blob, format='png'))
-	with im.sequence[-1] as frame:
-		frame.delay = delay
-
-def gif_output(im):
-	im.type = 'optimize'
-	im.format = 'gif'
-	return im.make_blob(), 'render.gif'
+def gif_output(frames, durations, loops):
+	bio = io.BytesIO()
+	imageio.mimwrite(bio, frames, loop=loops, duration=durations, format='GIF-PIL', subrectangles=True)
+	return bio, 'render.gif'
 
 class CommandConsolidator(type):
 	def __new__(cls, clsname, superclasses, attributes):
@@ -150,24 +147,34 @@ class Module(metaclass=CommandConsolidator):
 			led = '#fff'
 
 		# unsafe is needed to include bitmaps, and does not pose a security risk since the user has no control over the SVG
-		return cairosvg.svg2png(self.get_svg(led).encode(), unsafe=True), 'render.png'
+		return io.BytesIO(cairosvg.svg2png(self.get_svg(led).encode(), unsafe=True)), 'render.png'
 
 	@noparts
 	async def cmd_view(self, author):
 		await self.do_view(author.mention)
 
-	async def do_view(self, text, strike=False):
-		data, filename = await self.bomb.client.loop.run_in_executor(None, self.render, strike)
+	async def do_view(self, text, strike=False, **kwargs):
+		if DEBUG_MODE:
+			start_time = time.monotonic()
+		bio, filename = await self.bomb.client.loop.run_in_executor(None, functools.partial(self.render, strike, **kwargs))
+
+		assert isinstance(bio, io.BytesIO)
+		bio.seek(0)
+
+		if DEBUG_MODE:
+			end_time = time.monotonic()
+			print(f"Rendering {self.__class__.__name__} took {(end_time - start_time) * 1000:.2f} ms")
+
 		descr = f"[Manual]({self.get_manual()}). {self.get_help()}" if not self.solved else ''
 		embed = discord.Embed(title=str(self), description=descr)
 		embed.set_image(url=f"attachment://{filename}")
-		file_ = discord.File(io.BytesIO(data), filename=filename)
+		file_ = discord.File(bio, filename=filename)
 		send_task = asyncio.ensure_future(self.bomb.channel.send(text, file=file_, embed=embed))
 		if self.last_img is not None:
 			delete_task = asyncio.ensure_future(self.last_img.delete())
-			self.last_img = (await asyncio.gather(send_task, delete_task))[0]
+			(self.last_img, _) = await asyncio.gather(send_task, delete_task)
 		else:
-			self.last_img = (await asyncio.gather(send_task))[0]
+			(self.last_img, ) = await asyncio.gather(send_task)
 
 	@noparts
 	async def cmd_claim(self, author):

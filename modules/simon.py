@@ -1,9 +1,10 @@
+import io
 import random
+import imageio
 import cairosvg
 import enum
 import modules
 from functools import lru_cache
-from wand.image import Image
 
 class SimonSays(modules.Module):
 	display_name = "Simon Says"
@@ -45,9 +46,9 @@ class SimonSays(modules.Module):
 	
 	@staticmethod
 	@lru_cache(maxsize=16)
-	def get_image(color, led):
+	def get_image(color, led, as_array):
 		svg = (
-			f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
+			f'<svg viewBox="4 4 340 340" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
 			f'<path stroke="#000" stroke-width="2" d="M5 5h338v338h-338z"/>'
 			f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>'
 			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M68 174l52-52 52 52-52 52z"/>'.format('#f00' if color == SimonSays.Color.red else '#300') +
@@ -55,29 +56,33 @@ class SimonSays(modules.Module):
 			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M120 122l52-52 52 52-52 52z"/>'.format('#00f' if color == SimonSays.Color.blue else '#003') +
 			'<path fill="{:s}" stroke="#000" stroke-width="2" d="M172 174l52-52 52 52-52 52z"/>'.format('#ff0' if color == SimonSays.Color.yellow else '#330') +
 			'</svg>')
-		return cairosvg.svg2png(svg.encode())
+		data = cairosvg.svg2png(svg.encode())
+		return imageio.imread(data, 'PNG-PIL') if as_array else data
 
 	def render(self, strike):
 		if self.solved:
-			return SimonSays.get_image(None, '#0f0'), 'render.png'
+			return io.BytesIO(SimonSays.get_image(None, '#0f0', False)), 'render.png'
 
 		led = '#f00' if strike else '#fff'
 
-		with Image() as im:
-			def add(color, delay):
-				modules.gif_append(im, SimonSays.get_image(color, led), delay)
+		frames = []
+		durations = []
 
-			add(None, 200)
+		def add(color, delay):
+			frames.append(SimonSays.get_image(color, led, True))
+			durations.append(delay)
 
-			first = True
-			for color in self.sequence[:self.progress+1]:
-				if not first:
-					add(None, 10)
+		add(None, 2)
 
-				add(color, 60)
-				first = False
+		first = True
+		for color in self.sequence[:self.progress+1]:
+			if not first:
+				add(None, 0.1)
 
-			return modules.gif_output(im)
+			add(color, 0.6)
+			first = False
+
+		return modules.gif_output(frames, durations, 0)
 	
 	@modules.check_solve_cmd
 	async def cmd_press(self, author, parts):

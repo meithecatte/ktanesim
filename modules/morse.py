@@ -1,8 +1,8 @@
+import io
 import random
+import imageio
 import cairosvg
 import modules
-from functools import lru_cache
-from wand.image import Image
 
 MORSE_CODE = {
 	"a": ".-",
@@ -33,7 +33,7 @@ MORSE_CODE = {
 	"z": "--..",
 }
 
-DOT_LENGTH = 45
+DOT_LENGTH = 0.45
 
 class MorseCode(modules.Module):
 	display_name = "Morse Code"
@@ -91,7 +91,7 @@ class MorseCode(modules.Module):
 	
 	def get_image(self, rx_led, solve_led):
 		svg = (
-			f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
+			f'<svg viewBox="4 4 340 340" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
 			f'<path stroke="#000" stroke-width="2" d="M5 5h338v338h-338zM48 139h252v30h-252zm41 0v14m50-14v14m50-14v14m50-14v14m50-14v14m-225 16v-10m50 10v-10m50 10v-10m50 10v-10m50 10v-10M155 50h120M5 5l30 45M129 290h90v35h-90zM24 120h300v160h-300z"/>'
 			f'<circle fill="{solve_led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>'
 			f'<path fill="#000" d="M64 187h220v72h-220z"/>'
@@ -104,27 +104,30 @@ class MorseCode(modules.Module):
 
 	def render(self, strike):
 		if self.solved:
-			return self.get_image(False, '#0f0'), 'render.png'
+			return io.BytesIO(self.get_image(False, '#0f0')), 'render.png'
 		
 		led = '#f00' if strike else '#fff'
 
-		on = self.get_image(True, led)
-		off = self.get_image(False, led)
+		on = imageio.imread(self.get_image(True, led), 'PNG-PIL')
+		off = imageio.imread(self.get_image(False, led), 'PNG-PIL')
 
-		with Image() as im:
-			def add(frame, units):
-				modules.gif_append(im, frame, units * DOT_LENGTH)
+		frames = []
+		durations = []
 
-			for letter in self.word:
-				add(off, 3)
-				first_signal = True
-				for signal in MORSE_CODE[letter]:
-					if not first_signal: add(off, 1)
-					first_signal = False
-					add(on, 3 if signal == '-' else 1)
-			add(off, 4)
+		def add(frame, units):
+			frames.append(frame)
+			durations.append(units * DOT_LENGTH)
 
-			return modules.gif_output(im)
+		for letter in self.word:
+			add(off, 3)
+			first_signal = True
+			for signal in MORSE_CODE[letter]:
+				if not first_signal: add(off, 1)
+				first_signal = False
+				add(on, 3 if signal == '-' else 1)
+		add(off, 4)
+
+		return modules.gif_output(frames, durations, 0)
 	
 	@modules.check_solve_cmd
 	async def cmd_transmit(self, author, parts):

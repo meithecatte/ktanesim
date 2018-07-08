@@ -1,8 +1,9 @@
 from string import ascii_lowercase as abc
-from wand.image import Image
-import modules
+import io
 import random
+import imageio
 import cairosvg
+import modules
 
 class Password(modules.Module):
 	display_name = "Password"
@@ -38,7 +39,6 @@ class Password(modules.Module):
 		self.positions = [0] * 5
 		self.log(f"Solution: {self.solution}")
 		self.spinners = [list(abc) for _ in range(5)]
-		self.cycle = None
 
 		for match in self.get_matches():
 			if match == self.solution:
@@ -87,24 +87,29 @@ class Password(modules.Module):
 		svg += '</svg>'
 		return cairosvg.svg2png(svg.encode())
 
-	def render(self, strike):
+	def render(self, strike, cycle=None):
 		if self.solved:
-			return self.get_image('#0f0'), 'render.png'
+			return io.BytesIO(self.get_image('#0f0')), 'render.png'
 
 		led = '#f00' if strike else '#fff'
 
-		if self.cycle is None:
-			return self.get_image('#f00' if strike else '#fff'), 'render.png'
+		if cycle is None:
+			return io.BytesIO(self.get_image('#f00' if strike else '#fff')), 'render.png'
 
-		with Image() as im:
-			for column in self.cycle:
-				first = True
-				for _ in range(6):
-					modules.gif_append(im, self.get_image(led), 200 if first else 100)
-					first = False
-					self.positions[column] = (self.positions[column] + 1) % 6
+		frames = []
+		durations = []
 
-			return modules.gif_output(im)
+		for column in cycle:
+			first = True
+			for _ in range(6):
+				frames.append(imageio.imread(self.get_image(led), 'PNG-PIL'))
+				durations.append(2 if first else 1)
+				first = False
+				self.positions[column] = (self.positions[column] + 1) % 6
+		frames.append(imageio.imread(self.get_image(led), 'PNG-PIL'))
+		durations.append(1)
+
+		return modules.gif_output(frames, durations, 1)
 			
 	@modules.check_solve_cmd
 	async def cmd_submit(self, author, parts):
@@ -139,9 +144,7 @@ class Password(modules.Module):
 			columns = list(range(5))
 
 		self.log(f"Cycling columns: {' '.join(map(str, columns))}")
-		self.cycle = columns
-		await self.do_view(author.mention)
-		self.cycle = None
+		await self.do_view(author.mention, cycle=columns)
 
 	COMMANDS = {
 		"submit": cmd_submit,
