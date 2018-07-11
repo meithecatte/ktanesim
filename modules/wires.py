@@ -600,7 +600,7 @@ class WireSequence(modules.Module):
 		page_cut = self.cut[begin:end]
 		for index, should_cut, cut in zip(range(begin, end), page_should_cut, page_cut):
 			if should_cut and not cut:
-				self.log(f"Didn't cut wire {wire + 1}!")
+				self.log(f"Didn't cut wire {index + 1}!")
 				return await self.handle_strike(author)
 
 		self.current_page += 1
