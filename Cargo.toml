@@ -1,0 +1,8 @@
+[workspace]
+
+members = [
+    #"frontend/web",
+    #"frontend/discord",
+    #"ktanesim",
+    "ktane-ruleseed",
+]

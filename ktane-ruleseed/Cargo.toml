@@ -1,0 +1,7 @@
+[package]
+name = "ktane-ruleseed"
+version = "0.1.0"
+authors = ["NieDzejkob <niedzejkob@gmail.com>"]
+
+[dependencies]
+"ordered-float" = "1.0"
