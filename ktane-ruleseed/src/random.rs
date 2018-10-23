@@ -1,17 +1,30 @@
 use ordered_float::NotNan;
-use std::ops::Range;
 
 const SEED_LEN: usize = 55;
 
 pub struct RuleseedRandom {
-    seed_array: [i32; SEED_LEN],
+    seed_array: [u32; SEED_LEN],
     next_index: usize,
 }
 
 impl RuleseedRandom {
-    pub fn new(seed: i32) -> RuleseedRandom {
+    fn diff_keep_positive(lhs: u32, rhs: u32) -> u32 {
+        match lhs.overflowing_sub(rhs) {
+            (result, false) => result,
+            (result, true) => result.wrapping_add(<i32>::max_value() as u32),
+        }
+    }
+
+    fn reseed(&mut self) {
+        for (i, j) in (0..SEED_LEN).map(|i| (i, (i + 31) % SEED_LEN)) {
+            self.seed_array[i] =
+                RuleseedRandom::diff_keep_positive(self.seed_array[i], self.seed_array[j]);
+        }
+    }
+
+    pub fn new(seed: u32) -> RuleseedRandom {
         let mut seed_array = [0; SEED_LEN];
-        let mut last = 161_803_398 - seed.abs();
+        let mut last = 161_803_398 - seed;
 
         seed_array[SEED_LEN - 1] = last;
 
@@ -20,12 +33,8 @@ impl RuleseedRandom {
         for i in (1..SEED_LEN).map(|i| 21 * i % SEED_LEN - 1) {
             seed_array[i] = next;
             let current = next;
-            next = last - next;
+            next = RuleseedRandom::diff_keep_positive(last, next);
             last = current;
-
-            if next < 0 {
-                next += <i32>::max_value();
-            }
         }
 
         let mut random = RuleseedRandom {
@@ -38,16 +47,6 @@ impl RuleseedRandom {
         }
 
         random
-    }
-
-    fn reseed(&mut self) {
-        for (i, j) in (0..SEED_LEN).map(|i| (i, (i + 31) % SEED_LEN)) {
-            self.seed_array[i] -= self.seed_array[j];
-
-            if self.seed_array[i] < 0 {
-                self.seed_array[i] += <i32>::max_value();
-            }
-        }
     }
 
     pub fn next_double(&mut self) -> f64 {
@@ -66,17 +65,20 @@ impl RuleseedRandom {
         f64::from(result) * (1. / f64::from(<i32>::max_value()))
     }
 
-    pub fn next_int(&mut self) -> i32 {
-        self.next_below(<i32>::max_value())
+    pub fn next_int(&mut self) -> u32 {
+        self.next_below(<i32>::max_value() as u32)
     }
 
-    pub fn next_below(&mut self, max_value: i32) -> i32 {
-        assert!(max_value >= 0);
-        (self.next_double() * f64::from(max_value)) as i32
+    pub fn next_below(&mut self, max_value: u32) -> u32 {
+        (self.next_double() * f64::from(max_value)) as u32
     }
 
-    pub fn next(&mut self, range: Range<i32>) -> i32 {
-        self.next_below(range.len() as i32) + range.start
+    pub fn next(&mut self, lower_bound: u32, upper_bound: u32) -> u32 {
+        assert!(
+            lower_bound < upper_bound,
+            "RuleseedRandom::next: antimatter ranges not supported"
+        );
+        self.next_below(upper_bound - lower_bound) + lower_bound
     }
 
     pub fn shuffle_by_sorting<T>(&mut self, slice: &mut [T]) {
@@ -93,7 +95,7 @@ impl RuleseedRandom {
 
     pub fn shuffle_fisher_yates<T>(&mut self, slice: &mut [T]) {
         for i in (1..slice.len()).rev() {
-            let j = self.next(0..i as i32 + 1) as usize;
+            let j = self.next_below((i + 1) as u32) as usize;
             slice.swap(i, j);
         }
     }
@@ -139,7 +141,7 @@ mod tests {
         let mut random = get_rng();
 
         for &expected in EXPECTED_RANGE.iter() {
-            assert_eq!(random.next(10..20), expected);
+            assert_eq!(random.next(10, 20), expected);
         }
     }
 
@@ -150,7 +152,7 @@ mod tests {
         for &expected in EXPECTED_SHUFFLE_BY_SORTING.iter() {
             let mut test_vec: Vec<u8> = (0..expected.len() as u8).collect();
             random.shuffle_by_sorting(&mut test_vec);
-            assert_eq!(&test_vec, &expected);
+            assert_eq!(test_vec, expected);
         }
     }
 
@@ -161,11 +163,11 @@ mod tests {
         for &expected in EXPECTED_SHUFFLE_FISHER_YATES.iter() {
             let mut test_vec: Vec<u8> = (0..expected.len() as u8).collect();
             random.shuffle_fisher_yates(&mut test_vec);
-            assert_eq!(&test_vec, &expected);
+            assert_eq!(test_vec, expected);
         }
     }
 
-    const EXPECTED_INTS: [i32; 96] = [
+    const EXPECTED_INTS: [u32; 96] = [
         0x69cb4d51, 0x21d9b60d, 0x2db970fa, 0x4ca3339c, 0x5fd6ca7f, 0x7572119b, 0x12143312,
         0x6cadbdf5, 0x60ca0aa6, 0x57ffbbdd, 0x5f03f75d, 0x06cb3358, 0x35fda2ae, 0x2f645fb8,
         0x3c561089, 0x1120f216, 0x5e879587, 0x1464dcdd, 0x438f0ba9, 0x4fb9a1f3, 0x64ccd5b9,
@@ -210,7 +212,7 @@ mod tests {
         0.155882783306708,   0.11749586002784589, 0.8363758580928556,  0.630823170594323,
     ];
 
-    const EXPECTED_BELOW: [i32; 200] = [
+    const EXPECTED_BELOW: [u32; 200] = [
         82, 26, 35, 59, 74, 91, 14, 84, 75, 68, 74, 5, 42, 37, 47, 13, 73, 15, 52, 62, 78, 69, 11,
         68, 53, 74, 17, 54, 9, 48, 86, 2, 48, 36, 83, 94, 23, 64, 67, 71, 21, 87, 15, 19, 87, 91,
         25, 15, 70, 57, 9, 86, 92, 99, 11, 80, 77, 98, 76, 80, 67, 49, 17, 4, 47, 86, 89, 22, 49,
@@ -222,7 +224,7 @@ mod tests {
         72, 7, 89, 10, 60, 54, 3, 71, 17, 95, 31, 43, 13, 84, 3,
     ];
 
-    const EXPECTED_RANGE: [i32; 200] = [
+    const EXPECTED_RANGE: [u32; 200] = [
         18, 12, 13, 15, 17, 19, 11, 18, 17, 16, 17, 10, 14, 13, 14, 11, 17, 11, 15, 16, 17, 16, 11,
         16, 15, 17, 11, 15, 10, 14, 18, 10, 14, 13, 18, 19, 12, 16, 16, 17, 12, 18, 11, 11, 18, 19,
         12, 11, 17, 15, 10, 18, 19, 19, 11, 18, 17, 19, 17, 18, 16, 14, 11, 10, 14, 18, 18, 12, 14,
