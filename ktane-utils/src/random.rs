@@ -23,7 +23,8 @@ impl RuleseedRandom {
 
     /// Called to mangle the `seed_array` after using up all the random numbers in it.
     fn reseed(&mut self) {
-        for (i, j) in (0..SEED_LEN).map(|i| (i, (i + 31) % SEED_LEN)) {
+        for i in 0..SEED_LEN {
+            let j = (i + 31) % SEED_LEN;
             self.seed_array[i] = Self::diffwrap(self.seed_array[i], self.seed_array[j]);
         }
     }
@@ -37,7 +38,8 @@ impl RuleseedRandom {
 
         let mut next = 1;
 
-        for i in (1..SEED_LEN).map(|i| 21 * i % SEED_LEN - 1) {
+        for i in 1..SEED_LEN {
+            let i = 21 * i % SEED_LEN - 1;
             seed_array[i] = next;
             let current = next;
             next = Self::diffwrap(last, next);
