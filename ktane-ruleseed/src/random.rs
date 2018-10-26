@@ -1,27 +1,32 @@
-use ordered_float::NotNan;
+extern crate ordered_float;
+use self::ordered_float::NotNan;
 
 const SEED_LEN: usize = 55;
+const MAX_VALUE: u32 = <i32>::max_value() as u32;
 
+/// A pseudorandom number generator that matches the one used by the Rule Seed Modifier mod.
 pub struct RuleseedRandom {
     seed_array: [u32; SEED_LEN],
     next_index: usize,
 }
 
 impl RuleseedRandom {
-    fn diff_keep_positive(lhs: u32, rhs: u32) -> u32 {
+    /// Subtracts two numbers with a specific, unusual wrapping behavior used by the RNG.
+    fn diffwrap(lhs: u32, rhs: u32) -> u32 {
         match lhs.overflowing_sub(rhs) {
             (result, false) => result,
-            (result, true) => result.wrapping_add(<i32>::max_value() as u32),
+            (result, true) => result.wrapping_add(MAX_VALUE),
         }
     }
 
+    /// Called to mangle the `seed_array` after using up all the random numbers in it.
     fn reseed(&mut self) {
         for (i, j) in (0..SEED_LEN).map(|i| (i, (i + 31) % SEED_LEN)) {
-            self.seed_array[i] =
-                RuleseedRandom::diff_keep_positive(self.seed_array[i], self.seed_array[j]);
+            self.seed_array[i] = RuleseedRandom::diffwrap(self.seed_array[i], self.seed_array[j]);
         }
     }
 
+    /// Creates a new RuleseedRandom instance using the provided seed.
     pub fn new(seed: u32) -> RuleseedRandom {
         let mut seed_array = [0; SEED_LEN];
         let mut last = 161_803_398 - seed;
@@ -33,7 +38,7 @@ impl RuleseedRandom {
         for i in (1..SEED_LEN).map(|i| 21 * i % SEED_LEN - 1) {
             seed_array[i] = next;
             let current = next;
-            next = RuleseedRandom::diff_keep_positive(last, next);
+            next = RuleseedRandom::diffwrap(last, next);
             last = current;
         }
 
@@ -49,6 +54,8 @@ impl RuleseedRandom {
         random
     }
 
+    /// Generates a random `f64` in the half-open `[0; 1)` range. Please note that not all
+    /// representable values in that range are possible results.
     pub fn next_double(&mut self) -> f64 {
         let result = self.seed_array[self.next_index];
 
@@ -62,25 +69,33 @@ impl RuleseedRandom {
         // NOTE: dividing instead of multiplying by the reciprocal causes occasional off-by-ones.
         // That's also why next_int is implemented in terms of next_double and not the other way
         // around - it wouldn't match that way.
-        f64::from(result) * (1. / f64::from(<i32>::max_value()))
+        f64::from(result) * (1. / f64::from(MAX_VALUE))
     }
 
+    /// Generates a random 31-bit unsigned integer.
     pub fn next_int(&mut self) -> u32 {
-        self.next_below(<i32>::max_value() as u32)
+        self.next_below(MAX_VALUE)
     }
 
+    /// Generates a random integer with a value less than the `max_value` parameter.
     pub fn next_below(&mut self, max_value: u32) -> u32 {
         (self.next_double() * f64::from(max_value)) as u32
     }
 
+    /// Generates a random integer in the half-open `[lower_bound; upper_bound)` range.
+    ///
+    /// # Panics
+    ///
+    /// The method will panic if the range is empty.
     pub fn next(&mut self, lower_bound: u32, upper_bound: u32) -> u32 {
         assert!(
-            lower_bound < upper_bound,
-            "RuleseedRandom::next: antimatter ranges not supported"
+            lower_bound <= upper_bound,
+            "RuleseedRandom::next: range is empty"
         );
         self.next_below(upper_bound - lower_bound) + lower_bound
     }
 
+    /// Shuffles the provided `slice`. Equivalent to `.OrderBy(x => rnd.NextDouble())` in C#.
     pub fn shuffle_by_sorting<T>(&mut self, slice: &mut [T]) {
         match slice.len() {
             0 => (),
@@ -93,6 +108,8 @@ impl RuleseedRandom {
         };
     }
 
+    /// Shuffles the provided `slice` using the Fisher-Yates algorithm. Recommended over
+    /// `shuffle_by_sorting`.
     pub fn shuffle_fisher_yates<T>(&mut self, slice: &mut [T]) {
         for i in (1..slice.len()).rev() {
             let j = self.next_below((i + 1) as u32) as usize;
