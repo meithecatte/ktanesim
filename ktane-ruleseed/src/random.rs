@@ -3,7 +3,7 @@ use self::ordered_float::NotNan;
 
 const SEED_LEN: usize = 55;
 
-/// The upper bound of the half-open range of values returned by `RuleseedRandom::next_int`.
+/// The upper bound of the half-open range of values returned by [`RuleseedRandom::next_int`].
 pub const MAX_VALUE: u32 = <i32>::max_value() as u32;
 
 /// A pseudorandom number generator that matches the one used by the Rule Seed Modifier mod.
@@ -24,12 +24,12 @@ impl RuleseedRandom {
     /// Called to mangle the `seed_array` after using up all the random numbers in it.
     fn reseed(&mut self) {
         for (i, j) in (0..SEED_LEN).map(|i| (i, (i + 31) % SEED_LEN)) {
-            self.seed_array[i] = RuleseedRandom::diffwrap(self.seed_array[i], self.seed_array[j]);
+            self.seed_array[i] = Self::diffwrap(self.seed_array[i], self.seed_array[j]);
         }
     }
 
     /// Creates a new RuleseedRandom instance using the provided seed.
-    pub fn new(seed: u32) -> RuleseedRandom {
+    pub fn new(seed: u32) -> Self {
         let mut seed_array = [0; SEED_LEN];
         let mut last = 161_803_398 - seed;
 
@@ -40,11 +40,11 @@ impl RuleseedRandom {
         for i in (1..SEED_LEN).map(|i| 21 * i % SEED_LEN - 1) {
             seed_array[i] = next;
             let current = next;
-            next = RuleseedRandom::diffwrap(last, next);
+            next = Self::diffwrap(last, next);
             last = current;
         }
 
-        let mut random = RuleseedRandom {
+        let mut random = Self {
             seed_array,
             next_index: 0,
         };
