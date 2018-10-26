@@ -1,5 +1,5 @@
 [[package]]
-name = "ktane-ruleseed"
+name = "ktane-utils"
 version = "0.1.0"
 dependencies = [
  "ordered-float 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",

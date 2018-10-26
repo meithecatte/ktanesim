@@ -4,5 +4,5 @@ members = [
     #"frontend/web",
     #"frontend/discord",
     #"ktanesim",
-    "ktane-ruleseed",
+    "ktane-utils",
 ]
