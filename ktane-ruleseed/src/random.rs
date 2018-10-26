@@ -2,7 +2,9 @@ extern crate ordered_float;
 use self::ordered_float::NotNan;
 
 const SEED_LEN: usize = 55;
-const MAX_VALUE: u32 = <i32>::max_value() as u32;
+
+/// The upper bound of the half-open range of values returned by `RuleseedRandom::next_int`.
+pub const MAX_VALUE: u32 = <i32>::max_value() as u32;
 
 /// A pseudorandom number generator that matches the one used by the Rule Seed Modifier mod.
 pub struct RuleseedRandom {
