@@ -1,5 +1,4 @@
-extern crate ordered_float;
-use self::ordered_float::NotNan;
+use ordered_float::NotNan;
 
 const SEED_LEN: usize = 55;
 

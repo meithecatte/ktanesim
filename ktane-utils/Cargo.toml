@@ -4,4 +4,6 @@ version = "0.1.0"
 authors = ["NieDzejkob <niedzejkob@gmail.com>"]
 
 [dependencies]
-"ordered-float" = "1.0"
+ordered-float = "1.0"
+num-derive = "0.2"
+num-traits = "0.2"
