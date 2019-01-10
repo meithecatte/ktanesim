@@ -6,3 +6,7 @@ members = [
     #"ktanesim",
     "ktane-utils",
 ]
+
+[profile.release]
+lto = true
+codegen-units = 1

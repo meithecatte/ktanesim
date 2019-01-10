@@ -1,9 +1,14 @@
 [package]
 name = "ktane-utils"
 version = "0.1.0"
-authors = ["NieDzejkob <niedzejkob@gmail.com>"]
+authors = ["NieDzejkob <kuba@kadziolka.net>"]
+edition = "2018"
 
 [dependencies]
 ordered-float = "1.0"
 num-derive = "0.2"
 num-traits = "0.2"
+strum = "0.11"
+strum_macros = "0.11"
+bitflags = "1.0"
+enum-map = "0.4.1"
