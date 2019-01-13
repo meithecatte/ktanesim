@@ -75,7 +75,7 @@ impl SerialNumber {
 }
 
 /// A bitfield that represents the port types that can be present on a bomb.
-#[derive(EnumFlags, Copy, Clone, Debug, PartialEq)]
+#[derive(EnumFlags, Copy, Clone, Debug, PartialEq, EnumIter)]
 #[repr(u8)]
 pub enum PortType {
     Serial = 0b000001,
@@ -141,7 +141,7 @@ impl From<PortPlate> for BitFlags<PortType> {
     }
 }
 
-#[derive(Debug, Copy, Clone, FromPrimitive, AsStaticStr, Enum, PartialEq)]
+#[derive(Debug, Copy, Clone, FromPrimitive, IntoStaticStr, EnumIter, Enum, PartialEq)]
 pub enum IndicatorCode {
     SND,
     CLR,
