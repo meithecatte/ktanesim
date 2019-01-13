@@ -5,6 +5,9 @@ const SEED_LEN: usize = 55;
 /// The upper bound of the half-open range of values returned by [`RuleseedRandom::next_int`].
 pub const MAX_VALUE: u32 = <i32>::max_value() as u32;
 
+/// The seed used for vanilla manuals
+pub const VANILLA_SEED: u32 = 1;
+
 /// A pseudorandom number generator that matches the one used by the Rule Seed Modifier mod.
 pub struct RuleseedRandom {
     seed_array: [u32; SEED_LEN],
