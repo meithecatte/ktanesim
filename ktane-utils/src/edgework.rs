@@ -1,6 +1,7 @@
 use enum_map::EnumMap;
 use enumflags::BitFlags;
 use std::fmt;
+use std::str::FromStr;
 
 /// Represents the set of widgets on the edges of a bomb.
 #[derive(Debug, Clone, PartialEq)]
@@ -21,6 +22,35 @@ impl AsRef<str> for SerialNumber {
     }
 }
 
+impl FromStr for SerialNumber {
+    type Err = ();
+
+    /// Create a new SerialNumber instance, after making sure the parameter is a valid bomb
+    /// serial number.
+    fn from_str(serial: &str) -> Result<Self, Self::Err> {
+        const PATTERN: [fn(char) -> bool; 6] = [
+            SerialNumber::is_valid_character,
+            SerialNumber::is_valid_character,
+            SerialNumber::is_valid_digit,
+            SerialNumber::is_valid_letter,
+            SerialNumber::is_valid_letter,
+            SerialNumber::is_valid_digit,
+        ];
+
+        if serial.len() != PATTERN.len() {
+            return Err(());
+        }
+
+        for (c, func) in serial.chars().zip(PATTERN.iter()) {
+            if !func(c) {
+                return Err(());
+            }
+        }
+
+        Ok(SerialNumber(serial.to_string()))
+    }
+}
+
 impl SerialNumber {
     // O is replaced with E to avoid confusion with zeroes
     // Y is removed because some languages consider it a vowel and some don't
@@ -37,31 +67,6 @@ impl SerialNumber {
 
     fn is_valid_letter(c: char) -> bool {
         c.is_ascii_uppercase() && c != 'O' && c != 'Y'
-    }
-
-    /// Create a new SerialNumber instance, after making sure the parameter is a valid bomb
-    /// serial number.
-    pub fn new(serial: String) -> Option<Self> {
-        const PATTERN: [fn(char) -> bool; 6] = [
-            SerialNumber::is_valid_character,
-            SerialNumber::is_valid_character,
-            SerialNumber::is_valid_digit,
-            SerialNumber::is_valid_letter,
-            SerialNumber::is_valid_letter,
-            SerialNumber::is_valid_digit,
-        ];
-
-        if serial.len() != PATTERN.len() {
-            return None;
-        }
-
-        for (c, func) in serial.chars().zip(PATTERN.iter()) {
-            if !func(c) {
-                return None;
-            }
-        }
-
-        Some(SerialNumber(serial))
     }
 
     /// Returns the bytes that define the serial number.
@@ -259,11 +264,11 @@ mod tests {
             "SN1234", "ABCDEF", // Wrong patterns
             "OB1EC7", "YU0NO0", // Forbidden characters
         ] {
-            assert!(SerialNumber::new(wrong.into()).is_none());
+            assert!(wrong.parse::<SerialNumber>().is_err());
         }
 
         for &fine in &["AB1CD2", "123AB4", "KT4NE8"] {
-            assert!(SerialNumber::new(fine.into()).is_some());
+            assert!(fine.parse::<SerialNumber>().is_ok());
         }
     }
 }
