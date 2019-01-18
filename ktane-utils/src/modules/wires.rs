@@ -245,19 +245,14 @@ impl fmt::Display for WireSolution {
 }
 
 /// The colors a wire can have
-#[derive(Debug, Copy, Clone, IntoStaticStr, EnumIter, PartialEq)]
+#[derive(Debug, Display, Copy, Clone, IntoStaticStr, EnumIter, PartialEq)]
+#[strum(serialize_all = "snake_case")]
 pub enum WireColor {
     Black,
     Blue,
     Red,
     White,
     Yellow,
-}
-
-impl fmt::Display for WireColor {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", <&str>::from(*self).to_lowercase())
-    }
 }
 
 #[cfg(test)]
