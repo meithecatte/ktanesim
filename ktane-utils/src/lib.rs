@@ -21,6 +21,6 @@ extern crate strum_macros;
 
 pub mod edgework;
 pub mod random;
-pub mod rules {
+pub mod modules {
     pub mod wires;
 }
