@@ -114,7 +114,11 @@ pub struct PortPlate(BitFlags<PortType>);
 lazy_static! {
     /// Ports are divided into groups. All ports on a port plate must be from the same group,
     /// because they won't fit otherwise.
-    static ref PORT_GROUPS: [BitFlags<PortType>; 2] = [
+    ///
+    /// This is a lazily initialized static variable. See [`lazy_static`] for more details.
+    ///
+    /// [`lazy_static`]: https://crates.io/crates/lazy_static
+    pub static ref PORT_GROUPS: [BitFlags<PortType>; 2] = [
         PortType::Serial | PortType::Parallel,
         PortType::DVI | PortType::PS2 | PortType::RJ45 | PortType::StereoRCA,
     ];
@@ -192,6 +196,7 @@ impl Default for IndicatorState {
     }
 }
 
+/// A question that can be asked about the edgework by game rules
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum EdgeworkCondition {
     SerialStartsWithLetter,
