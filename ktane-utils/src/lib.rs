@@ -15,6 +15,7 @@ extern crate ordered_float;
 extern crate ordinal;
 #[macro_use]
 extern crate smallvec;
+extern crate regex;
 extern crate strum;
 #[macro_use]
 extern crate strum_macros;
