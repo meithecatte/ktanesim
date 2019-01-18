@@ -83,11 +83,13 @@ impl SerialNumber {
 /// A bitfield that represents the port types that can be present on a bomb.
 #[derive(EnumFlags, Copy, Clone, Debug, PartialEq, Eq, EnumString, EnumIter)]
 pub enum PortType {
-    Serial = 0b000001,
-    Parallel = 0b000010,
-    DVI = 0b000100,
-    PS2 = 0b001000,
-    RJ45 = 0b010000,
+    Serial    = 0b000001,
+    Parallel  = 0b000010,
+    DVI       = 0b000100,
+    PS2       = 0b001000,
+    #[strum(serialize = "RJ45", serialize = "RJ")]
+    RJ45      = 0b010000,
+    #[strum(serialize = "StereoRCA", serialize = "RCA")]
     StereoRCA = 0b100000,
 }
 
