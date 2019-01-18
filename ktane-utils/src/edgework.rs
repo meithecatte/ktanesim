@@ -135,6 +135,11 @@ impl PortPlate {
         }
     }
 
+    /// Create an empty port plate
+    pub fn empty() -> Self {
+        PortPlate(BitFlags::empty())
+    }
+
     /// Returns true if and only if there are no ports on this port plate
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
@@ -256,7 +261,7 @@ mod tests {
     fn port_plate_constructor() {
         use super::PortType::*;
         assert!(PortPlate::new(Serial | Parallel).is_some());
-        assert!(PortPlate::new(BitFlags::<PortType>::empty()).is_some());
+        assert!(PortPlate::new(BitFlags::empty()).is_some());
         assert!(PortPlate::new(DVI.into()).is_some());
         assert!(PortPlate::new(DVI | Serial).is_none());
     }
