@@ -3,6 +3,7 @@ use enumflags::BitFlags;
 use std::fmt;
 
 /// Represents the set of widgets on the edges of a bomb.
+#[derive(Debug, Clone, PartialEq)]
 pub struct Edgework {
     pub serial_number: SerialNumber,
     pub port_plates: Vec<PortPlate>,
@@ -11,7 +12,7 @@ pub struct Edgework {
     pub dcell_batteries: u8,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SerialNumber(String);
 
 impl AsRef<str> for SerialNumber {
@@ -75,8 +76,7 @@ impl SerialNumber {
 }
 
 /// A bitfield that represents the port types that can be present on a bomb.
-#[derive(EnumFlags, Copy, Clone, Debug, PartialEq, EnumIter)]
-#[repr(u8)]
+#[derive(EnumFlags, Copy, Clone, Debug, PartialEq, Eq, EnumString, EnumIter)]
 pub enum PortType {
     Serial = 0b000001,
     Parallel = 0b000010,
@@ -101,7 +101,7 @@ impl fmt::Display for PortType {
 }
 
 /// The port plate widget.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PortPlate(BitFlags<PortType>);
 
 lazy_static! {
@@ -141,7 +141,19 @@ impl From<PortPlate> for BitFlags<PortType> {
     }
 }
 
-#[derive(Debug, Copy, Clone, FromPrimitive, IntoStaticStr, EnumIter, Enum, PartialEq)]
+#[derive(
+    Debug,
+    Display,
+    Copy,
+    Clone,
+    FromPrimitive,
+    IntoStaticStr,
+    EnumIter,
+    Enum,
+    PartialEq,
+    Eq,
+    EnumString,
+)]
 pub enum IndicatorCode {
     SND,
     CLR,
