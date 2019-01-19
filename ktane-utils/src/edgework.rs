@@ -1,8 +1,5 @@
 use enum_map::EnumMap;
 use enumflags::BitFlags;
-use regex::Regex;
-use std::fmt;
-use std::str::FromStr;
 
 /// Represents the set of widgets on the edges of a bomb.
 #[derive(Debug, Clone, PartialEq)]
@@ -14,23 +11,7 @@ pub struct Edgework {
     pub dcell_batteries: u32,
 }
 
-/// Errors that the FromStr implementation for Edgework can produce
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EdgeworkParseError {
-    /// The string does not conform to the format
-    FormatError,
-    /// The combination of batteries and holders is impossible
-    ImpossibleBatteries,
-    /// The serial number is not valid
-    MalformedSerial,
-    /// A combination of ports on a port plate is impossible
-    ImpossiblePortPlate,
-    /// A section identified as port plates contains a port name that couldn't be recognized
-    NotAPort,
-    /// A section identified as indicators contains an unknown indicator
-    NotAnIndicator,
-}
-
+use std::str::FromStr;
 impl FromStr for Edgework {
     type Err = EdgeworkParseError;
     /// Parse a Twitch Plays-style edgework string, for example:
@@ -59,12 +40,13 @@ impl FromStr for Edgework {
     /// # }
     /// ```
     fn from_str(input: &str) -> Result<Self, Self::Err> {
+        use regex::Regex;
+        use self::EdgeworkParseError::*;
+
         lazy_static! {
             static ref REGEX: Regex =
                 Regex::new(r"^(\d+)B\s+(\d+)H // (?:(.*) // )?([0-9A-Z]{6})$").unwrap();
         }
-
-        use self::EdgeworkParseError::*;
 
         let captures = REGEX.captures(input).ok_or(FormatError)?;
 
@@ -133,6 +115,23 @@ impl FromStr for Edgework {
     }
 }
 
+/// Errors that the FromStr implementation for Edgework can produce
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EdgeworkParseError {
+    /// The string does not conform to the format
+    FormatError,
+    /// The combination of batteries and holders is impossible
+    ImpossibleBatteries,
+    /// The serial number is not valid
+    MalformedSerial,
+    /// A combination of ports on a port plate is impossible
+    ImpossiblePortPlate,
+    /// A section identified as port plates contains a port name that couldn't be recognized
+    NotAPort,
+    /// A section identified as indicators contains an unknown indicator
+    NotAnIndicator,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SerialNumber(String);
 
@@ -177,21 +176,31 @@ impl SerialNumber {
     // conclusion: not quite the alphabet
     pub const CHARSET: &'static str = "ABCDEFGHIJKLMNEPQRSTUVWXZ0123456789";
 
-    fn is_valid_character(c: char) -> bool {
+    /// Checks whether a character can appear in a serial number
+    pub fn is_valid_character(c: char) -> bool {
         Self::is_valid_letter(c) || Self::is_valid_digit(c)
     }
 
-    fn is_valid_digit(c: char) -> bool {
+    /// Checks whether a character can appear in a serial number at a position that requires a
+    /// digit.
+    pub fn is_valid_digit(c: char) -> bool {
         c.is_ascii_digit()
     }
 
-    fn is_valid_letter(c: char) -> bool {
+    /// Checks whether a character can appear in a serial number at a position that requires a
+    /// letter.
+    pub fn is_valid_letter(c: char) -> bool {
         c.is_ascii_uppercase() && c != 'O' && c != 'Y'
     }
 
-    /// Returns the bytes that define the serial number.
+    /// Returns a reference to the ASCII bytes that define the serial number.
     pub fn as_bytes(&self) -> &[u8] {
         &self.0.as_bytes()
+    }
+
+    /// Returns the 3rd character of the serial number, which is always a digit, as an integer.
+    pub fn middle_digit(&self) -> u8 {
+        self.as_bytes()[2] - b'0'
     }
 
     /// Returns the trailing digit as an integer.
@@ -201,30 +210,20 @@ impl SerialNumber {
 }
 
 /// A bitfield that represents the port types that can be present on a bomb.
-#[derive(EnumFlags, Copy, Clone, Debug, PartialEq, Eq, EnumString, EnumIter)]
+#[derive(EnumFlags, Copy, Clone, Debug, Display, PartialEq, Eq, EnumString, EnumIter)]
 pub enum PortType {
+    #[strum(serialize = "serial")]
     Serial    = 0b000001,
+    #[strum(serialize = "parallel")]
     Parallel  = 0b000010,
+    #[strum(serialize = "DVI-D")]
     DVI       = 0b000100,
+    #[strum(serialize = "PS/2")]
     PS2       = 0b001000,
-    #[strum(serialize = "RJ45", serialize = "RJ")]
+    #[strum(serialize = "RJ-45", serialize = "RJ45", serialize = "RJ")]
     RJ45      = 0b010000,
-    #[strum(serialize = "StereoRCA", serialize = "RCA")]
+    #[strum(serialize = "Stereo RCA", serialize = "StereoRCA", serialize = "RCA")]
     StereoRCA = 0b100000,
-}
-
-impl fmt::Display for PortType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::PortType::*;
-        match *self {
-            Serial => write!(f, "serial"),
-            Parallel => write!(f, "parallel"),
-            DVI => write!(f, "DVI-D"),
-            PS2 => write!(f, "PS/2"),
-            RJ45 => write!(f, "RJ-45"),
-            StereoRCA => write!(f, "Stereo RCA"),
-        }
-    }
 }
 
 /// The port plate widget.
@@ -285,10 +284,11 @@ impl From<PortPlate> for BitFlags<PortType> {
     FromPrimitive,
     IntoStaticStr,
     EnumIter,
+    EnumString,
+    EnumCount,
     Enum,
     PartialEq,
     Eq,
-    EnumString,
 )]
 pub enum IndicatorCode {
     SND,
@@ -302,10 +302,6 @@ pub enum IndicatorCode {
     TRN,
     BOB,
     FRK,
-}
-
-impl IndicatorCode {
-    pub const COUNT: u32 = IndicatorCode::FRK as u32 + 1;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -330,6 +326,7 @@ pub enum EdgeworkCondition {
     PortPresent(PortType),
 }
 
+use std::fmt;
 impl fmt::Display for EdgeworkCondition {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::EdgeworkCondition::*;
@@ -371,14 +368,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn check_enum_count() {
-        use num_traits::FromPrimitive;
-        assert!(IndicatorCode::from_u32(IndicatorCode::COUNT).is_none());
-        assert!(IndicatorCode::from_u32(IndicatorCode::COUNT - 1).is_some());
-    }
-
-    #[test]
-    fn port_plate_constructor() {
+    fn port_plate_validation() {
         use super::PortType::*;
         assert!(PortPlate::new(Serial | Parallel).is_some());
         assert!(PortPlate::new(BitFlags::empty()).is_some());
@@ -387,7 +377,7 @@ mod tests {
     }
 
     #[test]
-    fn serial_number_constructor() {
+    fn serial_number_validation() {
         for &wrong in &[
             "SN1BB3X", // Too long
             "SN1BB",   // Too short
