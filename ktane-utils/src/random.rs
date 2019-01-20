@@ -1,5 +1,3 @@
-use ordered_float::NotNan;
-
 const SEED_LEN: usize = 55;
 
 /// The upper bound of the half-open range of values returned by [`RuleseedRandom::next_int`].
@@ -109,6 +107,7 @@ impl RuleseedRandom {
                 self.next_double();
             }
             _ => {
+                use ordered_float::NotNan;
                 slice.sort_by_cached_key(|_| NotNan::new(self.next_double()).unwrap());
             }
         };
