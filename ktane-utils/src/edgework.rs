@@ -40,8 +40,8 @@ impl FromStr for Edgework {
     /// # }
     /// ```
     fn from_str(input: &str) -> Result<Self, Self::Err> {
-        use regex::Regex;
         use self::EdgeworkParseError::*;
+        use regex::Regex;
 
         lazy_static! {
             static ref REGEX: Regex =
@@ -210,19 +210,36 @@ impl SerialNumber {
 }
 
 /// A bitfield that represents the port types that can be present on a bomb.
-#[derive(EnumFlags, Copy, Clone, Debug, Display, PartialEq, Eq, EnumString, EnumIter)]
+#[derive(
+    EnumFlags,
+    Copy,
+    Clone,
+    Debug,
+    Display,
+    PartialEq,
+    Eq,
+    EnumString,
+    EnumIter,
+    EnumProperty,
+)]
 pub enum PortType {
-    #[strum(serialize = "serial")]
+    #[strum(to_string = "serial", serialize = "Serial")]
     Serial    = 0b000001,
-    #[strum(serialize = "parallel")]
+    #[strum(to_string = "parallel", serialize = "Parallel")]
     Parallel  = 0b000010,
-    #[strum(serialize = "DVI-D")]
+    #[strum(to_string = "DVI-D", serialize = "DVI")]
     DVI       = 0b000100,
-    #[strum(serialize = "PS/2")]
+    #[strum(to_string = "PS/2", serialize = "PS2")]
     PS2       = 0b001000,
-    #[strum(serialize = "RJ-45", serialize = "RJ45", serialize = "RJ")]
+    #[strum(to_string = "RJ-45", serialize = "RJ45", serialize = "RJ")]
+    #[strum(props(article = "an"))]
     RJ45      = 0b010000,
-    #[strum(serialize = "Stereo RCA", serialize = "StereoRCA", serialize = "RCA")]
+    #[strum(
+        to_string = "stereo RCA",
+        serialize = "Stereo RCA",
+        serialize = "StereoRCA",
+        serialize = "RCA",
+    )]
     StereoRCA = 0b100000,
 }
 
@@ -335,7 +352,8 @@ impl fmt::Display for EdgeworkCondition {
             SerialOdd => write!(f, "the last digit of the serial number is odd"),
             HasEmptyPortPlate => write!(f, "there is an empty port plate present on the bomb"),
             PortPresent(port) => {
-                let article = if port == PortType::RJ45 { "an" } else { "a" };
+                use strum::EnumProperty;
+                let article = port.get_str("article").unwrap_or("a");
                 write!(f, "there is {} {} port present on the bomb", article, port)
             }
         }
@@ -404,6 +422,7 @@ mod tests {
             "0B 0H // FRK // AA0AA0",
             "0B 0H // [Empty] // KT4NE8",
             "0B 0H // [RJ, RCA] // KT4NE8",
+            "0B 0H // [serial] [stereo RCA] // KT4NE8",
         ] {
             if let Err(error) = test.parse::<Edgework>() {
                 panic!("{} -> {:?}", test, error);
@@ -421,6 +440,20 @@ mod tests {
             ("3B 2H // [Airport] // KT4NE8", NotAPort),
         ] {
             assert_eq!(test.parse::<Edgework>(), Err(error));
+        }
+    }
+
+    #[test]
+    fn edgework_condition_display() {
+        use super::EdgeworkCondition::*;
+        use super::PortType::*;
+        for &(test, expected) in &[
+            (SerialStartsWithLetter, "the serial number starts with a letter"),
+            (PortPresent(Serial), "there is a serial port present on the bomb"),
+            (PortPresent(RJ45), "there is an RJ-45 port present on the bomb"),
+            (PortPresent(StereoRCA), "there is a stereo RCA port present on the bomb"),
+        ] {
+            assert_eq!(format!("{}", test), expected);
         }
     }
 }
