@@ -5,9 +5,9 @@ use strum_macros::{Display, EnumIter, IntoStaticStr};
 
 /// Stores a full rule set for Wires.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WireRuleSet([WireRuleList; 4]);
+pub struct RuleSet([RuleList; 4]);
 
-impl WireRuleSet {
+impl RuleSet {
     pub const MIN_WIRES: usize = 3;
     pub const MAX_WIRES: usize = 6;
 
@@ -26,7 +26,7 @@ impl WireRuleSet {
 
     /// If `wire_count` is a possible wire count, return a reference to the rules for the wire
     /// count.
-    pub fn get(&self, wire_count: usize) -> Option<&WireRuleList> {
+    pub fn get(&self, wire_count: usize) -> Option<&RuleList> {
         if (Self::MIN_WIRES..=Self::MAX_WIRES).contains(&wire_count) {
             Some(&self.0[wire_count - Self::MIN_WIRES])
         } else {
@@ -36,7 +36,7 @@ impl WireRuleSet {
 
     /// If `wire_count` is a possible wire count, return a mutable reference to the rules for
     /// the wire count.
-    pub fn get_mut(&mut self, wire_count: usize) -> Option<&mut WireRuleList> {
+    pub fn get_mut(&mut self, wire_count: usize) -> Option<&mut RuleList> {
         if (Self::MIN_WIRES..=Self::MAX_WIRES).contains(&wire_count) {
             Some(&mut self.0[wire_count - Self::MIN_WIRES])
         } else {
@@ -46,31 +46,31 @@ impl WireRuleSet {
 
     /// Return the solution for a given module. If there are no rules for a given wire count,
     /// None is returned.
-    pub fn evaluate(&self, edgework: &Edgework, wires: &[WireColor]) -> WireSolution {
+    pub fn evaluate(&self, edgework: &Edgework, wires: &[Color]) -> Solution {
         self[wires.len()].evaluate(edgework, wires)
     }
 }
 
 use std::ops::Index;
-impl Index<usize> for WireRuleSet {
-    type Output = WireRuleList;
+impl Index<usize> for RuleSet {
+    type Output = RuleList;
 
-    fn index(&self, wire_count: usize) -> &WireRuleList {
+    fn index(&self, wire_count: usize) -> &RuleList {
         self.get(wire_count)
-            .expect("index for WireRuleSet out of bounds")
+            .expect("index for RuleSet out of bounds")
     }
 }
 
 /// Represents the rules for a particular wire count.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WireRuleList {
-    pub rules: SmallVec<[WireRule; 4]>,
+pub struct RuleList {
+    pub rules: SmallVec<[Rule; 4]>,
     /// The solution in case none of the rules applies.
-    pub otherwise: WireSolution,
+    pub otherwise: Solution,
 }
 
-impl WireRuleList {
-    pub fn evaluate(&self, edgework: &Edgework, wires: &[WireColor]) -> WireSolution {
+impl RuleList {
+    pub fn evaluate(&self, edgework: &Edgework, wires: &[Color]) -> Solution {
         self.rules
             .iter()
             .filter(|rule| rule.evaluate(edgework, wires))
@@ -83,13 +83,13 @@ impl WireRuleList {
 /// Represents a single sentence in the manual. If all `conditions` are met, the `solution`
 /// applies (except earlier rules take precedence)
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WireRule {
-    pub conditions: SmallVec<[WireQuery; 2]>,
-    pub solution: WireSolution,
+pub struct Rule {
+    pub conditions: SmallVec<[Query; 2]>,
+    pub solution: Solution,
 }
 
-impl WireRule {
-    pub fn evaluate(&self, edgework: &Edgework, wires: &[WireColor]) -> bool {
+impl Rule {
+    pub fn evaluate(&self, edgework: &Edgework, wires: &[Color]) -> bool {
         self.conditions
             .iter()
             .all(|query| query.evaluate(edgework, wires))
@@ -98,23 +98,23 @@ impl WireRule {
 
 /// A single condition a particular rule might want to evaluate
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum WireQuery {
+pub enum Query {
     /// Represents a condition dependent only on the edgework
     EdgeworkFulfills(EdgeworkCondition),
     /// If there is exactly one _color_ wire...
-    ExactlyOneOfColor(WireColor),
+    ExactlyOneOfColor(Color),
     /// If there is more than one _color_ wire...
-    MoreThanOneOfColor(WireColor),
+    MoreThanOneOfColor(Color),
     /// If there are no _color_ wires...
-    ExactlyZeroOfColor(WireColor),
+    ExactlyZeroOfColor(Color),
     /// If there last wire is _color_...
-    LastWireIs(WireColor),
+    LastWireIs(Color),
 }
 
 use std::fmt;
-impl fmt::Display for WireQuery {
+impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::WireQuery::*;
+        use self::Query::*;
         match *self {
             EdgeworkFulfills(condition) => write!(f, "{}", condition),
             ExactlyOneOfColor(color) => write!(f, "there is exactly one {} wire", color),
@@ -125,9 +125,9 @@ impl fmt::Display for WireQuery {
     }
 }
 
-impl WireQuery {
-    pub fn evaluate(self, edgework: &Edgework, wires: &[WireColor]) -> bool {
-        use self::WireQuery::*;
+impl Query {
+    pub fn evaluate(self, edgework: &Edgework, wires: &[Color]) -> bool {
+        use self::Query::*;
         let count_wires = |color| wires.iter().cloned().filter(|wire| *wire == color).count();
         match self {
             EdgeworkFulfills(condition) => condition.evaluate(edgework),
@@ -141,20 +141,20 @@ impl WireQuery {
 
 /// The action the player should take to defuse a particular wire module
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum WireSolution {
+pub enum Solution {
     /// Cut the n-th wire. 0-indexed
     Index(u8),
     /// Cut the wire of the specified color. Only used when there is exactly one wire of the color.
-    TheOneOfColor(WireColor),
+    TheOneOfColor(Color),
     /// Cut the first wire of the specified color.
-    FirstOfColor(WireColor),
+    FirstOfColor(Color),
     /// Cut the first wire of the specified color.
-    LastOfColor(WireColor),
+    LastOfColor(Color),
 }
 
-impl fmt::Display for WireSolution {
+impl fmt::Display for Solution {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::WireSolution::*;
+        use self::Solution::*;
         use ordinal::Ordinal;
         match *self {
             Index(n) => write!(f, "cut the {} wire", Ordinal(n + 1)),
@@ -165,10 +165,10 @@ impl fmt::Display for WireSolution {
     }
 }
 
-impl WireSolution {
+impl Solution {
     /// Get the 0-indexed wire number for a given set of colors
-    pub fn as_index(self, wires: &[WireColor]) -> Option<u8> {
-        use self::WireSolution::*;
+    pub fn as_index(self, wires: &[Color]) -> Option<u8> {
+        use self::Solution::*;
         match self {
             Index(n) => Some(n),
             FirstOfColor(color) | TheOneOfColor(color) => wires
@@ -186,7 +186,7 @@ impl WireSolution {
 /// The colors a wire can have
 #[derive(Debug, Display, Copy, Clone, IntoStaticStr, EnumIter, PartialEq, Eq)]
 #[strum(serialize_all = "snake_case")]
-pub enum WireColor {
+pub enum Color {
     Black,
     Blue,
     Red,
@@ -196,18 +196,18 @@ pub enum WireColor {
 
 #[cfg(test)]
 mod tests {
-    use super::WireColor::*;
+    use super::Color::*;
     use super::*;
 
     #[test]
-    fn display_wire_query() {
+    fn display_query() {
         for &(test, expected) in &[
             (
-                WireQuery::EdgeworkFulfills(EdgeworkCondition::SerialOdd),
+                Query::EdgeworkFulfills(EdgeworkCondition::SerialOdd),
                 "the last digit of the serial number is odd",
             ),
             (
-                WireQuery::ExactlyOneOfColor(Yellow),
+                Query::ExactlyOneOfColor(Yellow),
                 "there is exactly one yellow wire",
             ),
         ] {
@@ -216,8 +216,8 @@ mod tests {
     }
 
     #[test]
-    fn display_wire_solution() {
-        use super::WireSolution::*;
+    fn display_solution() {
+        use super::Solution::*;
         for &(test, expected) in &[
             (Index(3), "cut the 4th wire"),
             (Index(1), "cut the 2nd wire"),
@@ -228,17 +228,17 @@ mod tests {
     }
 
     #[test]
-    fn display_wire_color() {
+    fn display_color() {
         assert_eq!(format!("{}", Black), "black");
     }
 
     #[test]
-    fn wire_query_evaluate() {
+    fn query_evaluate() {
         use super::EdgeworkCondition::*;
-        use super::WireQuery::*;
+        use super::Query::*;
 
         #[rustfmt::skip]
-        const TESTS: &[(Option<&str>, &[WireColor], WireQuery, bool)] = &[
+        const TESTS: &[(Option<&str>, &[Color], Query, bool)] = &[
             (Some("0B 0H // 000AA0"), &[Red, Black, Blue], EdgeworkFulfills(SerialOdd), false),
             (Some("0B 0H // 000AA1"), &[Red, Black, Blue], EdgeworkFulfills(SerialOdd), true),
             (None, &[Red, Black, Blue], LastWireIs(Red), false),
@@ -264,7 +264,7 @@ mod tests {
 
     #[test]
     fn vanilla_rules() {
-        let rules = WireRuleSet::new(VANILLA_SEED);
+        let rules = RuleSet::new(VANILLA_SEED);
 
         for &(edgework, colors, expected) in VANILLA_RULE_TESTS {
             let edgework = edgework.parse::<Edgework>().unwrap();
@@ -273,7 +273,7 @@ mod tests {
         }
     }
 
-    const VANILLA_RULE_TESTS: &[(&str, &[WireColor], u8)] = &[
+    const VANILLA_RULE_TESTS: &[(&str, &[Color], u8)] = &[
         ("0B 0H // *SIG *BOB *CLR // [DVI, PS2, RJ45, StereoRCA] [Parallel] // GU4XA6",
          &[Red, Blue, Yellow], 2),
         ("0B 0H // *SIG *BOB *CLR // [DVI, PS2, RJ45, StereoRCA] [Parallel] // GU4XA6",
@@ -395,98 +395,98 @@ mod tests {
     ];
 }
 
-impl WireRuleSet {
+impl RuleSet {
     fn vanilla_ruleset() -> Self {
-        use self::WireColor::*;
-        use self::WireQuery::*;
-        use self::WireSolution::*;
+        use self::Color::*;
+        use self::Query::*;
+        use self::Solution::*;
 
         #[rustfmt::skip]
-        WireRuleSet([
-            WireRuleList {
+        RuleSet([
+            RuleList {
                 rules: smallvec![
-                    WireRule {
+                    Rule {
                         conditions: smallvec![ExactlyZeroOfColor(Red)],
                         solution: Index(1),
                     },
-                    WireRule {
+                    Rule {
                         conditions: smallvec![LastWireIs(White)],
                         solution: Index(2),
                     },
-                    WireRule {
+                    Rule {
                         conditions: smallvec![MoreThanOneOfColor(Blue)],
                         solution: LastOfColor(Blue),
                     },
                 ],
                 otherwise: Index(2),
             },
-            WireRuleList {
+            RuleList {
                 rules: smallvec![
-                    WireRule {
+                    Rule {
                         conditions: smallvec![
                             MoreThanOneOfColor(Red),
                             EdgeworkFulfills(EdgeworkCondition::SerialOdd),
                         ],
                         solution: LastOfColor(Red),
                     },
-                    WireRule {
+                    Rule {
                         conditions: smallvec![
                             LastWireIs(Yellow),
                             ExactlyZeroOfColor(Red),
                         ],
                         solution: Index(0),
                     },
-                    WireRule {
+                    Rule {
                         conditions: smallvec![ExactlyOneOfColor(Blue)],
                         solution: Index(0),
                     },
-                    WireRule {
+                    Rule {
                         conditions: smallvec![MoreThanOneOfColor(Yellow)],
                         solution: Index(3),
                     },
                 ],
                 otherwise: Index(1),
             },
-            WireRuleList {
+            RuleList {
                 rules: smallvec![
-                    WireRule {
+                    Rule {
                         conditions: smallvec![
                             LastWireIs(Black),
                             EdgeworkFulfills(EdgeworkCondition::SerialOdd),
                         ],
                         solution: Index(3),
                     },
-                    WireRule {
+                    Rule {
                         conditions: smallvec![
                             ExactlyOneOfColor(Red),
                             MoreThanOneOfColor(Yellow),
                         ],
                         solution: Index(0),
                     },
-                    WireRule {
+                    Rule {
                         conditions: smallvec![ExactlyZeroOfColor(Black)],
                         solution: Index(1),
                     },
                 ],
                 otherwise: Index(0),
             },
-            WireRuleList {
+            RuleList {
                 rules: smallvec![
-                    WireRule {
+                    Rule {
                         conditions: smallvec![
                             ExactlyZeroOfColor(Yellow),
                             EdgeworkFulfills(EdgeworkCondition::SerialOdd),
                         ],
                         solution: Index(2),
                     },
-                    WireRule {
+                    Rule {
                         conditions: smallvec![
                             ExactlyOneOfColor(Yellow),
                             MoreThanOneOfColor(White),
                         ],
                         solution: Index(3),
                     },
-                    WireRule {
+                    Rule {
                         conditions: smallvec![ExactlyZeroOfColor(Red)],
                         solution: Index(5),
                     },
