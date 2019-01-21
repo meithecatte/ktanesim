@@ -237,8 +237,7 @@ pub enum PortType {
     #[strum(props(article = "an"))]
     RJ45      = 0b01_0000,
     #[strum(
-        to_string = "stereo RCA",
-        serialize = "Stereo RCA",
+        to_string = "Stereo RCA",
         serialize = "StereoRCA",
         serialize = "RCA"
     )]
@@ -424,7 +423,7 @@ mod tests {
             "0B 0H // FRK // AA0AA0",
             "0B 0H // [Empty] // KT4NE8",
             "0B 0H // [RJ, RCA] // KT4NE8",
-            "0B 0H // [serial] [stereo RCA] // KT4NE8",
+            "0B 0H // [serial] [Stereo RCA] // KT4NE8",
         ] {
             if let Err(error) = test.parse::<Edgework>() {
                 panic!("{} -> {:?}", test, error);
@@ -453,7 +452,7 @@ mod tests {
             (SerialStartsWithLetter, "the serial number starts with a letter"),
             (PortPresent(Serial), "there is a serial port present on the bomb"),
             (PortPresent(RJ45), "there is an RJ-45 port present on the bomb"),
-            (PortPresent(StereoRCA), "there is a stereo RCA port present on the bomb"),
+            (PortPresent(StereoRCA), "there is a Stereo RCA port present on the bomb"),
         ] {
             assert_eq!(format!("{}", test), expected);
         }
