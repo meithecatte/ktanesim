@@ -1,5 +1,7 @@
 use enum_map::EnumMap;
 use enumflags::BitFlags;
+use lazy_static::lazy_static;
+use strum_macros::{Display, EnumCount, EnumIter, EnumProperty, EnumString, IntoStaticStr};
 
 /// Represents the set of widgets on the edges of a bomb.
 #[derive(Debug, Clone, PartialEq)]
@@ -17,9 +19,8 @@ impl FromStr for Edgework {
     /// Parse a Twitch Plays-style edgework string, for example:
     /// ```
     /// # use ktane_utils::edgework::*;
-    /// # #[macro_use]
-    /// # extern crate enum_map;
     /// # fn main() {
+    /// #     use enum_map::enum_map;
     /// #     assert_eq!(
     /// "2B 1H // *FRK CAR // [Serial] [DVI, RJ45] [Empty] // PG3NL1"
     /// #     .parse::<Edgework>().unwrap(), Edgework {
@@ -209,6 +210,7 @@ impl SerialNumber {
     }
 }
 
+use enumflags_derive::EnumFlags;
 /// A bitfield that represents the port types that can be present on a bomb.
 #[derive(
     EnumFlags,
@@ -224,23 +226,23 @@ impl SerialNumber {
 )]
 pub enum PortType {
     #[strum(to_string = "serial", serialize = "Serial")]
-    Serial    = 0b000001,
+    Serial    = 0b00_0001,
     #[strum(to_string = "parallel", serialize = "Parallel")]
-    Parallel  = 0b000010,
+    Parallel  = 0b00_0010,
     #[strum(to_string = "DVI-D", serialize = "DVI")]
-    DVI       = 0b000100,
+    DVI       = 0b00_0100,
     #[strum(to_string = "PS/2", serialize = "PS2")]
-    PS2       = 0b001000,
+    PS2       = 0b00_1000,
     #[strum(to_string = "RJ-45", serialize = "RJ45", serialize = "RJ")]
     #[strum(props(article = "an"))]
-    RJ45      = 0b010000,
+    RJ45      = 0b01_0000,
     #[strum(
         to_string = "stereo RCA",
         serialize = "Stereo RCA",
         serialize = "StereoRCA",
-        serialize = "RCA",
+        serialize = "RCA"
     )]
-    StereoRCA = 0b100000,
+    StereoRCA = 0b10_0000,
 }
 
 /// The port plate widget.
@@ -277,12 +279,12 @@ impl PortPlate {
     }
 
     /// Returns true if and only if there are no ports on this port plate
-    pub fn is_empty(&self) -> bool {
+    pub fn is_empty(self) -> bool {
         self.0.is_empty()
     }
 
     /// Returns true if and only if `port` is present on this port plate
-    pub fn has(&self, port: PortType) -> bool {
+    pub fn has(self, port: PortType) -> bool {
         self.0.contains(port)
     }
 }
@@ -293,12 +295,12 @@ impl From<PortPlate> for BitFlags<PortType> {
     }
 }
 
+use enum_map::Enum;
 #[derive(
     Debug,
     Display,
     Copy,
     Clone,
-    FromPrimitive,
     IntoStaticStr,
     EnumIter,
     EnumString,
@@ -335,7 +337,7 @@ impl Default for IndicatorState {
 }
 
 /// A question that can be asked about the edgework by game rules
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum EdgeworkCondition {
     SerialStartsWithLetter,
     SerialOdd,
@@ -362,9 +364,9 @@ impl fmt::Display for EdgeworkCondition {
 
 impl EdgeworkCondition {
     /// Returns true if `edgework` satisfies the condition
-    pub fn evaluate(&self, edgework: &Edgework) -> bool {
+    pub fn evaluate(self, edgework: &Edgework) -> bool {
         use self::EdgeworkCondition::*;
-        match *self {
+        match self {
             SerialStartsWithLetter => edgework.serial_number.as_bytes()[0].is_ascii_uppercase(),
             SerialOdd => edgework.serial_number.last_digit() % 2 == 1,
             HasEmptyPortPlate => edgework
@@ -447,13 +449,39 @@ mod tests {
     fn edgework_condition_display() {
         use super::EdgeworkCondition::*;
         use super::PortType::*;
-        for &(test, expected) in &[
+        for &(test, expected) in #[rustfmt::skip] &[
             (SerialStartsWithLetter, "the serial number starts with a letter"),
             (PortPresent(Serial), "there is a serial port present on the bomb"),
             (PortPresent(RJ45), "there is an RJ-45 port present on the bomb"),
             (PortPresent(StereoRCA), "there is a stereo RCA port present on the bomb"),
         ] {
             assert_eq!(format!("{}", test), expected);
+        }
+    }
+
+    #[test]
+    fn edgework_condition_evaluate() {
+        use super::EdgeworkCondition::*;
+        use super::PortType::*;
+        for &(edgework, condition, expected) in #[rustfmt::skip] &[
+            ("0B 0H // KT4NE8", SerialStartsWithLetter, true),
+            ("0B 0H // 123AB4", SerialStartsWithLetter, false),
+            ("0B 0H // KT4NE8", SerialOdd, false),
+            ("0B 0H // KT4NE7", SerialOdd, true),
+            ("0B 0H // [Empty] // KT4NE8", HasEmptyPortPlate, true),
+            ("0B 0H // [Serial] [Empty] // KT4NE8", HasEmptyPortPlate, true),
+            ("0B 0H // KT4NE8", HasEmptyPortPlate, false),
+            ("0B 0H // [Serial] [RCA] // KT4NE8", HasEmptyPortPlate, false),
+            ("0B 0H // [Serial] // KT4NE8", PortPresent(Serial), true),
+            ("0B 0H // [Serial, Parallel] // KT4NE8", PortPresent(Serial), true),
+            ("0B 0H // [Serial, Parallel] // KT4NE8", PortPresent(Parallel), true),
+            ("0B 0H // [Parallel] [Empty] // KT4NE8", PortPresent(Serial), false),
+            ("0B 0H // [Parallel] [Serial] // KT4NE8", PortPresent(Serial), true),
+            ("0B 0H // [Serial] [Parallel] // KT4NE8", PortPresent(Serial), true),
+            ("0B 0H // KT4NE8", PortPresent(Serial), false),
+        ] {
+            let edgework = edgework.parse::<Edgework>().unwrap();
+            assert_eq!(condition.evaluate(&edgework), expected);
         }
     }
 }
