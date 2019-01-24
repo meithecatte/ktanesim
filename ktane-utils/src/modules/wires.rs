@@ -766,6 +766,42 @@ mod tests {
     }
 
     #[test]
+    fn generated_rules() {
+        let rules = RuleSet::new(42);
+        let expected = RuleSet([
+            rules! {
+                LastWireIs(Yellow), PortPresent(Serial) => Index(2),
+                MoreThanOne(White), SerialStartsWithLetter => Index(1),
+                ExactlyOne(Red) => Index(0),
+                NotPresent(Black) => Index(2)
+                or Index(0)
+            },
+            rules! {
+                MoreThanOne(Red), HasEmptyPortPlate => Index(2),
+                NotPresent(Yellow) => Index(0),
+                LastWireIs(Yellow) => Index(1),
+                MoreThanOne(Black) => FirstOfColor(Black)
+                or Index(3)
+            },
+            rules! {
+                MoreThanOne(Red), PortPresent(PS2) => Index(3),
+                NotPresent(Black), SerialOdd => Index(2),
+                LastWireIs(Red) => Index(1),
+                ExactlyOne(White) => TheOneOfColor(White)
+                or Index(1)
+            },
+            rules! {
+                ExactlyOne(Blue), PortPresent(Parallel) => Index(4),
+                NotPresent(Blue) => Index(1),
+                LastWireIs(Black) => Index(2)
+                or Index(1)
+            },
+        ]);
+
+        assert_eq!(rules, expected);
+    }
+
+    #[test]
     fn vanilla_rules() {
         let rules = RuleSet::new(VANILLA_SEED);
 
