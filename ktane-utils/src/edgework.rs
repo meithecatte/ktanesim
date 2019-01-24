@@ -223,25 +223,27 @@ use enumflags_derive::EnumFlags;
     EnumString,
     EnumIter,
     EnumProperty,
+    EnumCount,
+    Hash,
 )]
 pub enum PortType {
-    #[strum(to_string = "serial", serialize = "Serial")]
-    Serial    = 0b00_0001,
-    #[strum(to_string = "parallel", serialize = "Parallel")]
-    Parallel  = 0b00_0010,
     #[strum(to_string = "DVI-D", serialize = "DVI")]
-    DVI       = 0b00_0100,
+    DVI       = 0b00_0001,
     #[strum(to_string = "PS/2", serialize = "PS2")]
-    PS2       = 0b00_1000,
+    PS2       = 0b00_0010,
     #[strum(to_string = "RJ-45", serialize = "RJ45", serialize = "RJ")]
     #[strum(props(article = "an"))]
-    RJ45      = 0b01_0000,
+    RJ45      = 0b00_0100,
     #[strum(
         to_string = "Stereo RCA",
         serialize = "StereoRCA",
         serialize = "RCA"
     )]
-    StereoRCA = 0b10_0000,
+    StereoRCA = 0b00_1000,
+    #[strum(to_string = "parallel", serialize = "Parallel")]
+    Parallel  = 0b01_0000,
+    #[strum(to_string = "serial", serialize = "Serial")]
+    Serial    = 0b10_0000,
 }
 
 /// The port plate widget.
@@ -335,53 +337,6 @@ impl Default for IndicatorState {
     }
 }
 
-/// A question that can be asked about the edgework by game rules
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum EdgeworkCondition {
-    SerialStartsWithLetter,
-    SerialOdd,
-    HasEmptyPortPlate,
-    PortPresent(PortType),
-}
-
-use std::fmt;
-impl fmt::Display for EdgeworkCondition {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::EdgeworkCondition::*;
-        match *self {
-            SerialStartsWithLetter => write!(f, "the serial number starts with a letter"),
-            SerialOdd => write!(f, "the last digit of the serial number is odd"),
-            HasEmptyPortPlate => write!(f, "there is an empty port plate present on the bomb"),
-            PortPresent(port) => {
-                use strum::EnumProperty;
-                let article = port.get_str("article").unwrap_or("a");
-                write!(f, "there is {} {} port present on the bomb", article, port)
-            }
-        }
-    }
-}
-
-impl EdgeworkCondition {
-    /// Returns true if `edgework` satisfies the condition
-    pub fn evaluate(self, edgework: &Edgework) -> bool {
-        use self::EdgeworkCondition::*;
-        match self {
-            SerialStartsWithLetter => edgework.serial_number.as_bytes()[0].is_ascii_uppercase(),
-            SerialOdd => edgework.serial_number.last_digit() % 2 == 1,
-            HasEmptyPortPlate => edgework
-                .port_plates
-                .iter()
-                .cloned()
-                .any(|plate| plate.is_empty()),
-            PortPresent(port) => edgework
-                .port_plates
-                .iter()
-                .cloned()
-                .any(|plate| plate.has(port)),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -441,46 +396,6 @@ mod tests {
             ("3B 2H // [Airport] // KT4NE8", NotAPort),
         ] {
             assert_eq!(test.parse::<Edgework>(), Err(error));
-        }
-    }
-
-    #[test]
-    fn edgework_condition_display() {
-        use super::EdgeworkCondition::*;
-        use super::PortType::*;
-        for &(test, expected) in #[rustfmt::skip] &[
-            (SerialStartsWithLetter, "the serial number starts with a letter"),
-            (PortPresent(Serial), "there is a serial port present on the bomb"),
-            (PortPresent(RJ45), "there is an RJ-45 port present on the bomb"),
-            (PortPresent(StereoRCA), "there is a Stereo RCA port present on the bomb"),
-        ] {
-            assert_eq!(format!("{}", test), expected);
-        }
-    }
-
-    #[test]
-    fn edgework_condition_evaluate() {
-        use super::EdgeworkCondition::*;
-        use super::PortType::*;
-        for &(edgework, condition, expected) in #[rustfmt::skip] &[
-            ("0B 0H // KT4NE8", SerialStartsWithLetter, true),
-            ("0B 0H // 123AB4", SerialStartsWithLetter, false),
-            ("0B 0H // KT4NE8", SerialOdd, false),
-            ("0B 0H // KT4NE7", SerialOdd, true),
-            ("0B 0H // [Empty] // KT4NE8", HasEmptyPortPlate, true),
-            ("0B 0H // [Serial] [Empty] // KT4NE8", HasEmptyPortPlate, true),
-            ("0B 0H // KT4NE8", HasEmptyPortPlate, false),
-            ("0B 0H // [Serial] [RCA] // KT4NE8", HasEmptyPortPlate, false),
-            ("0B 0H // [Serial] // KT4NE8", PortPresent(Serial), true),
-            ("0B 0H // [Serial, Parallel] // KT4NE8", PortPresent(Serial), true),
-            ("0B 0H // [Serial, Parallel] // KT4NE8", PortPresent(Parallel), true),
-            ("0B 0H // [Parallel] [Empty] // KT4NE8", PortPresent(Serial), false),
-            ("0B 0H // [Parallel] [Serial] // KT4NE8", PortPresent(Serial), true),
-            ("0B 0H // [Serial] [Parallel] // KT4NE8", PortPresent(Serial), true),
-            ("0B 0H // KT4NE8", PortPresent(Serial), false),
-        ] {
-            let edgework = edgework.parse::<Edgework>().unwrap();
-            assert_eq!(condition.evaluate(&edgework), expected);
         }
     }
 }

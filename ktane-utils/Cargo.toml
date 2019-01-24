@@ -5,6 +5,7 @@ authors = ["NieDzejkob <kuba@kadziolka.net>"]
 edition = "2018"
 
 [dependencies]
+array-init = "^0.0"
 enumflags = "^0.4"
 enumflags_derive = "^0.4"
 enum-map = "^0.4"

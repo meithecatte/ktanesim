@@ -73,7 +73,7 @@ impl RuleseedRandom {
         // NOTE: dividing instead of multiplying by the reciprocal causes occasional off-by-ones.
         // That's also why next_int is implemented in terms of next_double and not the other way
         // around - it wouldn't match that way.
-        f64::from(result) * (1. / f64::from(MAX_VALUE))
+        dbg!(f64::from(result) * (1. / f64::from(MAX_VALUE)))
     }
 
     /// Generates a random 31-bit unsigned integer.
