@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::hash::Hash;
+
 const SEED_LEN: usize = 55;
 
 /// The upper bound of the half-open range of values returned by [`RuleseedRandom::next_int`].
@@ -73,7 +76,7 @@ impl RuleseedRandom {
         // NOTE: dividing instead of multiplying by the reciprocal causes occasional off-by-ones.
         // That's also why next_int is implemented in terms of next_double and not the other way
         // around - it wouldn't match that way.
-        dbg!(f64::from(result) * (1. / f64::from(MAX_VALUE)))
+        f64::from(result) * (1. / f64::from(MAX_VALUE))
     }
 
     /// Generates a random 31-bit unsigned integer.
@@ -83,7 +86,11 @@ impl RuleseedRandom {
 
     /// Generates a random integer with a value less than the `max_value` parameter.
     pub fn next_below(&mut self, max_value: u32) -> u32 {
-        (self.next_double() * f64::from(max_value)) as u32
+        if max_value <= 1 {
+            0
+        } else {
+            (self.next_double() * f64::from(max_value)) as u32
+        }
     }
 
     /// Generates a random integer in the half-open `[lower_bound; upper_bound)` range.
@@ -100,6 +107,7 @@ impl RuleseedRandom {
     }
 
     /// Shuffles the provided `slice`. Equivalent to `.OrderBy(x => rnd.NextDouble())` in C#.
+    /// Please consider using `shuffle_fisher_yates` instead.
     pub fn shuffle_by_sorting<T>(&mut self, slice: &mut [T]) {
         match slice.len() {
             0 => (),
@@ -121,6 +129,42 @@ impl RuleseedRandom {
             slice.swap(i, j);
         }
     }
+
+    /// Returns a randomly chosen element from the slice, or `None` if empty.
+    pub fn choice<'s, T>(&mut self, slice: &'s [T]) -> Option<&'s T> {
+        use std::convert::TryInto;
+        let index = self.next_below(slice.len().try_into().expect("slice too large"));
+        slice.get(index as usize)
+    }
+
+    /// Given a `Vec<T>` and a `HashMap<T, f64>`, perform a weighted random selection from the
+    /// `Vec`, using the corresponding values in the `HashMap` as weights.
+    pub fn weighted_select<'s, T>(
+        &mut self,
+        elements: &'s [T],
+        weights: &HashMap<T, f64>,
+    ) -> &'s T
+    where
+        T: Hash + Eq,
+    {
+        let total_weights: f64 = elements
+            .iter()
+            .map(|element| weights.get(element).cloned().unwrap_or(1.0))
+            .sum();
+        let mut choice = self.next_double() * total_weights;
+
+        for element in elements.iter() {
+            let weight = weights.get(element).cloned().unwrap_or(1.0);
+            if choice < weight {
+                return element;
+            } else {
+                choice -= weight;
+            }
+        }
+
+        panic!("weighted_select tried to choose from zero elements");
+    }
+
 }
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
 #![feature(slice_sort_by_cached_key)]
 #![feature(range_contains)]
 #![feature(stmt_expr_attributes)]
+#![feature(try_from)]
 
 // Temporary, EnumFlags needs a fix
 #![allow(proc_macro_derive_resolution_fallback)]

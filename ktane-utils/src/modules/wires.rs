@@ -43,9 +43,18 @@ impl RuleSet {
                 // Put all the compound query rules in front
                 rules.sort_by_key(|rule: &Rule| rule.queries.len().wrapping_neg());
 
+                let mut solutions = Self::possible_solutions(&[], wire_count);
+
+                if seed != VANILLA_SEED {
+                    let forbidden: SolutionWeightKey = rules.last().unwrap().solution.into();
+                    solutions.retain(|&mut solution| solution != forbidden);
+                }
+
+                let otherwise = random.choice(&solutions).unwrap().colorize(&mut random, &[]);
+
                 RuleList {
                     rules,
-                    otherwise: Solution::Index(0),
+                    otherwise,
                 }
             }))
         }
@@ -73,7 +82,6 @@ impl RuleSet {
         wire_count: usize,
         vanilla_seed: bool,
     ) -> Rule {
-        println!("Generating rule for {} wires", wire_count);
         let compound = Self::roll_compound(random);
         use strum::IntoEnumIterator;
         let mut colors_available_for_queries: SmallVec<[Color; COLOR_COUNT]> =
@@ -82,9 +90,12 @@ impl RuleSet {
         let available_queries: SmallVec<[_; WIREQUERYTYPE_COUNT]> = WireQueryType::iter()
             .map(QueryWeightKey::Wire)
             .collect();
-        let main_query = Self::weighted_select(random, &available_queries, query_weights);
-        *query_weights.entry(main_query).or_insert(1.0) *= 0.1;
-        let main_query = main_query.colorize(random, &mut colors_available_for_queries);
+        let main_query = Self::choose_query(
+            random,
+            &available_queries,
+            query_weights,
+            &mut colors_available_for_queries
+        );
 
         let auxiliary_query = if compound {
             let max_wires_involved = wire_count - main_query.wires_involved();
@@ -124,11 +135,10 @@ impl RuleSet {
 
         let available_solutions = Self::possible_solutions(
             &queries,
-            wire_count as u8,
+            wire_count,
         );
 
-        println!("Choosing solution type");
-        let solution = Self::weighted_select(random, &available_solutions, solution_weights);
+        let solution = *random.weighted_select(&available_solutions, solution_weights);
         *solution_weights.entry(solution).or_insert(1.0) *= 0.05;
 
         let solution_colors: SmallVec<[Color; 2]> = queries
@@ -137,10 +147,7 @@ impl RuleSet {
             .filter_map(Query::solution_colors)
             .collect();
 
-        println!("Choosing solution color");
         let solution = solution.colorize(random, &solution_colors);
-
-        println!("Chose {:#?} -> {:#?}", queries, solution);
 
         Rule {
             queries,
@@ -154,16 +161,17 @@ impl RuleSet {
         query_weights: &mut HashMap<QueryWeightKey, f64>,
         colors_available: &mut SmallVec<[Color; COLOR_COUNT]>,
     ) -> Query {
-        let query_type = Self::weighted_select(random, &available_queries, query_weights);
+        let query_type = *random.weighted_select(&available_queries, query_weights);
         *query_weights.entry(query_type).or_insert(1.0) *= 0.1;
         query_type.colorize(random, colors_available)
     }
 
     fn possible_solutions(
         queries: &[Query],
-        wire_count: u8,
+        wire_count: usize,
     ) -> SmallVec<[SolutionWeightKey; 8]> {
         use self::SolutionWeightKey::*;
+        let wire_count = wire_count as u8;
         let mut solutions = smallvec![
             Index(0),
             Index(1),
@@ -173,36 +181,6 @@ impl RuleSet {
         solutions.extend((2..wire_count - 1).map(Index));
         solutions.extend(queries.iter().cloned().flat_map(Query::additional_solutions));
         solutions
-    }
-
-    /// Given a `Vec<T>` and a `HashMap<T, f64>`, perform a weighted random selection from the
-    /// `Vec`, using the corresponding values in the `HashMap` as weights.
-    fn weighted_select<T>(
-        random: &mut RuleseedRandom,
-        elements: &[T],
-        weights: &HashMap<T, f64>,
-    ) -> T
-    where
-        T: Copy + std::hash::Hash + Eq + std::fmt::Debug,
-    {
-        println!("Weights: {:#?}", weights);
-        println!("Elements: {:#?}", elements);
-        let total_weights: f64 = elements
-            .iter()
-            .map(|element| weights.get(element).cloned().unwrap_or(1.0))
-            .sum();
-        let mut choice = dbg!(random.next_double() * dbg!(total_weights));
-
-        for &element in elements.iter() {
-            let weight = weights.get(&element).cloned().unwrap_or(1.0);
-            if choice < weight {
-                return element;
-            } else {
-                choice -= weight;
-            }
-        }
-
-        panic!("weighted_select tried to choose from zero elements");
     }
 
     /// If `wire_count` is a possible wire count, return a reference to the rules for the wire
@@ -550,20 +528,12 @@ impl SolutionWeightKey {
         colors_available: &[Color],
     ) -> Solution {
         use self::SolutionWeightKey::*;
-        if colors_available.is_empty() {
-            match self {
-                Index(n) => Solution::Index(n),
-                _ => unreachable!(),
-            }
-        } else {
-            let index = random.next_below(colors_available.len() as u32);
-            let color = colors_available[index as usize];
-            match self {
-                Index(n) => Solution::Index(n),
-                TheOneOfColor => Solution::TheOneOfColor(color),
-                FirstOfColor => Solution::FirstOfColor(color),
-                LastOfColor => Solution::LastOfColor(color),
-            }
+        let color = random.choice(colors_available).cloned();
+        match self {
+            Index(n) => Solution::Index(n),
+            TheOneOfColor => Solution::TheOneOfColor(color.unwrap()),
+            FirstOfColor => Solution::FirstOfColor(color.unwrap()),
+            LastOfColor => Solution::LastOfColor(color.unwrap()),
         }
     }
 }
