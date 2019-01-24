@@ -733,40 +733,37 @@ mod tests {
         }
     }
 
-    /*
     #[test]
-    fn query_evaluate() {
-        use super::Query::*;
+    fn edgework_query_evaluate() {
+        use super::EdgeworkQuery::*;
         use super::PortType::*;
 
         #[rustfmt::skip]
-        const TESTS: &[(Option<&str>, Option<&[Color]>, Query, bool)] = &[
-            (Some("0B 0H // KT4NE8"), None, SerialStartsWithLetter, true),
-            (Some("0B 0H // 123AB4"), None, SerialStartsWithLetter, false),
-            (Some("0B 0H // KT4NE8"), None, SerialOdd, false),
-            (Some("0B 0H // KT4NE7"), None, SerialOdd, true),
-            (Some("0B 0H // [Empty] // KT4NE8"), None, HasEmptyPortPlate, true),
-            (Some("0B 0H // [Serial] [Empty] // KT4NE8"), None, HasEmptyPortPlate, true),
-            (Some("0B 0H // KT4NE8"), None, HasEmptyPortPlate, false),
-            (Some("0B 0H // [Serial] [RCA] // KT4NE8"), None, HasEmptyPortPlate, false),
-            (Some("0B 0H // [Serial] // KT4NE8"), None, PortPresent(Serial), true),
-            (Some("0B 0H // [Serial, Parallel] // KT4NE8"), None, PortPresent(Serial), true),
-            (Some("0B 0H // [Serial, Parallel] // KT4NE8"), None, PortPresent(Parallel), true),
-            (Some("0B 0H // [Parallel] [Empty] // KT4NE8"), None, PortPresent(Serial), false),
-            (Some("0B 0H // [Parallel] [Serial] // KT4NE8"), None, PortPresent(Serial), true),
-            (Some("0B 0H // [Serial] [Parallel] // KT4NE8"), None, PortPresent(Serial), true),
-            (Some("0B 0H // KT4NE8"), None, PortPresent(Serial), false),
+        const TESTS: &[(&str, EdgeworkQuery, bool)] = &[
+            ("0B 0H // KT4NE8", SerialStartsWithLetter, true),
+            ("0B 0H // 123AB4", SerialStartsWithLetter, false),
+            ("0B 0H // KT4NE8", SerialOdd, false),
+            ("0B 0H // KT4NE7", SerialOdd, true),
+            ("0B 0H // [Empty] // KT4NE8", HasEmptyPortPlate, true),
+            ("0B 0H // [Serial] [Empty] // KT4NE8", HasEmptyPortPlate, true),
+            ("0B 0H // KT4NE8", HasEmptyPortPlate, false),
+            ("0B 0H // [Serial] [RCA] // KT4NE8", HasEmptyPortPlate, false),
+            ("0B 0H // [Serial] // KT4NE8", PortPresent(Serial), true),
+            ("0B 0H // [Serial, Parallel] // KT4NE8", PortPresent(Serial), true),
+            ("0B 0H // [Serial, Parallel] // KT4NE8", PortPresent(Parallel), true),
+            ("0B 0H // [Parallel] [Empty] // KT4NE8", PortPresent(Serial), false),
+            ("0B 0H // [Parallel] [Serial] // KT4NE8", PortPresent(Serial), true),
+            ("0B 0H // [Serial] [Parallel] // KT4NE8", PortPresent(Serial), true),
+            ("0B 0H // KT4NE8", PortPresent(Serial), false),
         ];
 
-        for &(edgework, colors, query, expected) in TESTS {
+        for &(edgework, query, expected) in TESTS {
             let edgework = edgework
-                .unwrap_or("0B 0H // KT4NE8")
                 .parse::<Edgework>()
                 .unwrap();
-            let colors = colors.unwrap_or(&[Red, Black, Blue]);
-            assert_eq!(query.evaluate(&edgework, colors), expected);
+            assert_eq!(query.evaluate(&edgework), expected);
         }
-    }*/
+    }
 
     #[test]
     fn vanilla_rules() {
