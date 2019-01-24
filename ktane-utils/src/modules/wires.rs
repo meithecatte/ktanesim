@@ -4,14 +4,14 @@ use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
 use strum_macros::{Display, EnumCount, EnumIter, IntoStaticStr};
 
+pub const MIN_WIRES: usize = 3;
+pub const MAX_WIRES: usize = 6;
+
 /// Stores a full rule set for Wires.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuleSet([RuleList; 4]);
 
 impl RuleSet {
-    pub const MIN_WIRES: usize = 3;
-    pub const MAX_WIRES: usize = 6;
-
     /// Generates the rule set for a given `seed`.
     pub fn new(seed: u32) -> Self {
         if seed == VANILLA_SEED {
@@ -20,7 +20,7 @@ impl RuleSet {
         } else {
             let mut random = RuleseedRandom::new(seed);
             RuleSet(array_init::array_init(|index| {
-                let wire_count = index + Self::MIN_WIRES;
+                let wire_count = index + MIN_WIRES;
                 let rule_count = Self::roll_rule_count(&mut random);
                 let mut rules = smallvec![];
                 let mut query_weights: HashMap<QueryWeightKey, f64> = HashMap::new();
@@ -32,7 +32,6 @@ impl RuleSet {
                         &mut query_weights,
                         &mut solution_weights,
                         wire_count,
-                        seed == VANILLA_SEED,
                     );
 
                     if rule.is_valid() {
@@ -44,18 +43,15 @@ impl RuleSet {
                 rules.sort_by_key(|rule: &Rule| rule.queries.len().wrapping_neg());
 
                 let mut solutions = Self::possible_solutions(&[], wire_count);
+                let forbidden: SolutionWeightKey = rules.last().unwrap().solution.into();
+                solutions.retain(|&mut solution| solution != forbidden);
 
-                if seed != VANILLA_SEED {
-                    let forbidden: SolutionWeightKey = rules.last().unwrap().solution.into();
-                    solutions.retain(|&mut solution| solution != forbidden);
-                }
+                let otherwise = random
+                    .choice(&solutions)
+                    .unwrap()
+                    .colorize(&mut random, &[]);
 
-                let otherwise = random.choice(&solutions).unwrap().colorize(&mut random, &[]);
-
-                RuleList {
-                    rules,
-                    otherwise,
-                }
+                RuleList { rules, otherwise }
             }))
         }
     }
@@ -80,27 +76,25 @@ impl RuleSet {
         query_weights: &mut HashMap<QueryWeightKey, f64>,
         solution_weights: &mut HashMap<SolutionWeightKey, f64>,
         wire_count: usize,
-        vanilla_seed: bool,
     ) -> Rule {
         let compound = Self::roll_compound(random);
         use strum::IntoEnumIterator;
         let mut colors_available_for_queries: SmallVec<[Color; COLOR_COUNT]> =
             Color::iter().collect();
 
-        let available_queries: SmallVec<[_; WIREQUERYTYPE_COUNT]> = WireQueryType::iter()
-            .map(QueryWeightKey::Wire)
-            .collect();
+        let available_queries: SmallVec<[_; WIREQUERYTYPE_COUNT]> =
+            WireQueryType::iter().map(QueryWeightKey::Wire).collect();
         let main_query = Self::choose_query(
             random,
             &available_queries,
             query_weights,
-            &mut colors_available_for_queries
+            &mut colors_available_for_queries,
         );
 
         let auxiliary_query = if compound {
             let max_wires_involved = wire_count - main_query.wires_involved();
             use self::EdgeworkQuery::*;
-            let mut available_queries: SmallVec<[_; QUERY_TYPE_COUNT]> =
+            let available_queries: SmallVec<[_; QUERY_TYPE_COUNT]> =
                 [SerialStartsWithLetter, SerialOdd]
                     .iter()
                     .cloned()
@@ -108,23 +102,21 @@ impl RuleSet {
                     .chain(
                         WireQueryType::iter()
                             .filter(|query_type| query_type.wires_involved() < max_wires_involved)
-                            .map(QueryWeightKey::Wire))
+                            .map(QueryWeightKey::Wire),
+                    )
+                    .chain(
+                        PortType::iter()
+                            .map(PortPresent)
+                            .chain(std::iter::once(HasEmptyPortPlate))
+                            .map(QueryWeightKey::Edgework),
+                    )
                     .collect();
 
-            if !vanilla_seed {
-                available_queries.extend(
-                    PortType::iter()
-                        .map(PortPresent)
-                        .chain(std::iter::once(HasEmptyPortPlate))
-                        .map(QueryWeightKey::Edgework),
-                );
-            }
-
             Some(Self::choose_query(
-                    random,
-                    &available_queries,
-                    query_weights,
-                    &mut colors_available_for_queries,
+                random,
+                &available_queries,
+                query_weights,
+                &mut colors_available_for_queries,
             ))
         } else {
             None
@@ -133,10 +125,7 @@ impl RuleSet {
         let mut queries: SmallVec<[Query; 2]> = smallvec![main_query];
         queries.extend(auxiliary_query);
 
-        let available_solutions = Self::possible_solutions(
-            &queries,
-            wire_count,
-        );
+        let available_solutions = Self::possible_solutions(&queries, wire_count);
 
         let solution = *random.weighted_select(&available_solutions, solution_weights);
         *solution_weights.entry(solution).or_insert(1.0) *= 0.05;
@@ -149,10 +138,7 @@ impl RuleSet {
 
         let solution = solution.colorize(random, &solution_colors);
 
-        Rule {
-            queries,
-            solution,
-        }
+        Rule { queries, solution }
     }
 
     fn choose_query(
@@ -172,22 +158,23 @@ impl RuleSet {
     ) -> SmallVec<[SolutionWeightKey; 8]> {
         use self::SolutionWeightKey::*;
         let wire_count = wire_count as u8;
-        let mut solutions = smallvec![
-            Index(0),
-            Index(1),
-            Index(wire_count - 1),
-        ];
+        let mut solutions = smallvec![Index(0), Index(1), Index(wire_count - 1)];
 
         solutions.extend((2..wire_count - 1).map(Index));
-        solutions.extend(queries.iter().cloned().flat_map(Query::additional_solutions));
+        solutions.extend(
+            queries
+                .iter()
+                .cloned()
+                .flat_map(Query::additional_solutions),
+        );
         solutions
     }
 
     /// If `wire_count` is a possible wire count, return a reference to the rules for the wire
     /// count.
     pub fn get(&self, wire_count: usize) -> Option<&RuleList> {
-        if (Self::MIN_WIRES..=Self::MAX_WIRES).contains(&wire_count) {
-            Some(&self.0[wire_count - Self::MIN_WIRES])
+        if (MIN_WIRES..=MAX_WIRES).contains(&wire_count) {
+            Some(&self.0[wire_count - MIN_WIRES])
         } else {
             None
         }
@@ -196,8 +183,8 @@ impl RuleSet {
     /// If `wire_count` is a possible wire count, return a mutable reference to the rules for
     /// the wire count.
     pub fn get_mut(&mut self, wire_count: usize) -> Option<&mut RuleList> {
-        if (Self::MIN_WIRES..=Self::MAX_WIRES).contains(&wire_count) {
-            Some(&mut self.0[wire_count - Self::MIN_WIRES])
+        if (MIN_WIRES..=MAX_WIRES).contains(&wire_count) {
+            Some(&mut self.0[wire_count - MIN_WIRES])
         } else {
             None
         }
@@ -207,6 +194,16 @@ impl RuleSet {
     /// None is returned.
     pub fn evaluate(&self, edgework: &Edgework, wires: &[Color]) -> Solution {
         self[wires.len()].evaluate(edgework, wires)
+    }
+}
+
+impl fmt::Display for RuleSet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for wire_count in MIN_WIRES..=MAX_WIRES {
+            write!(f, "{} wires:\n{}\n\n", wire_count, self[wire_count])?;
+        }
+
+        Ok(())
     }
 }
 
@@ -239,6 +236,35 @@ impl RuleList {
     }
 }
 
+impl fmt::Display for RuleList {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut first_rule = true;
+
+        for rule in self.rules.iter() {
+            let beginning = if first_rule { "If" } else { "Otherwise, if" };
+
+            write!(f, "{} ", beginning)?;
+
+            let mut first_query = true;
+
+            for &query in rule.queries.iter() {
+                if !first_query {
+                    write!(f, " and ")?;
+                }
+
+                write!(f, "{}", query)?;
+                first_query = false;
+            }
+
+            write!(f, ", {}.\n", rule.solution)?;
+
+            first_rule = false;
+        }
+
+        write!(f, "Otherwise, {}.", self.otherwise)
+    }
+}
+
 /// Represents a single sentence in the manual. If all `queries` are met, the `solution` applies
 /// (except earlier rules take precedence)
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -249,7 +275,9 @@ pub struct Rule {
 
 impl Rule {
     pub fn evaluate(&self, edgework: &Edgework, wires: &[Color]) -> bool {
-        self.queries.iter().all(|query| query.evaluate(edgework, wires))
+        self.queries
+            .iter()
+            .all(|query| query.evaluate(edgework, wires))
     }
 
     fn is_valid(&self) -> bool {
@@ -294,6 +322,16 @@ use crate::edgework::PortType;
 pub enum Query {
     Edgework(EdgeworkQuery),
     Wire(WireQuery),
+}
+
+impl fmt::Display for Query {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Query::*;
+        match self {
+            Edgework(q) => q.fmt(f),
+            Wire(q) => q.fmt(f),
+        }
+    }
 }
 
 impl Query {
@@ -522,11 +560,7 @@ impl From<Solution> for SolutionWeightKey {
 }
 
 impl SolutionWeightKey {
-    fn colorize(
-        self,
-        random: &mut RuleseedRandom,
-        colors_available: &[Color],
-    ) -> Solution {
+    fn colorize(self, random: &mut RuleseedRandom, colors_available: &[Color]) -> Solution {
         use self::SolutionWeightKey::*;
         let color = random.choice(colors_available).cloned();
         match self {
@@ -585,23 +619,24 @@ mod tests {
     use super::Color::*;
     use super::*;
 
-    /*
     #[test]
     fn display_query() {
         for &(test, expected) in &[
             (
-                EdgeworkQuery::SerialOdd,
+                Query::Edgework(EdgeworkQuery::SerialOdd),
                 "the last digit of the serial number is odd",
             ),
             (
-                WireQuery { query_type: WireQueryType::ExactlyOneOfColor, color: Yellow },
+                Query::Wire(WireQuery {
+                    query_type: WireQueryType::ExactlyOneOfColor,
+                    color: Yellow,
+                }),
                 "there is exactly one yellow wire",
             ),
         ] {
             assert_eq!(format!("{}", test), expected);
         }
     }
-    */
 
     #[test]
     fn display_solution() {
@@ -692,8 +727,8 @@ mod tests {
 
     #[test]
     fn tmp() {
-        let rules = RuleSet::new(2);
-        println!("{:#?}", rules);
+        let rules = RuleSet::new(1);
+        println!("{}", rules);
         panic!();
     }
 

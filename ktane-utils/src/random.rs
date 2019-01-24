@@ -139,11 +139,7 @@ impl RuleseedRandom {
 
     /// Given a `Vec<T>` and a `HashMap<T, f64>`, perform a weighted random selection from the
     /// `Vec`, using the corresponding values in the `HashMap` as weights.
-    pub fn weighted_select<'s, T>(
-        &mut self,
-        elements: &'s [T],
-        weights: &HashMap<T, f64>,
-    ) -> &'s T
+    pub fn weighted_select<'s, T>(&mut self, elements: &'s [T], weights: &HashMap<T, f64>) -> &'s T
     where
         T: Hash + Eq,
     {
