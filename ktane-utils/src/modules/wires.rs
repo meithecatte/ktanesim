@@ -57,28 +57,28 @@ impl RuleSet {
 
             RuleSet([
                 rules! {
-                    ExactlyZeroOfColor(Red) => Index(1),
+                    NotPresent(Red) => Index(1),
                     LastWireIs(White) => Index(2),
-                    MoreThanOneOfColor(Blue) => LastOfColor(Blue)
+                    MoreThanOne(Blue) => LastOfColor(Blue)
                     or Index(2)
                 },
                 rules! {
-                    MoreThanOneOfColor(Red), SerialOdd => LastOfColor(Red),
-                    LastWireIs(Yellow), ExactlyZeroOfColor(Red) => Index(0),
-                    ExactlyOneOfColor(Blue) => Index(0),
-                    MoreThanOneOfColor(Yellow) => Index(3)
+                    MoreThanOne(Red), SerialOdd => LastOfColor(Red),
+                    LastWireIs(Yellow), NotPresent(Red) => Index(0),
+                    ExactlyOne(Blue) => Index(0),
+                    MoreThanOne(Yellow) => Index(3)
                     or Index(1)
                 },
                 rules! {
                     LastWireIs(Black), SerialOdd => Index(3),
-                    ExactlyOneOfColor(Red), MoreThanOneOfColor(Yellow) => Index(0),
-                    ExactlyZeroOfColor(Black) => Index(1)
+                    ExactlyOne(Red), MoreThanOne(Yellow) => Index(0),
+                    NotPresent(Black) => Index(1)
                     or Index(0)
                 },
                 rules! {
-                    ExactlyZeroOfColor(Yellow), SerialOdd => Index(2),
-                    ExactlyOneOfColor(Yellow), MoreThanOneOfColor(White) => Index(3),
-                    ExactlyZeroOfColor(Red) => Index(5)
+                    NotPresent(Yellow), SerialOdd => Index(2),
+                    ExactlyOne(Yellow), MoreThanOne(White) => Index(3),
+                    NotPresent(Red) => Index(5)
                     or Index(3)
                 },
             ])
@@ -403,8 +403,8 @@ impl Query {
         use self::WireQueryType::*;
         let solutions: &[_] = match self {
             Query::Wire(WireQuery { query_type, .. }) => match query_type {
-                ExactlyOneOfColor => &[TheOneOfColor],
-                MoreThanOneOfColor => &[FirstOfColor, LastOfColor],
+                ExactlyOne => &[TheOneOfColor],
+                MoreThanOne => &[FirstOfColor, LastOfColor],
                 _ => &[],
             },
             _ => &[],
@@ -418,7 +418,7 @@ impl Query {
         use self::WireQueryType::*;
         match self {
             Wire(WireQuery { query_type, color }) => match query_type {
-                ExactlyOneOfColor | MoreThanOneOfColor | LastWireIs => Some(color),
+                ExactlyOne | MoreThanOne | LastWireIs => Some(color),
                 _ => None,
             },
             _ => None,
@@ -516,21 +516,21 @@ pub struct WireQuery {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, EnumCount, EnumIter)]
 pub enum WireQueryType {
     /// If there is exactly one _color_ wire...
-    ExactlyOneOfColor,
+    ExactlyOne,
     /// If there are no _color_ wires...
-    ExactlyZeroOfColor,
+    NotPresent,
     /// If there last wire is _color_...
     LastWireIs,
     /// If there is more than one _color_ wire...
-    MoreThanOneOfColor,
+    MoreThanOne,
 }
 
 impl WireQueryType {
     fn wires_involved(self) -> usize {
         use self::WireQueryType::*;
         match self {
-            MoreThanOneOfColor => 2,
-            ExactlyZeroOfColor => 0,
+            MoreThanOne => 2,
+            NotPresent => 0,
             _ => 1,
         }
     }
@@ -561,9 +561,9 @@ impl fmt::Display for WireQuery {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::WireQueryType::*;
         match self.query_type {
-            ExactlyOneOfColor => write!(f, "there is exactly one {} wire", self.color),
-            MoreThanOneOfColor => write!(f, "there is more than one {} wire", self.color),
-            ExactlyZeroOfColor => write!(f, "there are no {} wires", self.color),
+            ExactlyOne => write!(f, "there is exactly one {} wire", self.color),
+            MoreThanOne => write!(f, "there is more than one {} wire", self.color),
+            NotPresent => write!(f, "there are no {} wires", self.color),
             LastWireIs => write!(f, "the last wire is {}", self.color),
         }
     }
@@ -575,9 +575,9 @@ impl WireQuery {
         let count_wires = || wires.iter().filter(|&&wire| wire == self.color).count();
         match self.query_type {
             LastWireIs => *wires.last().unwrap() == self.color,
-            ExactlyOneOfColor => count_wires() == 1,
-            MoreThanOneOfColor => count_wires() > 1,
-            ExactlyZeroOfColor => count_wires() == 0,
+            ExactlyOne => count_wires() == 1,
+            MoreThanOne => count_wires() > 1,
+            NotPresent => count_wires() == 0,
         }
     }
 }
@@ -683,7 +683,7 @@ mod tests {
             ),
             (
                 Query::Wire(WireQuery {
-                    query_type: WireQueryType::ExactlyOneOfColor,
+                    query_type: WireQueryType::ExactlyOne,
                     color: Yellow,
                 }),
                 "there is exactly one yellow wire",
@@ -719,12 +719,12 @@ mod tests {
             (&[Red, Black, Blue], LastWireIs, Blue, true),
             (&[Red, Black, Blue, Yellow], LastWireIs, Yellow, true),
             (&[Red, Black, Yellow, Blue], LastWireIs, Yellow, false),
-            (&[Red, Black, Red, Blue], ExactlyOneOfColor, Red, false),
-            (&[Red, Black, Blue, Yellow], ExactlyOneOfColor, Black, true),
-            (&[Red, Black, Yellow, Blue, Yellow], MoreThanOneOfColor, Yellow, true),
-            (&[Red, Black, Yellow, Blue, Red], MoreThanOneOfColor, Yellow, false),
-            (&[Red, Black, Yellow, Black], ExactlyZeroOfColor, Yellow, false),
-            (&[Red, Black, Blue, Black], ExactlyZeroOfColor, Yellow, true),
+            (&[Red, Black, Red, Blue], ExactlyOne, Red, false),
+            (&[Red, Black, Blue, Yellow], ExactlyOne, Black, true),
+            (&[Red, Black, Yellow, Blue, Yellow], MoreThanOne, Yellow, true),
+            (&[Red, Black, Yellow, Blue, Red], MoreThanOne, Yellow, false),
+            (&[Red, Black, Yellow, Black], NotPresent, Yellow, false),
+            (&[Red, Black, Blue, Black], NotPresent, Yellow, true),
         ];
 
         for &(colors, query_type, color, expected) in TESTS {
