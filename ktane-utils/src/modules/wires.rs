@@ -812,10 +812,35 @@ mod tests {
         }
     }
 
-    // TODO: look for broken rules:
-    // if the last wire is black and the last wire is black
-    // if there is exactly one red wire and there is exactly one red wire
-    // if there is exactly one red wire and there is more than one blue wire, cut the blue wire
+    #[test]
+    #[ignore]
+    // Find seeds with a TheOneOfColor solution where there is more than one wire of the color.
+    fn find_broken() {
+        for seed in 1..=crate::random::MAX_VALUE {
+            println!("Trying seed {}", seed);
+            let rule_set = RuleSet::new(seed);
+
+            for (rule_list, wire_count) in rule_set.0.iter().zip(MIN_WIRES..) {
+                println!("{} wires", wire_count);
+                for rule in rule_list.rules.iter() {
+                    if let Solution::TheOneOfColor(color) = rule.solution {
+                        let mut found = false;
+                        for query in rule.queries.iter() {
+                            if let Query::Wire(query) = query {
+                                if query.query_type == WireQueryType::ExactlyOne
+                                    && query.color == color
+                                {
+                                    found = true;
+                                }
+                            }
+                        }
+
+                        assert!(found);
+                    }
+                }
+            }
+        }
+    }
 
     const VANILLA_RULE_TESTS: &[(&str, &[Color], u8)] = &[
         ("0B 0H // *SIG *BOB *CLR // [DVI, PS2, RJ45, StereoRCA] [Parallel] // GU4XA6",
