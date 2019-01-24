@@ -725,13 +725,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn tmp() {
-        let rules = RuleSet::new(1);
-        println!("{}", rules);
-        panic!();
-    }
-
     // TODO: look for broken rules:
     // if the last wire is black and the last wire is black
     // if there is exactly one red wire and there is exactly one red wire
@@ -861,106 +854,72 @@ mod tests {
 
 impl RuleSet {
     fn vanilla_ruleset() -> Self {
-        unimplemented!();
-    }
+        macro_rules! cond {
+            ( $type:ident ) => {
+                Query::Edgework(EdgeworkQuery::$type)
+            };
+            ( PortPresent ($port:ident) ) => {
+                Query::Edgework(EdgeworkQuery::PortPresent(PortType::$port))
+            };
+            ( $type:ident ($color:ident) ) => {
+                Query::Wire(WireQuery {
+                    query_type: WireQueryType::$type,
+                    color: Color::$color,
+                })
+            };
+        }
 
-/*    fn vanilla_ruleset() -> Self {
+        macro_rules! rules {
+            ( $(
+                $( $condition_type:tt $( ( $condition_arg:tt ) )? ),+ =>
+                $solution_type:ident ($solution_arg:expr)
+            ),+ or $otherwise_type:ident ($otherwise_arg:expr) ) => {
+                RuleList {
+                    rules: smallvec![
+                        $(
+                            Rule {
+                                queries: smallvec![
+                                    $(
+                                        cond!($condition_type $(($condition_arg))?)
+                                    ),+
+                                ],
+                                solution: Solution::$solution_type($solution_arg),
+                            }
+                        ),+
+                    ],
+                    otherwise: Solution::$otherwise_type($otherwise_arg),
+                }
+            };
+        }
+
         use self::Color::*;
-        use self::Query::*;
-        use self::Solution::*;
 
-        #[rustfmt::skip]
         RuleSet([
-            RuleList {
-                rules: smallvec![
-                    Rule {
-                        conditions: smallvec![ExactlyZeroOfColor(Red)],
-                        solution: Index(1),
-                    },
-                    Rule {
-                        conditions: smallvec![LastWireIs(White)],
-                        solution: Index(2),
-                    },
-                    Rule {
-                        conditions: smallvec![MoreThanOneOfColor(Blue)],
-                        solution: LastOfColor(Blue),
-                    },
-                ],
-                otherwise: Index(2),
+            rules! {
+                ExactlyZeroOfColor(Red) => Index(1),
+                LastWireIs(White) => Index(2),
+                MoreThanOneOfColor(Blue) => LastOfColor(Blue)
+                or Index(2)
             },
-            RuleList {
-                rules: smallvec![
-                    Rule {
-                        conditions: smallvec![
-                            MoreThanOneOfColor(Red),
-                            SerialOdd,
-                        ],
-                        solution: LastOfColor(Red),
-                    },
-                    Rule {
-                        conditions: smallvec![
-                            LastWireIs(Yellow),
-                            ExactlyZeroOfColor(Red),
-                        ],
-                        solution: Index(0),
-                    },
-                    Rule {
-                        conditions: smallvec![ExactlyOneOfColor(Blue)],
-                        solution: Index(0),
-                    },
-                    Rule {
-                        conditions: smallvec![MoreThanOneOfColor(Yellow)],
-                        solution: Index(3),
-                    },
-                ],
-                otherwise: Index(1),
+            rules! {
+                MoreThanOneOfColor(Red), SerialOdd => LastOfColor(Red),
+                LastWireIs(Yellow), ExactlyZeroOfColor(Red) => Index(0),
+                ExactlyOneOfColor(Blue) => Index(0),
+                MoreThanOneOfColor(Yellow) => Index(3)
+                or Index(1)
             },
-            RuleList {
-                rules: smallvec![
-                    Rule {
-                        conditions: smallvec![
-                            LastWireIs(Black),
-                            SerialOdd,
-                        ],
-                        solution: Index(3),
-                    },
-                    Rule {
-                        conditions: smallvec![
-                            ExactlyOneOfColor(Red),
-                            MoreThanOneOfColor(Yellow),
-                        ],
-                        solution: Index(0),
-                    },
-                    Rule {
-                        conditions: smallvec![ExactlyZeroOfColor(Black)],
-                        solution: Index(1),
-                    },
-                ],
-                otherwise: Index(0),
+            rules! {
+                LastWireIs(Black), SerialOdd => Index(3),
+                ExactlyOneOfColor(Red), MoreThanOneOfColor(Yellow) => Index(0),
+                ExactlyZeroOfColor(Black) => Index(1)
+                or Index(0)
             },
-            RuleList {
-                rules: smallvec![
-                    Rule {
-                        conditions: smallvec![
-                            ExactlyZeroOfColor(Yellow),
-                            SerialOdd,
-                        ],
-                        solution: Index(2),
-                    },
-                    Rule {
-                        conditions: smallvec![
-                            ExactlyOneOfColor(Yellow),
-                            MoreThanOneOfColor(White),
-                        ],
-                        solution: Index(3),
-                    },
-                    Rule {
-                        conditions: smallvec![ExactlyZeroOfColor(Red)],
-                        solution: Index(5),
-                    },
-                ],
-                otherwise: Index(3),
+            rules! {
+                ExactlyZeroOfColor(Yellow), SerialOdd => Index(2),
+                ExactlyOneOfColor(Yellow), MoreThanOneOfColor(White) => Index(3),
+                ExactlyZeroOfColor(Red) => Index(5)
+                or Index(3)
             },
         ])
-    }*/
+    }
 }
