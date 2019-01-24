@@ -160,7 +160,6 @@ impl RuleseedRandom {
 
         panic!("weighted_select tried to choose from zero elements");
     }
-
 }
 
 #[cfg(test)]
