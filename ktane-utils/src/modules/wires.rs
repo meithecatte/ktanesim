@@ -11,12 +11,77 @@ pub const MAX_WIRES: usize = 6;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuleSet([RuleList; 4]);
 
+macro_rules! cond {
+    ( $type:ident ) => {
+        Query::Edgework(EdgeworkQuery::$type)
+    };
+    ( PortPresent ($port:ident) ) => {
+        Query::Edgework(EdgeworkQuery::PortPresent(PortType::$port))
+    };
+    ( $type:ident ($color:ident) ) => {
+        Query::Wire(WireQuery {
+            query_type: WireQueryType::$type,
+            color: Color::$color,
+        })
+    };
+}
+
+macro_rules! rules {
+    ( $(
+        $( $condition_type:tt $( ( $condition_arg:tt ) )? ),+ =>
+        $solution_type:ident ($solution_arg:expr)
+    ),+ or $otherwise_type:ident ($otherwise_arg:expr) ) => {
+        RuleList {
+            rules: smallvec![
+                $(
+                    Rule {
+                        queries: smallvec![
+                            $(
+                                cond!($condition_type $(($condition_arg))?)
+                            ),+
+                        ],
+                        solution: Solution::$solution_type($solution_arg),
+                    }
+                ),+
+            ],
+            otherwise: Solution::$otherwise_type($otherwise_arg),
+        }
+    };
+}
+
 impl RuleSet {
     /// Generates the rule set for a given `seed`.
     pub fn new(seed: u32) -> Self {
         if seed == VANILLA_SEED {
-            // large dataset at the end of the file
-            Self::vanilla_ruleset()
+            use self::Color::*;
+
+            RuleSet([
+                rules! {
+                    ExactlyZeroOfColor(Red) => Index(1),
+                    LastWireIs(White) => Index(2),
+                    MoreThanOneOfColor(Blue) => LastOfColor(Blue)
+                    or Index(2)
+                },
+                rules! {
+                    MoreThanOneOfColor(Red), SerialOdd => LastOfColor(Red),
+                    LastWireIs(Yellow), ExactlyZeroOfColor(Red) => Index(0),
+                    ExactlyOneOfColor(Blue) => Index(0),
+                    MoreThanOneOfColor(Yellow) => Index(3)
+                    or Index(1)
+                },
+                rules! {
+                    LastWireIs(Black), SerialOdd => Index(3),
+                    ExactlyOneOfColor(Red), MoreThanOneOfColor(Yellow) => Index(0),
+                    ExactlyZeroOfColor(Black) => Index(1)
+                    or Index(0)
+                },
+                rules! {
+                    ExactlyZeroOfColor(Yellow), SerialOdd => Index(2),
+                    ExactlyOneOfColor(Yellow), MoreThanOneOfColor(White) => Index(3),
+                    ExactlyZeroOfColor(Red) => Index(5)
+                    or Index(3)
+                },
+            ])
         } else {
             let mut random = RuleseedRandom::new(seed);
             RuleSet(array_init::array_init(|index| {
@@ -714,7 +779,6 @@ mod tests {
     }*/
 
     #[test]
-    #[ignore]
     fn vanilla_rules() {
         let rules = RuleSet::new(VANILLA_SEED);
 
@@ -850,76 +914,4 @@ mod tests {
         ("0B 0H // MSA *CAR // [DVI, StereoRCA] [PS2, RJ45, StereoRCA] [DVI, PS2, StereoRCA] // 285SX0",
          &[Red, Yellow, Red, Yellow, Yellow, Blue], 3),
     ];
-}
-
-impl RuleSet {
-    fn vanilla_ruleset() -> Self {
-        macro_rules! cond {
-            ( $type:ident ) => {
-                Query::Edgework(EdgeworkQuery::$type)
-            };
-            ( PortPresent ($port:ident) ) => {
-                Query::Edgework(EdgeworkQuery::PortPresent(PortType::$port))
-            };
-            ( $type:ident ($color:ident) ) => {
-                Query::Wire(WireQuery {
-                    query_type: WireQueryType::$type,
-                    color: Color::$color,
-                })
-            };
-        }
-
-        macro_rules! rules {
-            ( $(
-                $( $condition_type:tt $( ( $condition_arg:tt ) )? ),+ =>
-                $solution_type:ident ($solution_arg:expr)
-            ),+ or $otherwise_type:ident ($otherwise_arg:expr) ) => {
-                RuleList {
-                    rules: smallvec![
-                        $(
-                            Rule {
-                                queries: smallvec![
-                                    $(
-                                        cond!($condition_type $(($condition_arg))?)
-                                    ),+
-                                ],
-                                solution: Solution::$solution_type($solution_arg),
-                            }
-                        ),+
-                    ],
-                    otherwise: Solution::$otherwise_type($otherwise_arg),
-                }
-            };
-        }
-
-        use self::Color::*;
-
-        RuleSet([
-            rules! {
-                ExactlyZeroOfColor(Red) => Index(1),
-                LastWireIs(White) => Index(2),
-                MoreThanOneOfColor(Blue) => LastOfColor(Blue)
-                or Index(2)
-            },
-            rules! {
-                MoreThanOneOfColor(Red), SerialOdd => LastOfColor(Red),
-                LastWireIs(Yellow), ExactlyZeroOfColor(Red) => Index(0),
-                ExactlyOneOfColor(Blue) => Index(0),
-                MoreThanOneOfColor(Yellow) => Index(3)
-                or Index(1)
-            },
-            rules! {
-                LastWireIs(Black), SerialOdd => Index(3),
-                ExactlyOneOfColor(Red), MoreThanOneOfColor(Yellow) => Index(0),
-                ExactlyZeroOfColor(Black) => Index(1)
-                or Index(0)
-            },
-            rules! {
-                ExactlyZeroOfColor(Yellow), SerialOdd => Index(2),
-                ExactlyOneOfColor(Yellow), MoreThanOneOfColor(White) => Index(3),
-                ExactlyZeroOfColor(Red) => Index(5)
-                or Index(3)
-            },
-        ])
-    }
 }
