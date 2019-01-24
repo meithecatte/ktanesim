@@ -264,8 +264,8 @@ impl RuleSet {
 
 impl fmt::Display for RuleSet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for wire_count in MIN_WIRES..=MAX_WIRES {
-            write!(f, "{} wires:\n{}\n\n", wire_count, self[wire_count])?;
+        for (rule_list, wire_count) in self.0.iter().zip(MIN_WIRES..) {
+            write!(f, "{} wires:\n{}\n\n", wire_count, rule_list)?;
         }
 
         Ok(())
@@ -321,7 +321,7 @@ impl fmt::Display for RuleList {
                 first_query = false;
             }
 
-            write!(f, ", {}.\n", rule.solution)?;
+            writeln!(f, ", {}.", rule.solution)?;
 
             first_rule = false;
         }
@@ -351,32 +351,22 @@ impl Rule {
             return true;
         }
 
-        use self::Query::*;
+        use self::Query::Wire;
         if let Wire(first) = self.queries[0] {
             if let Wire(second) = self.queries[1] {
-                use self::WireQueryType::*;
-                if first.color == second.color {
-                    for pair in &[
-                        (ExactlyOneOfColor, ExactlyZeroOfColor),
-                        (ExactlyOneOfColor, MoreThanOneOfColor),
-                        (MoreThanOneOfColor, ExactlyZeroOfColor),
-                        (LastWireIs, ExactlyZeroOfColor),
-                    ] {
-                        if (first.query_type == pair.0 && second.query_type == pair.1)
-                            || (first.query_type == pair.1 && second.query_type == pair.0)
-                        {
-                            return false;
-                        }
-                    }
-                } else {
-                    if first.query_type == LastWireIs && second.query_type == LastWireIs {
-                        return false;
-                    }
+                // The original algorithm considers many cases of rules that use the same color for
+                // both queries. Because WireQueryType::colorize removes the chosen color from the
+                // list of available colors, this situation can never actually arise. Hence, the
+                // only thing we need to consider is two LastWireIs queries in the same rule, which
+                // will obviously never be true at the same time.
+                use self::WireQueryType::LastWireIs;
+                if first.query_type == LastWireIs && second.query_type == LastWireIs {
+                    return false;
                 }
             }
         }
 
-        return true;
+        true
     }
 }
 
