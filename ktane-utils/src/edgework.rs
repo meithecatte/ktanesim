@@ -1,7 +1,8 @@
 use enum_map::EnumMap;
-use enumflags::BitFlags;
+use enumflags2::BitFlags;
 use lazy_static::lazy_static;
 use strum_macros::{Display, EnumCount, EnumIter, EnumProperty, EnumString, IntoStaticStr};
+use rand::prelude::*;
 
 /// Represents the set of widgets on the edges of a bomb.
 #[derive(Debug, Clone, PartialEq)]
@@ -133,6 +134,52 @@ pub enum EdgeworkParseError {
     NotAnIndicator,
 }
 
+use rand::distributions::Standard;
+impl Distribution<Edgework> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Edgework {
+        let serial_number = rng.gen();
+        let mut dcell_batteries = 0;
+        let mut aa_battery_pairs = 0;
+        let mut port_plates = vec![];
+        let mut indicators = EnumMap::new();
+        use strum::IntoEnumIterator;
+        let mut unused_indicators: Vec<_> = IndicatorCode::iter().collect();
+        let mut unused_indicators = unused_indicators.partial_shuffle(rng, 5).0.into_iter();
+
+        for _ in 0..5 {
+            match rng.gen_range(0, 3) {
+                0 => {
+                    // battery widget
+                    if rng.gen() {
+                        dcell_batteries += 1;
+                    } else {
+                        aa_battery_pairs += 1;
+                    }
+                }
+                // port plate widget
+                1 => port_plates.push(random()),
+                2 => {
+                    // indicator widget
+                    indicators[*unused_indicators.next().unwrap()] = if rng.gen_bool(0.6) {
+                        IndicatorState::Lit
+                    } else {
+                        IndicatorState::Unlit
+                    }
+                }
+                _ => unreachable!(),
+            }
+        }
+
+        Edgework {
+            serial_number,
+            dcell_batteries,
+            aa_battery_pairs,
+            port_plates,
+            indicators,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SerialNumber(String);
 
@@ -210,7 +257,27 @@ impl SerialNumber {
     }
 }
 
-use enumflags_derive::EnumFlags;
+impl Distribution<SerialNumber> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SerialNumber {
+        let any = |rng: &mut R| *SerialNumber::CHARSET.as_bytes().choose(rng).unwrap() as char;
+        let letter = |rng: &mut R| *SerialNumber::CHARSET[..SerialNumber::CHARSET.len() - 10]
+            .as_bytes()
+            .choose(rng)
+            .unwrap() as char;
+        let digit = |rng: &mut R| (rng.gen_range(0, 10) + b'0') as char;
+
+        let mut serial = String::with_capacity(6);
+        serial.push(any(rng));
+        serial.push(any(rng));
+        serial.push(digit(rng));
+        serial.push(letter(rng));
+        serial.push(letter(rng));
+        serial.push(digit(rng));
+        SerialNumber(serial)
+    }
+}
+
+use enumflags2_derive::EnumFlags;
 /// A bitfield that represents the port types that can be present on a bomb.
 #[derive(
     EnumFlags,
@@ -293,6 +360,15 @@ impl PortPlate {
 impl From<PortPlate> for BitFlags<PortType> {
     fn from(plate: PortPlate) -> BitFlags<PortType> {
         plate.0
+    }
+}
+
+impl Distribution<PortPlate> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> PortPlate {
+        let port_group = PORT_GROUPS.choose(rng).unwrap();
+
+        let ports = port_group.iter().filter(|_| rng.gen()).collect();
+        PortPlate(ports)
     }
 }
 

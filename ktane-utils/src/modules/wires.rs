@@ -7,6 +7,26 @@ use strum_macros::{Display, EnumCount, EnumIter, IntoStaticStr};
 pub const MIN_WIRES: usize = 3;
 pub const MAX_WIRES: usize = 6;
 
+use rand::prelude::*;
+pub fn generate<R: Rng + ?Sized>(rng: &mut R) -> [Option<Color>; MAX_WIRES] {
+    // 6 wires have more chance to occur
+    let mut wire_count = rng.gen_range(MIN_WIRES, 9);
+
+    if wire_count > MAX_WIRES {
+        wire_count = MAX_WIRES;
+    }
+
+    let mut positions: [u8; MAX_WIRES] = array_init::array_init_copy(|i| i as u8);
+    let mut wires = [None; MAX_WIRES];
+
+    for &mut position in positions.partial_shuffle(rng, wire_count).0.into_iter() {
+        use strum::IntoEnumIterator;
+        wires[position as usize] = Color::iter().choose(rng);
+    }
+
+    wires
+}
+
 /// Stores a full rule set for Wires.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuleSet([RuleList; 4]);
@@ -641,19 +661,30 @@ impl fmt::Display for Solution {
 }
 
 impl Solution {
-    /// Get the 0-indexed wire number for a given set of colors
-    pub fn as_index(self, wires: &[Color]) -> Option<u8> {
+    /// Get one of the valid solutions as a 0-indexed wire number. If you are validating, use
+    /// `check` instead, as some rulesets can create multiple valid solutions.
+    pub fn as_index(self, wires: &[Color]) -> u8 {
         use self::Solution::*;
         match self {
-            Index(n) => Some(n),
+            Index(n) => n,
             FirstOfColor(color) | TheOneOfColor(color) => wires
                 .iter()
                 .position(|&wire| wire == color)
-                .map(|x| x as u8),
+                .unwrap() as u8,
             LastOfColor(color) => wires
                 .iter()
                 .rposition(|&wire| wire == color)
-                .map(|x| x as u8),
+                .unwrap() as u8,
+        }
+    }
+
+    /// Checks if the right wire was cut. Use this if you're validating wire choice, since some
+    /// rulesets have multiple valid solutions in some situations.
+    pub fn check(self, wires: &[Color], index: u8) -> bool {
+        use self::Solution::*;
+        match self {
+            TheOneOfColor(color) => wires[index as usize] == color,
+            _ => self.as_index(wires) == index,
         }
     }
 }

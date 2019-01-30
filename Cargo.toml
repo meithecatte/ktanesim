@@ -1,9 +1,6 @@
 [workspace]
-
 members = [
-    #"frontend/web",
-    #"frontend/discord",
-    #"ktanesim",
+    "ktanesim",
     "ktane-utils",
 ]
 

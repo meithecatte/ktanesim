@@ -1,17 +1,18 @@
 [package]
 name = "ktane-utils"
 version = "0.1.0"
-authors = ["NieDzejkob <kuba@kadziolka.net>"]
+authors = ["Jakub \"NieDżejkob\" Kądziołka <kuba@kadziolka.net>"]
 edition = "2018"
 
 [dependencies]
 array-init = "^0.0"
-enumflags = "^0.4"
-enumflags_derive = "^0.4"
+enumflags2 = "^0.5"
+enumflags2_derive = "^0.5"
 enum-map = "^0.4"
 lazy_static = "^1.2"
 ordered-float = "^1.0"
 ordinal = "^0.2"
+rand = "^0.6"
 regex = "^1.1"
 smallvec = "^0.6"
 strum = "^0.13"
