@@ -1,5 +1,6 @@
 use crate::prelude::*;
-use bv::BitVec;
+use rand::prelude::*;
+use smallbitvec::SmallBitVec;
 use ktane_utils::modules::wires::{generate, Color, RuleSet, MAX_WIRES};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
@@ -7,7 +8,7 @@ use std::sync::{Arc, Weak};
 pub struct Wires {
     rules: Arc<RuleSet>,
     wires: [Option<Color>; MAX_WIRES],
-    cut_state: BitVec,
+    cut_state: SmallBitVec,
 }
 
 pub struct RuleCacheKey();
@@ -43,7 +44,7 @@ pub fn init(bomb: &mut Bomb, rules_cache: MutexGuard<ShareMap>) -> Box<dyn Modul
     Box::new(Wires {
         rules,
         wires,
-        cut_state: BitVec::new_fill(false, wire_count as u64),
+        cut_state: SmallBitVec::from_elem(wire_count as usize, false),
     })
 }
 
@@ -58,6 +59,8 @@ impl Module for Wires {
 
     fn view(&self) -> Render {
         let wires = self.wires;
+        let mut cut_state = self.cut_state.clone();
+        cut_state.set(rand::thread_rng().gen_range(0, cut_state.len()), true);
         Box::new(move || {
             let (surface, ctx) = module_canvas(SolveLight::Normal);
 
@@ -70,9 +73,15 @@ impl Module for Wires {
             ctx.stroke();
 
             ctx.set_line_cap(cairo::LineCap::Square);
-            for (wire, path) in wires.iter().zip(PATHS) {
+            let mut cut_state = cut_state.into_iter();
+            for ((wire, path), path_cut) in wires.into_iter().zip(PATHS).zip(PATHS_CUT) {
                 if let Some(wire) = wire {
-                    path(&ctx);
+                    if cut_state.next().unwrap() {
+                        path_cut(&ctx);
+                    } else {
+                        path(&ctx);
+                    }
+
                     ctx.set_source_rgb(0.0, 0.0, 0.0);
                     ctx.set_line_width(8.0);
                     ctx.stroke_preserve();

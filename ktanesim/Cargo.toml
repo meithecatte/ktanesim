@@ -13,12 +13,12 @@ smallvec = "*"
 strum = "*"
 strum_macros = "*"
 
-bv = "^0.11"
+smallbitvec = "^2.3"
 phf = "^0.7"
 phf_macros = "^0.7"
 typemap = "^0.3"
 cairo-rs = { version = "^0.5", features = ["png"] }
-cairo-svgpath = { path = "../../cairo-svgpath" }
+cairo-svgpath = "^0.1"
 
 [dependencies.serenity]
 git = "https://github.com/serenity-rs/serenity"
