@@ -1,8 +1,8 @@
 use enum_map::EnumMap;
 use enumflags2::BitFlags;
 use lazy_static::lazy_static;
-use strum_macros::{Display, EnumCount, EnumIter, EnumProperty, EnumString, IntoStaticStr};
 use rand::prelude::*;
+use strum_macros::{Display, EnumCount, EnumIter, EnumProperty, EnumString, IntoStaticStr};
 
 /// Represents the set of widgets on the edges of a bomb.
 #[derive(Debug, Clone, PartialEq)]
@@ -260,10 +260,12 @@ impl SerialNumber {
 impl Distribution<SerialNumber> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SerialNumber {
         let any = |rng: &mut R| *SerialNumber::CHARSET.as_bytes().choose(rng).unwrap() as char;
-        let letter = |rng: &mut R| *SerialNumber::CHARSET[..SerialNumber::CHARSET.len() - 10]
-            .as_bytes()
-            .choose(rng)
-            .unwrap() as char;
+        let letter = |rng: &mut R| {
+            *SerialNumber::CHARSET[..SerialNumber::CHARSET.len() - 10]
+                .as_bytes()
+                .choose(rng)
+                .unwrap() as char
+        };
         let digit = |rng: &mut R| (rng.gen_range(0, 10) + b'0') as char;
 
         let mut serial = String::with_capacity(6);
@@ -295,22 +297,18 @@ use enumflags2_derive::EnumFlags;
 )]
 pub enum PortType {
     #[strum(to_string = "DVI-D", serialize = "DVI")]
-    DVI       = 0b00_0001,
+    DVI = 0b00_0001,
     #[strum(to_string = "PS/2", serialize = "PS2")]
-    PS2       = 0b00_0010,
+    PS2 = 0b00_0010,
     #[strum(to_string = "RJ-45", serialize = "RJ45", serialize = "RJ")]
     #[strum(props(article = "an"))]
-    RJ45      = 0b00_0100,
-    #[strum(
-        to_string = "Stereo RCA",
-        serialize = "StereoRCA",
-        serialize = "RCA"
-    )]
+    RJ45 = 0b00_0100,
+    #[strum(to_string = "Stereo RCA", serialize = "StereoRCA", serialize = "RCA")]
     StereoRCA = 0b00_1000,
     #[strum(to_string = "parallel", serialize = "Parallel")]
-    Parallel  = 0b01_0000,
+    Parallel = 0b01_0000,
     #[strum(to_string = "serial", serialize = "Serial")]
-    Serial    = 0b10_0000,
+    Serial = 0b10_0000,
 }
 
 /// The port plate widget.
@@ -374,17 +372,7 @@ impl Distribution<PortPlate> for Standard {
 
 use enum_map::Enum;
 #[derive(
-    Debug,
-    Display,
-    Copy,
-    Clone,
-    IntoStaticStr,
-    EnumIter,
-    EnumString,
-    EnumCount,
-    Enum,
-    PartialEq,
-    Eq,
+    Debug, Display, Copy, Clone, IntoStaticStr, EnumIter, EnumString, EnumCount, Enum, PartialEq, Eq,
 )]
 pub enum IndicatorCode {
     SND,

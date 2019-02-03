@@ -7,8 +7,24 @@ publish = false
 
 [dependencies]
 ktane-utils = { path = "../ktane-utils" }
-rand = "^0.6"
+# Use the same version as ktane-utils
+rand = "*"
+smallvec = "*"
+strum = "*"
+strum_macros = "*"
+
+bv = "^0.11"
+phf = "^0.7"
+phf_macros = "^0.7"
+typemap = "^0.3"
+cairo-rs = { version = "^0.5", features = ["png"] }
+cairo-svgpath = { path = "../../cairo-svgpath" }
+
+[dependencies.serenity]
+git = "https://github.com/serenity-rs/serenity"
+branch = "futures"
+
+[lib]
 
 [[bin]]
 name = "ktanesim"
-path = "main.rs"

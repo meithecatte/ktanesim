@@ -8,7 +8,11 @@ pub const MIN_WIRES: usize = 3;
 pub const MAX_WIRES: usize = 6;
 
 use rand::prelude::*;
-pub fn generate<R: Rng + ?Sized>(rng: &mut R) -> [Option<Color>; MAX_WIRES] {
+
+/// Generates a wire module just like the game. Each wire slot is represented as an Option, which
+/// is set to `Some` if a wire is present, and to `None` otherwise. Additionally, the number of
+/// wires actually present is returned as the second element of the tuple.
+pub fn generate<R: Rng + ?Sized>(rng: &mut R) -> ([Option<Color>; MAX_WIRES], u8) {
     // 6 wires have more chance to occur
     let mut wire_count = rng.gen_range(MIN_WIRES, 9);
 
@@ -24,7 +28,7 @@ pub fn generate<R: Rng + ?Sized>(rng: &mut R) -> [Option<Color>; MAX_WIRES] {
         wires[position as usize] = Color::iter().choose(rng);
     }
 
-    wires
+    (wires, wire_count as u8)
 }
 
 /// Stores a full rule set for Wires.
@@ -667,14 +671,10 @@ impl Solution {
         use self::Solution::*;
         match self {
             Index(n) => n,
-            FirstOfColor(color) | TheOneOfColor(color) => wires
-                .iter()
-                .position(|&wire| wire == color)
-                .unwrap() as u8,
-            LastOfColor(color) => wires
-                .iter()
-                .rposition(|&wire| wire == color)
-                .unwrap() as u8,
+            FirstOfColor(color) | TheOneOfColor(color) => {
+                wires.iter().position(|&wire| wire == color).unwrap() as u8
+            }
+            LastOfColor(color) => wires.iter().rposition(|&wire| wire == color).unwrap() as u8,
         }
     }
 
@@ -789,9 +789,7 @@ mod tests {
         ];
 
         for &(edgework, query, expected) in TESTS {
-            let edgework = edgework
-                .parse::<Edgework>()
-                .unwrap();
+            let edgework = edgework.parse::<Edgework>().unwrap();
             assert_eq!(query.evaluate(&edgework), expected);
         }
     }
@@ -838,7 +836,7 @@ mod tests {
 
         for &(edgework, colors, expected) in VANILLA_RULE_TESTS {
             let edgework = edgework.parse::<Edgework>().unwrap();
-            let solution = rules.evaluate(&edgework, colors).as_index(colors).unwrap();
+            let solution = rules.evaluate(&edgework, colors).as_index(colors);
             assert_eq!(expected, solution);
         }
     }
