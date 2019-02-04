@@ -2,6 +2,7 @@ use crate::Bomb;
 use std::boxed::FnBox;
 use std::sync::MutexGuard;
 use typemap::ShareMap;
+use serenity::model::id::UserId;
 
 pub const MODULE_SIZE: i32 = 348;
 pub type Render = Box<dyn FnBox() -> (Vec<u8>, RenderType)>;
@@ -60,25 +61,13 @@ pub fn output_png(surface: ImageSurface) -> (Vec<u8>, RenderType) {
     (png.into_inner(), RenderType::PNG)
 }
 
-pub enum Event<'a> {
-    Command(&'a str),
-    SomeModuleSolved,
-    Strike,
-    TimerNotification,
-}
-
-pub enum EventResponse {
-    Solved(Render),
-    Strike(Render),
-    Unsubmittable(Render),
-    Ok {
-        render: Option<Render>,
-        message: Option<String>,
-    },
+pub struct EventResponse {
+    render: Option<Render>,
+    message: Option<String>,
 }
 
 pub trait Module {
-    fn handle_event<'a>(&mut self, bomb: &mut Bomb, event: &'a Event<'a>) -> EventResponse;
+    fn handle_command(&mut self, bomb: &mut Bomb, user: UserId, command: &str) -> EventResponse;
     fn view(&self) -> Render;
 }
 

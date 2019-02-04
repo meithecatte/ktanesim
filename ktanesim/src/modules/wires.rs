@@ -49,12 +49,8 @@ pub fn init(bomb: &mut Bomb, rules_cache: MutexGuard<ShareMap>) -> Box<dyn Modul
 }
 
 impl Module for Wires {
-    fn handle_event<'a>(&mut self, bomb: &mut Bomb, event: &'a Event<'a>) -> EventResponse {
-        use Event::*;
-        match event {
-            Command(cmd) => unimplemented!(),
-            _ => unreachable!(),
-        }
+    fn handle_command(&mut self, bomb: &mut Bomb, user: UserId, command: &str) -> EventResponse {
+        unimplemented!();
     }
 
     fn view(&self) -> Render {
