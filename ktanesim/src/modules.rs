@@ -68,7 +68,7 @@ pub struct EventResponse {
 
 pub trait Module {
     fn handle_command(&mut self, bomb: &mut Bomb, user: UserId, command: &str) -> EventResponse;
-    fn view(&self) -> Render;
+    fn view(&self, light: SolveLight) -> Render;
 }
 
 use phf_macros::phf_map;

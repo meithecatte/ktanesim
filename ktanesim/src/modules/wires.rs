@@ -53,12 +53,11 @@ impl Module for Wires {
         unimplemented!();
     }
 
-    fn view(&self) -> Render {
+    fn view(&self, light: SolveLight) -> Render {
         let wires = self.wires;
-        let mut cut_state = self.cut_state.clone();
-        cut_state.set(rand::thread_rng().gen_range(0, cut_state.len()), true);
+        let cut_state = self.cut_state.clone();
         Box::new(move || {
-            let (surface, ctx) = module_canvas(SolveLight::Normal);
+            let (surface, ctx) = module_canvas(light);
 
             // Draw the boxes at the end of the wires
             ctx.set_source_rgb(0.0, 0.0, 0.0);
