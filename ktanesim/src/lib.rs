@@ -18,8 +18,10 @@ use std::time::{Duration, Instant};
 pub struct Timer {
     mode: TimerMode,
     strikes: u32,
-    adjusted_start: Instant,
-    starting_time: Duration,
+    /// Last time the `display` fiel was updated.
+    last_update: Instant,
+    /// The display at the time of the `last_update`.
+    display: Duration,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -34,13 +36,35 @@ impl Timer {
         Timer {
             mode,
             strikes: 0,
-            adjusted_start: Instant::now(),
-            starting_time,
+            last_update: Instant::now(),
+            display: starting_time,
         }
     }
 
     pub fn get_mode(&self) -> TimerMode {
         self.mode
+    }
+
+    pub fn get_display(&self) -> Duration {
+        self.get_display_for_time(Instant::now())
+    }
+
+    fn get_display_for_time(&self, now: Instant) -> Duration {
+        let real_delta = now.duration_since(self.last_update);
+        let bomb_delta = self.to_bomb_time(real_delta);
+
+        if self.going_forward() {
+            self.display + bomb_delta
+        } else {
+            self.display - bomb_delta
+        }
+    }
+
+    /// Must be called before each change of speed.
+    fn update(&mut self) {
+        let now = Instant::now();
+        self.display = self.get_display_for_time(now);
+        self.last_update = now;
     }
 
     fn to_bomb_time(&self, duration: Duration) -> Duration {
@@ -71,23 +95,17 @@ impl Timer {
         self.mode == TimerMode::Zen
     }
 
-    /// Returns the time that should be displayed on the timer
-    pub fn get_display(&self) -> Duration {
-        let elapsed = self.to_bomb_time(self.adjusted_start.elapsed());
-
-        if self.going_forward() {
-            elapsed
-        } else {
-            self.starting_time - elapsed
-        }
+    pub fn variable_speed(&self) -> bool {
+        self.mode == TimerMode::Normal
     }
 
-    /// Add a strike to the counter and adjust the `adjusted_start` field so that the value on the
-    /// display doesn't change.
+    /// Register a strike on the bomb. Does not perform leaderboard accounting and does not notify
+    /// the players.
     pub fn strike(&mut self) {
-        let now = Instant::now();
-        let elapsed = self.to_bomb_time(now.duration_since(self.adjusted_start));
+        if self.variable_speed() {
+            self.update();
+        }
+
         self.strikes += 1;
-        self.adjusted_start = now - self.to_real_time(elapsed);
     }
 }
