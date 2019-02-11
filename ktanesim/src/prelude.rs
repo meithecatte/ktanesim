@@ -6,6 +6,6 @@ pub use crate::modules::{
 pub use crate::Bomb;
 
 // Reexported because of function signatures
+pub use serenity::model::id::UserId;
 pub use std::sync::MutexGuard;
 pub use typemap::ShareMap;
-pub use serenity::model::id::UserId;

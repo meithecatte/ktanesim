@@ -13,16 +13,31 @@ smallvec = "*"
 strum = "*"
 strum_macros = "*"
 
+# Use the same version as serenity
+tungstenite = "*"
+typemap = "*"
+log = "*"
+
+# async stuff
+futures = "^0.1"
+tokio = { version = "^0.1", features = ["async-await-preview"] }
+tokio-async-await = "^0.1"
+
+# data structures
 smallbitvec = "^2.3"
 phf = "^0.7"
 phf_macros = "^0.7"
-typemap = "^0.3"
+
 cairo-rs = { version = "^0.5", features = ["png"] }
 cairo-svgpath = "^0.1"
 
+kankyo = "^0.2"
+env_logger = "^0.6"
+
 [dependencies.serenity]
-git = "https://github.com/serenity-rs/serenity"
-branch = "futures"
+#git = "https://github.com/serenity-rs/serenity"
+#branch = "futures"
+path = "../../serenity/"
 
 [lib]
 

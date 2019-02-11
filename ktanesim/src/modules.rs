@@ -1,8 +1,8 @@
 use crate::Bomb;
+use serenity::model::id::UserId;
 use std::boxed::FnBox;
 use std::sync::MutexGuard;
 use typemap::ShareMap;
-use serenity::model::id::UserId;
 
 pub const MODULE_SIZE: i32 = 348;
 pub type Render = Box<dyn FnBox() -> (Vec<u8>, RenderType)>;

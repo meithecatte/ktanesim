@@ -1,16 +1,51 @@
+#![feature(futures_api, async_await, await_macro, try_blocks)]
+#![feature(try_trait)]
+
+#[macro_use] extern crate log;
+
 use ktanesim::modules::wires;
 use ktanesim::prelude::*;
+use serenity::gateway::Shard;
 use std::io::prelude::*;
-use std::sync::{Arc, Mutex};
+use tokio::prelude::*;
+use tokio_async_await::compat::forward::IntoAwaitable;
+use tungstenite::error::Error as TungsteniteError;
+use serenity::prelude::*;
 
-fn main() -> std::io::Result<()> {
-    unimplemented!();
-    /*let rule_cache = Arc::new(Mutex::new(ShareMap::custom()));
-    let mut bomb = Bomb { rule_seed: 1 };
-    let mut module = wires::init(&mut bomb, rule_cache.lock().unwrap());
-    let (data, filetype) = module.view()();
-    let filename = format!("render.{}", filetype);
-    let mut file = std::fs::File::create(filename)?;
-    file.write_all(&data)?;
-    Ok(())*/
+#[derive(Debug)]
+enum Error {
+    None,
+    Tungstenite(TungsteniteError),
+    Serenity(SerenityError),
+}
+
+impl From<std::option::NoneError> for Error {
+    fn from(_: std::option::NoneError) -> Error {
+        Error::None
+    }
+}
+
+impl From<TungsteniteError> for Error {
+    fn from(err: TungsteniteError) -> Error {
+        Error::Tungstenite(err)
+    }
+}
+
+impl From<SerenityError> for Error {
+    fn from(err: SerenityError) -> Error {
+        Error::Serenity(err)
+    }
+}
+
+fn main() {
+    tokio::run_async(
+        async {
+            if let Err(err) = kankyo::load() {
+                eprintln!("Couldn't load .env file: {:?}", err);
+            }
+
+            env_logger::init();
+            let token = kankyo::key("DISCORD_TOKEN").expect("Token not present in environment");
+        },
+    );
 }
