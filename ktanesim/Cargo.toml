@@ -38,8 +38,3 @@ env_logger = "^0.6"
 #git = "https://github.com/serenity-rs/serenity"
 #branch = "futures"
 path = "../../serenity/"
-
-[lib]
-
-[[bin]]
-name = "ktanesim"

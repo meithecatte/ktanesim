@@ -11,7 +11,7 @@ pub struct Wires {
     cut_state: SmallBitVec,
 }
 
-pub struct RuleCacheKey();
+struct RuleCacheKey;
 impl typemap::Key for RuleCacheKey {
     type Value = HashMap<u32, Weak<RuleSet>>;
 }

@@ -1,14 +1,26 @@
-#![feature(futures_api, async_await, await_macro, try_blocks)]
-#![feature(type_ascription)]
-#![feature(try_trait)]
+#![feature(
+    proc_macro_hygiene,
+    fnbox,
+    futures_api, async_await, await_macro, try_blocks,
+    type_ascription,
+    try_trait,
+)]
+
+mod backoff;
+mod bomb;
+mod gateway;
+mod modules;
+mod prelude;
+#[macro_use]
+mod util_macros;
 
 #[macro_use]
 extern crate log;
 
-use ktanesim::awaitt;
-use ktanesim::backoff::Backoff;
-use ktanesim::modules::wires;
-use ktanesim::prelude::*;
+use backoff::Backoff;
+use gateway::event_loop;
+use modules::wires;
+use prelude::*;
 use serenity::gateway::Shard;
 use serenity::model::event::{Event, GatewayEvent};
 use serenity::prelude::*;

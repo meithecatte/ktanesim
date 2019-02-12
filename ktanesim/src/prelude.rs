@@ -3,7 +3,7 @@
 pub use crate::modules::{
     module_canvas, output_png, EventResponse, Module, Render, RenderType, SolveLight,
 };
-pub use crate::Bomb;
+pub use crate::bomb::Bomb;
 
 // Reexported because of function signatures
 pub use serenity::model::id::UserId;
