@@ -17,6 +17,8 @@ strum_macros = "*"
 tungstenite = "*"
 typemap = "*"
 log = "*"
+hyper = "*"
+hyper-tls = "*"
 
 # async stuff
 futures = "^0.1"
@@ -35,6 +37,6 @@ kankyo = "^0.2"
 env_logger = "^0.6"
 
 [dependencies.serenity]
-#git = "https://github.com/serenity-rs/serenity"
+#git = "https://github.com/NieDzejkob/serenity"
 #branch = "futures"
-path = "../../serenity/"
+path = "../../serenity"
