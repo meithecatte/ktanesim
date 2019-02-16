@@ -129,7 +129,7 @@ impl RuleSet {
                 }
 
                 // Put all the compound query rules in front
-                rules.sort_by_key(|rule: &Rule| rule.queries.len().wrapping_neg());
+                rules.sort_by_key(|rule: &Rule| std::cmp::Reverse(rule.queries.len()));
 
                 let mut solutions = Self::possible_solutions(&[], wire_count);
                 let forbidden: SolutionWeightKey = rules.last().unwrap().solution.into();
