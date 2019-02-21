@@ -1,3 +1,11 @@
+use phf_macros::phf_map;
+static MODULES: phf::Map<&'static str, ModuleNew> = phf_map! {
+    "wires" => wires::init,
+    "simplewires" => wires::init,
+};
+
+pub mod wires;
+
 use crate::Bomb;
 use serenity::model::id::UserId;
 use std::boxed::FnBox;
@@ -70,14 +78,6 @@ pub trait Module {
     fn handle_command(&mut self, bomb: &mut Bomb, user: UserId, command: &str) -> EventResponse;
     fn view(&self, light: SolveLight) -> Render;
 }
-
-use phf_macros::phf_map;
-static MODULES: phf::Map<&'static str, ModuleNew> = phf_map! {
-    "wires" => wires::init,
-    "simplewires" => wires::init,
-};
-
-pub mod wires;
 
 #[cfg(test)]
 mod tests {

@@ -1,11 +1,10 @@
 use crate::prelude::*;
 use smallbitvec::SmallBitVec;
 
-pub struct Bomb<'a> {
+pub struct Bomb {
     pub rule_seed: u32,
     pub timer: Timer,
     pub modules: Vec<Box<dyn Module>>,
-    pub delay_queue: tokio::timer::DelayQueue<DelayedEvent<'a>>,
     solve_state: SmallBitVec,
 }
 

@@ -14,16 +14,8 @@ strum = "*"
 strum_macros = "*"
 
 # Use the same version as serenity
-tungstenite = "*"
 typemap = "*"
 log = "*"
-hyper = "*"
-hyper-tls = "*"
-
-# async stuff
-futures = "^0.1"
-tokio = { version = "^0.1", features = ["async-await-preview"] }
-tokio-async-await = "^0.1"
 
 # data structures
 smallbitvec = "^2.3"
@@ -37,6 +29,5 @@ kankyo = "^0.2"
 env_logger = "^0.6"
 
 [dependencies.serenity]
-#git = "https://github.com/NieDzejkob/serenity"
-#branch = "futures"
-path = "../../serenity"
+git = "https://github.com/serenity-rs/serenity"
+branch = "v0.6.x"
