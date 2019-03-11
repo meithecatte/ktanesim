@@ -72,7 +72,7 @@ any_time!(CMD_HELP "!help [command]"
                 e.color(Colour::BLURPLE);
                 e.title("Help");
                 e.description(
-"This bot simulates [Keep Talking and Nobody Explodes](https://keeptalkinggame.com) bombs right in your Discord client. Message the bomb in a *Direct Message* for solo play or collaborate in server channels (the bot may only be allowed to talk in some of them).
+"This bot simulates [Keep Talking and Nobody Explodes](https://keeptalkinggame.com) bombs right in your Discord client. Message the bot in a *Direct Message* for solo play or collaborate in server channels (the bot may only be allowed to talk in some of them).
 
 Each module on the bomb has a number. To send a command to a specific module, prefix the command with the number. For example, `!3 view` (or `!3 v` for short) will show you a picture of the third module on a bomb. The message will also contain a handy reference for module-specific commands.
 
