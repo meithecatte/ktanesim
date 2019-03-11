@@ -186,7 +186,7 @@ impl RuleSet {
             let available_queries: SmallVec<[_; QUERY_TYPE_COUNT]> =
                 [SerialStartsWithLetter, SerialOdd]
                     .iter()
-                    .cloned()
+                    .copied()
                     .map(QueryWeightKey::Edgework)
                     .chain(
                         WireQueryType::iter()
@@ -221,7 +221,7 @@ impl RuleSet {
 
         let solution_colors: SmallVec<[Color; 2]> = queries
             .iter()
-            .cloned()
+            .copied()
             .filter_map(Query::solution_colors)
             .collect();
 
@@ -253,7 +253,7 @@ impl RuleSet {
         solutions.extend(
             queries
                 .iter()
-                .cloned()
+                .copied()
                 .flat_map(Query::additional_solutions),
         );
         solutions
@@ -434,7 +434,7 @@ impl Query {
             _ => &[],
         };
 
-        solutions.iter().cloned()
+        solutions.iter().copied()
     }
 
     fn solution_colors(self) -> Option<Color> {
@@ -641,7 +641,7 @@ impl From<Solution> for SolutionWeightKey {
 impl SolutionWeightKey {
     fn colorize(self, random: &mut RuleseedRandom, colors_available: &[Color]) -> Solution {
         use self::SolutionWeightKey::*;
-        let color = random.choice(colors_available).cloned();
+        let color = random.choice(colors_available).copied();
         match self {
             Index(n) => Solution::Index(n),
             TheOneOfColor => Solution::TheOneOfColor(color.unwrap()),

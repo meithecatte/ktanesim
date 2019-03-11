@@ -1,7 +1,7 @@
-#![feature(slice_sort_by_cached_key)]
 #![feature(range_contains)]
 #![feature(stmt_expr_attributes)]
-#![feature(try_from)]
+#![feature(iter_copied)]
+#![feature(copied)]
 
 pub mod edgework;
 pub mod random;

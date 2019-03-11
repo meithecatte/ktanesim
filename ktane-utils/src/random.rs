@@ -145,12 +145,12 @@ impl RuleseedRandom {
     {
         let total_weights: f64 = elements
             .iter()
-            .map(|element| weights.get(element).cloned().unwrap_or(1.0))
+            .map(|element| weights.get(element).copied().unwrap_or(1.0))
             .sum();
         let mut choice = self.next_double() * total_weights;
 
         for element in elements.iter() {
-            let weight = weights.get(element).cloned().unwrap_or(1.0);
+            let weight = weights.get(element).copied().unwrap_or(1.0);
             if choice < weight {
                 return element;
             } else {
@@ -226,6 +226,13 @@ mod tests {
             random.shuffle_fisher_yates(&mut test_vec);
             assert_eq!(test_vec, expected);
         }
+    }
+
+    #[test]
+    #[should_panic]
+    fn weighted_select_empty() {
+        let mut random = get_rng();
+        random.weighted_select::<u8>(&[], &std::collections::HashMap::new());
     }
 
     const EXPECTED_INTS: [u32; 96] = [
