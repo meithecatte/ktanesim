@@ -1,6 +1,6 @@
+use serenity::builder::CreateMessage;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use serenity::builder::CreateMessage;
 
 /// Try to send a message and handle any errors
 pub fn send_message<F>(ctx: &Context, channel_id: ChannelId, f: F)
