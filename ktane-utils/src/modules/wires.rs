@@ -23,7 +23,7 @@ pub fn generate<R: Rng + ?Sized>(rng: &mut R) -> ([Option<Color>; MAX_WIRES], u8
     let mut positions: [u8; MAX_WIRES] = array_init::array_init_copy(|i| i as u8);
     let mut wires = [None; MAX_WIRES];
 
-    for &mut position in positions.partial_shuffle(rng, wire_count).0.into_iter() {
+    for &position in positions.partial_shuffle(rng, wire_count).0.iter() {
         use strum::IntoEnumIterator;
         wires[position as usize] = Color::iter().choose(rng);
     }

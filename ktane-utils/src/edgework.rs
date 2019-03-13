@@ -85,7 +85,7 @@ impl FromStr for Edgework {
                         } else {
                             let ports = port_plate
                                 .split(", ")
-                                .map(|port| port.parse::<PortType>())
+                                .map(str::parse::<PortType>)
                                 .collect::<Result<BitFlags<_>, _>>()
                                 .map_err(|_| NotAPort)?;
                             port_plates.push(PortPlate::new(ports).ok_or(ImpossiblePortPlate)?);
@@ -144,7 +144,7 @@ impl Distribution<Edgework> for Standard {
         let mut indicators = EnumMap::new();
         use strum::IntoEnumIterator;
         let mut unused_indicators: Vec<_> = IndicatorCode::iter().collect();
-        let mut unused_indicators = unused_indicators.partial_shuffle(rng, 5).0.into_iter();
+        let mut unused_indicators = unused_indicators.partial_shuffle(rng, 5).0.iter();
 
         for _ in 0..5 {
             match rng.gen_range(0, 3) {
