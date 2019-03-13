@@ -16,6 +16,16 @@ pub const MODULE_SIZE: i32 = 348;
 pub type Render = Box<dyn FnBox() -> (Vec<u8>, RenderType)>;
 pub type ModuleNew = fn(bomb: &mut Bomb, rule_cache: MutexGuard<ShareMap>) -> Box<dyn Module>;
 
+pub trait Module: Send + Sync {
+    fn handle_command(&mut self, bomb: &mut Bomb, user: UserId, command: &str) -> EventResponse;
+    fn view(&self, light: SolveLight) -> Render;
+}
+
+pub struct EventResponse {
+    render: Option<Render>,
+    message: Option<String>,
+}
+
 use strum_macros::Display;
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Display)]
 #[strum(serialize_all = "snake_case")]
@@ -67,16 +77,6 @@ pub fn output_png(surface: ImageSurface) -> (Vec<u8>, RenderType) {
     let mut png = std::io::Cursor::new(vec![]);
     surface.write_to_png(&mut png).unwrap();
     (png.into_inner(), RenderType::PNG)
-}
-
-pub struct EventResponse {
-    render: Option<Render>,
-    message: Option<String>,
-}
-
-pub trait Module {
-    fn handle_command(&mut self, bomb: &mut Bomb, user: UserId, command: &str) -> EventResponse;
-    fn view(&self, light: SolveLight) -> Render;
 }
 
 #[cfg(test)]
