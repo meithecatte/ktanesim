@@ -8,8 +8,59 @@ use phf_macros::phf_ordered_map;
 pub static COMMANDS: phf::OrderedMap<&'static str, Command> = phf_ordered_map! {
     "claim" => CMD_CLAIM,
     "modules" => CMD_MODULES,
+    "run" => CMD_RUN,
     "help" => CMD_HELP,
 };
+
+pub fn dispatch(ctx: Context, msg: Message, cmd: String) {
+    if cmd.starts_with('!') {
+        unimplemented!();
+    } else {
+        let mut parts = cmd.split_whitespace();
+        if let Some(first) = parts.next() {
+            if let Some(descriptor) = COMMANDS.get(first) {
+                match descriptor.handler {
+                    CommandHandler::AnyTime(f) => f(ctx, &msg, parts),
+                    _ => unimplemented!(),
+                }
+            } else {
+                send_message(&ctx, msg.channel_id, |m| {
+                    m.embed(|e| {
+                        e.color(Colour::RED).title("No such command").description({
+                            let mut builder = MessageBuilder::new();
+                            builder
+                                .push_mono_safe(first)
+                                .push(" is not recognized as a command.");
+
+                            if let Some(bomb) = crate::bomb::get_bomb(&ctx, &msg) {
+                                let last = bomb
+                                    .read()
+                                    .defusers
+                                    .get(&msg.author.id)
+                                    .and_then(|defuser| defuser.last_view)
+                                    .unwrap_or(0)
+                                    + 1;
+
+                                builder
+                                    .push(
+                                        "Did you mean to send it to one of the modules? \
+                                         If so, try using two exclamation marks or a \
+                                         module number: `!!",
+                                    )
+                                    .push_safe(&cmd)
+                                    .push(format!("`, or `!{} ", last))
+                                    .push_safe(&cmd)
+                                    .push("`");
+                            }
+
+                            builder.build()
+                        })
+                    })
+                });
+            }
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct Command {
@@ -37,7 +88,7 @@ macro_rules! _command {
     };
 }
 
-any_time!(CMD_HELP "!help [command]"
+any_time!(CMD_HELP "!help [`command`]"
           "This message. If followed by a command name, show help for the command."
 => |ctx, msg, params| {
     send_message(&ctx, msg.channel_id, |m| {
@@ -90,6 +141,19 @@ Here's a list of commands you can use:");
 
         m
     });
+});
+
+any_time!(CMD_RUN "!run [`mode`] `mission`, !run [`mode`, ] `module or group`+... `count`, ..."
+          "Arm a bomb in this channel. You can either start a *mission* (see **!missions**) or choose some modules for a customized experience (see **!modules**). You can also use the following words in place of a module name to refer to more modules at once:
+
+- *vanilla* - present in the base game.
+- *mods*, *modded* - available in the Steam Workshop.
+- *fantasy*, *novelty* - not yet available in the Steam Workshop.
+- *needy* - can't be disarmed, must be periodically interacted with in order to avoid strikes.
+- *solvable*, *regular* - the most common type of a module.
+- *boss*, *special* - must be accounted for throughout the bomb, while not being a needy, such as Forget Me Not or Souvenir."
+=> |ctx, msg, params| {
+    unimplemented!();
 });
 
 any_time!(CMD_MODULES "!modules"

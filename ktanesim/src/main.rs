@@ -3,22 +3,19 @@
 #[macro_use]
 extern crate log;
 
-use prelude::*;
-use serenity::model::prelude::*;
-use serenity::prelude::*;
-use std::collections::HashSet;
-use std::error::Error;
-use std::sync::Arc;
-
 mod bomb;
 mod commands;
+mod config;
 mod modules;
 mod prelude;
 mod utils;
 
-fn env(name: &'static str) -> String {
-    kankyo::key(name).unwrap_or_else(|| panic!("Environment variable {} not found", name))
-}
+use config::Config;
+use prelude::*;
+use serenity::model::prelude::*;
+use serenity::prelude::*;
+use std::collections::HashMap;
+use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
     if let Err(err) = kankyo::load() {
@@ -29,43 +26,35 @@ fn main() -> Result<(), Box<dyn Error>> {
     let token = env("DISCORD_TOKEN");
     let config = Config::parse()?;
     let mut client = Client::new(&token, Handler { config })?;
+    client.data.write().insert::<bomb::Bombs>(HashMap::new());
     client.start()?;
     Ok(())
 }
 
-struct Config {
-    allow_dm: bool,
-    bot_owner: UserId,
-    allowed_channels: HashSet<ChannelId>,
-}
-
-impl Config {
-    fn parse() -> Result<Config, Box<dyn Error>> {
-        Ok(Config {
-            allow_dm: env("ALLOW_DM").parse()?,
-            bot_owner: UserId(env("BOT_OWNER").parse()?),
-            allowed_channels: env("ALLOWED_CHANNELS")
-                .split(',')
-                .map(|s| s.parse().map(|id| ChannelId(id)))
-                .collect::<Result<_, _>>()?,
-        })
-    }
-
-    fn should_ignore_message(&self, msg: &Message) -> bool {
-        if msg.author.bot {
-            return true;
-        }
-
-        if msg.guild_id.is_some() {
-            !self.allowed_channels.contains(&msg.channel_id)
-        } else {
-            !self.allow_dm && msg.author.id != self.bot_owner
-        }
-    }
+fn env(name: &'static str) -> String {
+    kankyo::key(name).unwrap_or_else(|| panic!("Environment variable {} not found", name))
 }
 
 struct Handler {
     config: Config,
+}
+
+impl EventHandler for Handler {
+    fn ready(&self, _: Context, event: Ready) {
+        info!("Ready as {}", event.user.name);
+    }
+
+    fn message(&self, ctx: Context, msg: Message) {
+        let cmd = msg.content.trim();
+
+        if !cmd.starts_with('!') || self.config.should_ignore_message(&msg) {
+            return;
+        }
+
+        info!("Processing command: {:?}", cmd);
+        let normalized = normalize(cmd[1..].trim());
+        commands::dispatch(ctx, msg, normalized);
+    }
 }
 
 /// Convert the string to lowercase while replacing some unicode homoglyphs that keyboards tend to
@@ -85,33 +74,4 @@ fn normalize(input: &str) -> String {
     }
 
     output
-}
-
-impl EventHandler for Handler {
-    fn ready(&self, _ctx: Context, event: Ready) {
-        info!("Ready as {}", event.user.name);
-    }
-
-    fn message(&self, ctx: Context, message: Message) {
-        use commands::{CommandHandler, COMMANDS};
-        let cmd = message.content.trim();
-
-        if !cmd.starts_with('!') || self.config.should_ignore_message(&message) {
-            return;
-        }
-
-        info!("Processing command: {:?}", cmd);
-
-        let cmd = normalize(cmd[1..].trim());
-        let mut parts = cmd.split_whitespace();
-        if let Some(first) = parts.next() {
-            trace!("Verb: {:?}", first);
-            if let Some(descriptor) = COMMANDS.get(first) {
-                match descriptor.handler {
-                    CommandHandler::AnyTime(f) => f(ctx, &message, parts),
-                    _ => unimplemented!(),
-                }
-            }
-        }
-    }
 }
