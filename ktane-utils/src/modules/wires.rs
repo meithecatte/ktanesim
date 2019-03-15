@@ -287,7 +287,7 @@ impl RuleSet {
 }
 
 impl fmt::Display for RuleSet {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (rule_list, wire_count) in self.0.iter().zip(MIN_WIRES..) {
             write!(f, "{} wires:\n{}\n\n", wire_count, rule_list)?;
         }
@@ -326,7 +326,7 @@ impl RuleList {
 }
 
 impl fmt::Display for RuleList {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut first_rule = true;
 
         for rule in self.rules.iter() {
@@ -404,7 +404,7 @@ pub enum Query {
 }
 
 impl fmt::Display for Query {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::Query::*;
         match self {
             Edgework(q) => q.fmt(f),
@@ -503,7 +503,7 @@ pub enum EdgeworkQuery {
 }
 
 impl fmt::Display for EdgeworkQuery {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::EdgeworkQuery::*;
         match self {
             SerialStartsWithLetter => write!(f, "the serial number starts with a letter"),
@@ -582,7 +582,7 @@ impl WireQuery {
 
 use std::fmt;
 impl fmt::Display for WireQuery {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::WireQueryType::*;
         match self.query_type {
             ExactlyOne => write!(f, "there is exactly one {} wire", self.color),
@@ -652,7 +652,7 @@ impl SolutionWeightKey {
 }
 
 impl fmt::Display for Solution {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::Solution::*;
         use ordinal::Ordinal;
         match self {
