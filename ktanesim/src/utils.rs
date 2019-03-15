@@ -1,6 +1,7 @@
 use serenity::builder::CreateMessage;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
+use serenity::utils::Colour;
 
 /// Try to send a message and handle any errors
 pub fn send_message<F>(ctx: &Context, channel_id: ChannelId, f: F)
@@ -11,3 +12,5 @@ where
         error!("Couldn't send message: {:#?}", why);
     }
 }
+
+pub type ErrorMessage = (String, String);

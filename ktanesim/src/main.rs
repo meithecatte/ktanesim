@@ -1,4 +1,12 @@
-#![feature(proc_macro_hygiene, fnbox, try_blocks, type_ascription, try_trait)]
+#![feature(
+    proc_macro_hygiene,
+    fnbox,
+    try_blocks,
+    type_ascription,
+    try_trait,
+    int_error_matching
+)]
+#![warn(rust_2018_idioms)]
 
 #[macro_use]
 extern crate log;
@@ -14,6 +22,7 @@ use config::Config;
 use prelude::*;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
+use serenity::utils::Colour;
 use std::collections::HashMap;
 use std::error::Error;
 
@@ -53,7 +62,11 @@ impl EventHandler for Handler {
 
         info!("Processing command: {:?}", cmd);
         let normalized = normalize(cmd[1..].trim());
-        commands::dispatch(ctx, msg, normalized);
+        if let Err((title, description)) = commands::dispatch(&ctx, &msg, normalized) {
+            send_message(&ctx, msg.channel_id, |m| {
+                m.embed(|e| e.color(Colour::RED).title(title).description(description))
+            });
+        }
     }
 }
 

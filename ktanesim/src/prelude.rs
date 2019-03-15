@@ -4,6 +4,9 @@ pub use crate::bomb::Bomb;
 pub use crate::modules::{
     module_canvas, output_png, EventResponse, Module, Render, RenderType, SolveLight,
 };
+pub use crate::utils::*;
+
+pub type Parameters<'a> = std::str::SplitWhitespace<'a>;
 
 // Reexported because of function signatures
 pub use serenity::model::id::UserId;

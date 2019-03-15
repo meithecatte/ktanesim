@@ -1,20 +1,39 @@
-use phf_macros::phf_map;
-static MODULES: phf::Map<&'static str, ModuleNew> = phf_map! {
-    "wires" => wires::init,
-    "simplewires" => wires::init,
-};
-
-pub mod wires;
-
 use crate::Bomb;
 use serenity::model::id::UserId;
 use std::boxed::FnBox;
 use std::sync::MutexGuard;
 use typemap::ShareMap;
 
+pub type ModuleNew = fn(bomb: &mut Bomb, rule_cache: MutexGuard<'_, ShareMap>) -> Box<dyn Module>;
+
+use phf_macros::phf_map;
+
+/// A perfect hash map of all modules and module groups
+pub static MODULE_GROUPS: phf::Map<&'static str, &'static [ModuleNew]> = phf_map! {
+    "wires"       => &[wires::init],
+    "simplewires" => &[wires::init],
+
+    "vanilla"      => VANILLA_MODULES,
+    "base"         => VANILLA_MODULES,
+    "unmodded"     => VANILLA_MODULES,
+    "solvable"     => SOLVABLE_MODULES,
+    "regular"      => SOLVABLE_MODULES,
+    "normal"       => SOLVABLE_MODULES,
+    "ruleseed"     => RULESEED_MODULES,
+    "ruleseedable" => RULESEED_MODULES,
+    "all"          => ALL_MODULES,
+    "any"          => ALL_MODULES,
+};
+
+static VANILLA_MODULES: &[ModuleNew] = &[wires::init];
+static SOLVABLE_MODULES: &[ModuleNew] = &[wires::init];
+static RULESEED_MODULES: &[ModuleNew] = &[wires::init];
+static ALL_MODULES: &[ModuleNew] = &[wires::init];
+
+pub mod wires;
+
 pub const MODULE_SIZE: i32 = 348;
 pub type Render = Box<dyn FnBox() -> (Vec<u8>, RenderType)>;
-pub type ModuleNew = fn(bomb: &mut Bomb, rule_cache: MutexGuard<ShareMap>) -> Box<dyn Module>;
 
 pub trait Module: Send + Sync {
     fn handle_command(&mut self, bomb: &mut Bomb, user: UserId, command: &str) -> EventResponse;

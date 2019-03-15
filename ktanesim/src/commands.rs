@@ -1,5 +1,4 @@
-use crate::bomb::Bomb;
-use crate::utils::send_message;
+use crate::prelude::*;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::utils::{Colour, MessageBuilder};
@@ -12,7 +11,7 @@ pub static COMMANDS: phf::OrderedMap<&'static str, Command> = phf_ordered_map! {
     "help" => CMD_HELP,
 };
 
-pub fn dispatch(ctx: Context, msg: Message, cmd: String) {
+pub fn dispatch(ctx: &Context, msg: &Message, cmd: String) -> Result<(), ErrorMessage> {
     if cmd.starts_with('!') {
         unimplemented!();
     } else {
@@ -20,44 +19,42 @@ pub fn dispatch(ctx: Context, msg: Message, cmd: String) {
         if let Some(first) = parts.next() {
             if let Some(descriptor) = COMMANDS.get(first) {
                 match descriptor.handler {
-                    CommandHandler::AnyTime(f) => f(ctx, &msg, parts),
+                    CommandHandler::AnyTime(f) => f(ctx, msg, parts),
                     _ => unimplemented!(),
                 }
             } else {
-                send_message(&ctx, msg.channel_id, |m| {
-                    m.embed(|e| {
-                        e.color(Colour::RED).title("No such command").description({
-                            let mut builder = MessageBuilder::new();
-                            builder
-                                .push_mono_safe(first)
-                                .push(" is not recognized as a command.");
+                return Err(("No such command".to_owned(), {
+                    let mut builder = MessageBuilder::new();
+                    builder
+                        .push_mono_safe(first)
+                        .push(" is not recognized as a command.");
 
-                            if let Some(bomb) = crate::bomb::get_bomb(&ctx, &msg) {
-                                let last = bomb
-                                    .read()
-                                    .defusers
-                                    .get(&msg.author.id)
-                                    .and_then(|defuser| defuser.last_view)
-                                    .unwrap_or(0)
-                                    + 1;
+                    if let Some(bomb) = crate::bomb::get_bomb(&ctx, &msg) {
+                        let last = bomb
+                            .read()
+                            .defusers
+                            .get(&msg.author.id)
+                            .and_then(|defuser| defuser.last_view)
+                            .unwrap_or(0)
+                            + 1;
 
-                                builder
-                                    .push(
-                                        "Did you mean to send it to one of the modules? \
-                                         If so, try using two exclamation marks or a \
-                                         module number: `!!",
-                                    )
-                                    .push_safe(&cmd)
-                                    .push(format!("`, or `!{} ", last))
-                                    .push_safe(&cmd)
-                                    .push("`");
-                            }
+                        builder
+                            .push(
+                                "Did you mean to send it to one of the modules? \
+                                 If so, try using two exclamation marks or a \
+                                 module number: `!!",
+                            )
+                            .push_safe(&cmd)
+                            .push(format!("`, or `!{} ", last))
+                            .push_safe(&cmd)
+                            .push("`");
+                    }
 
-                            builder.build()
-                        })
-                    })
-                });
+                    builder.build()
+                }));
             }
+        } else {
+            Ok(())
         }
     }
 }
@@ -71,8 +68,8 @@ pub struct Command {
 
 #[derive(Clone, Copy)]
 pub enum CommandHandler {
-    NeedsBomb(fn(ctx: Context, msg: &Message, bomb: &Bomb, params: std::str::SplitWhitespace)),
-    AnyTime(fn(ctx: Context, msg: &Message, params: std::str::SplitWhitespace)),
+    NeedsBomb(fn(ctx: &Context, msg: &Message, bomb: &Bomb, params: Parameters<'_>)),
+    AnyTime(fn(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(), ErrorMessage>),
 }
 
 macro_rules! needs_bomb {( $($arg:tt)* ) => { _command!(NeedsBomb $($arg)*); }}
@@ -91,6 +88,7 @@ macro_rules! _command {
 any_time!(CMD_HELP "!help [`command`]"
           "This message. If followed by a command name, show help for the command."
 => |ctx, msg, params| {
+    unimplemented!();
     send_message(&ctx, msg.channel_id, |m| {
         m.embed(|e| {
             let search = params.collect::<Vec<_>>();
@@ -132,6 +130,7 @@ As a shorthand, you can use a double exclamation mark to refer to the module mos
 Here's a list of commands you can use:");
 
                 for command in COMMANDS.values() {
+                    info!("Length = {}", command.help.len());
                     e.field(command.help_header, command.help, false);
                 }
             }
@@ -143,18 +142,33 @@ Here's a list of commands you can use:");
     });
 });
 
-any_time!(CMD_RUN "!run [`mode`] `mission`, !run [`mode`, ] `module or group`+... `count`, ..."
-          "Arm a bomb in this channel. You can either start a *mission* (see **!missions**) or choose some modules for a customized experience (see **!modules**). You can also use the following words in place of a module name to refer to more modules at once:
+// TODO: Update this
+any_time!(CMD_RUN "!run [ruleseed=`seed`] [mode=`mode`] `mission`, !run [ruleseed=`seed`] [mode=`mode`] `module or group`\u{B1}... `count`, ..."
+"Arm a bomb in this channel. You can either start a *mission* (see **!missions**) or choose some modules for a customized experience (see **!modules**). You can also use the following words in place of a module name to refer to more modules at once:
 
-- *vanilla* - present in the base game.
+- *vanilla*, *base*, *unmodded* - present in the base game.
 - *mods*, *modded* - available in the Steam Workshop.
 - *fantasy*, *novelty* - not yet available in the Steam Workshop.
 - *needy* - can't be disarmed, must be periodically interacted with in order to avoid strikes.
-- *solvable*, *regular* - the most common type of a module.
-- *boss*, *special* - must be accounted for throughout the bomb, while not being a needy, such as Forget Me Not or Souvenir."
-=> |ctx, msg, params| {
-    unimplemented!();
-});
+- *solvable*, *regular*, *normal* - the most common type of a module.
+- *boss*, *special* - must be accounted for throughout the bomb, while not being a needy, such as Forget Me Not or Souvenir.
+- *ruleseedable*, *ruleseed* - modules that support procedural rule generation. See also the named parameter *ruleseed*
+- *all*, *any* - all of the above.
+
+These sets can be combined with `+` or `-`. For example, `!run mods+novelty-needy+knob 30` will randomly choose 30 modules, where each is either a needy *knob* or a non-*needy* module from the *mods* or *novelty* category. The expressions are evaluated left-to-right, so `mods+novelty+knob-needy` would first add the *knob* and then prune all the needies, making it impossible for the knob to actually appear on the bomb.
+
+To achieve more certainty about the exact modules you will encounter, you can add `each` after the count - `!run all 1 each` will give you a taste of everything in store. Alternatively, it's also possible to use more than one pair of a module set and a count, such as `!run wires 2, hexamaze 5` or `!run solvable 30, boss+needy 1 each` (good luck).
+
+Finally, you can add named parameters before the mission name or module list:
+
+- *seed*, *ruleseed*, *rules* - for modules that support it, generate the rules procedurally with the specified seed - for example, `!run ruleseed=7 wires+digitalRoot+capacitor 1 each` will give new rules to the vanilla Wires, but not to the needy Capacitor or Digital Root. Seeds are positive integers smaller than 2147483647 (or, as a practical approximation, up to nine digits long). This replicates the functionality of the [Rule Seed Modifier](https://steamcommunity.com/sharedfiles/filedetails/?id=1224413364) mod.
+- *timer* - choose a behavior for the timer:
+  - `!run timer=8m30s ...` (or any other value) - the timer is constantly running down from the specified starting value and will speed up on a strike. This mode is the default, but specifying it explicitly allows you to control the amount of time you have.
+  - `!run timer=zen ...` - the timer starts at zero and is counting up. Strikes do not affect the timer speed. The bomb will not explode in this mode unless forcibly detonated. Solving modules with this option has a smaller weight on the leaderboard.
+  - `!run timer=time ...` - the timer starts counting down from five minutes. Each time a module is solved, time is added, while strikes cause time to be removed.
+  
+Both named parameters can be used for missions as well as custom bombs."
+=> crate::bomb::cmd_run);
 
 any_time!(CMD_MODULES "!modules"
           "Show the list of modules available for constructing bombs."

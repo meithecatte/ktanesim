@@ -12,6 +12,8 @@ rand = "*"
 smallvec = "*"
 strum = "*"
 strum_macros = "*"
+lazy_static = "*"
+regex = "*"
 
 # Use the same version as serenity
 typemap = "*"
@@ -27,6 +29,9 @@ cairo-svgpath = "^0.1"
 
 kankyo = "^0.2"
 env_logger = "^0.6"
+
+humantime = "^1.2"
+itertools = "^0.8"
 
 [dependencies.serenity]
 git = "https://github.com/serenity-rs/serenity"

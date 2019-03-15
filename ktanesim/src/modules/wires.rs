@@ -15,7 +15,7 @@ impl typemap::Key for RuleCacheKey {
     type Value = HashMap<u32, Weak<RuleSet>>;
 }
 
-fn get_rules(seed: u32, mut rules_cache: MutexGuard<ShareMap>) -> Arc<RuleSet> {
+fn get_rules(seed: u32, mut rules_cache: MutexGuard<'_, ShareMap>) -> Arc<RuleSet> {
     let rule_map = rules_cache
         .entry::<RuleCacheKey>()
         .or_insert_with(HashMap::new);
@@ -36,7 +36,7 @@ fn get_rules(seed: u32, mut rules_cache: MutexGuard<ShareMap>) -> Arc<RuleSet> {
     }
 }
 
-pub fn init(bomb: &mut Bomb, rules_cache: MutexGuard<ShareMap>) -> Box<dyn Module> {
+pub fn init(bomb: &mut Bomb, rules_cache: MutexGuard<'_, ShareMap>) -> Box<dyn Module> {
     let rules = get_rules(bomb.rule_seed, rules_cache);
     let (wires, wire_count) = generate(&mut rand::thread_rng());
 
@@ -99,7 +99,7 @@ impl Module for Wires {
 }
 
 use cairo_svgpath::svgpath;
-const PATHS: &[&Fn(&cairo::Context)] = &[
+const PATHS: &[&dyn Fn(&cairo::Context)] = &[
     &|ctx: &cairo::Context| {
         svgpath!(ctx, "m61.6063 94.05481c10.847099 -2.326851 19.528023 12.062485 30.566925 13.165352c24.493225 2.4470444 49.259254 -2.853485 73.83202 -1.4094467c11.687805 0.68683624 20.134766 12.74498 31.509186 15.519684c25.011337 6.1013184 50.6969 9.060364 76.183716 12.695541");
     },
@@ -120,7 +120,7 @@ const PATHS: &[&Fn(&cairo::Context)] = &[
     },
 ];
 
-const PATHS_CUT: &[&Fn(&cairo::Context)] = &[
+const PATHS_CUT: &[&dyn Fn(&cairo::Context)] = &[
     &|ctx: &cairo::Context| {
         svgpath!(ctx, "m 61.6063,94.05481 c 10.847099,-2.326851 19.528024,12.06248 30.566925,13.16535 16.662945,1.66475 33.452145,-0.25623 50.220865,-1.19995 m 23.61115,-0.20949 c 11.68781,0.68683 20.13477,12.74498 31.50919,15.51968 25.01134,6.10132 50.6969,9.06036 76.18372,12.69554");
     },
