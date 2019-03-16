@@ -1,7 +1,4 @@
-#![feature(range_contains)]
-#![feature(stmt_expr_attributes)]
-#![feature(iter_copied)]
-#![feature(copied)]
+#![feature(range_contains, stmt_expr_attributes, iter_copied, copied)]
 #![warn(rust_2018_idioms)]
 
 pub mod edgework;
