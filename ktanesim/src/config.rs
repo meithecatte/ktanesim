@@ -16,7 +16,7 @@ impl Config {
             bot_owner: UserId(env("BOT_OWNER").parse()?),
             allowed_channels: env("ALLOWED_CHANNELS")
                 .split(',')
-                .map(|s| s.parse().map(|id| ChannelId(id)))
+                .map(|s| s.parse().map(ChannelId))
                 .collect::<Result<_, _>>()?,
         })
     }
