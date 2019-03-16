@@ -2,11 +2,11 @@ use crate::bomb::TimerMode;
 use crate::modules::ModuleNew;
 use crate::prelude::*;
 use itertools::Itertools;
+use rand::prelude::*;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::utils::MessageBuilder;
 use std::collections::HashSet;
-use std::iter::Peekable;
 use std::time::Duration;
 
 const MAX_MODULES: u32 = 101;
@@ -24,6 +24,16 @@ fn ensure_no_bomb(ctx: &Context, msg: &Message) -> Result<(), ErrorMessage> {
     }
 
     Ok(())
+}
+
+fn start_bomb(
+    ctx: &Context,
+    msg: &Message,
+    timer: TimerMode,
+    ruleseed: u32,
+    modules: &[ModuleNew],
+) {
+    unimplemented!();
 }
 
 pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(), ErrorMessage> {
@@ -47,6 +57,7 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(
 
     let mut chosen_modules = vec![];
 
+    let rng = &mut rand::thread_rng();
     for group in params
         .join(" ")
         .split(',')
@@ -109,7 +120,30 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(
             ));
         }
 
-        let modules = parse_group(specifier)?;
+        let group_modules = parse_group(specifier)?;
+
+        if group_modules.is_empty() {
+            return Err((
+                "Empty module set".to_owned(),
+                MessageBuilder::new()
+                    .push("The module group specifier ")
+                    .push_mono_safe(specifier)
+                    .push(" excludes all implemented modules.")
+                    .build(),
+            ));
+        }
+
+        if each {
+            for _ in 0..count {
+                chosen_modules.extend(group_modules.iter().map(|module| module.0));
+            }
+        } else {
+            let group_modules: Vec<_> = group_modules.iter().map(|module| module.0).collect();
+
+            for _ in 0..count {
+                chosen_modules.push(*group_modules.choose(rng).unwrap());
+            }
+        }
     }
 
     Ok(())
@@ -125,6 +159,13 @@ impl PartialEq for HashableModuleNew {
     }
 }
 
+use std::fmt;
+impl fmt::Debug for HashableModuleNew {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        (self.0 as usize).fmt(f)
+    }
+}
+
 impl Eq for HashableModuleNew {}
 
 use std::hash::{Hash, Hasher};
@@ -132,6 +173,19 @@ impl Hash for HashableModuleNew {
     fn hash<H: Hasher>(&self, state: &mut H) {
         (self.0 as usize).hash(state);
     }
+}
+
+fn specifier_no_meaning(
+    input: &str,
+    f: impl FnOnce(&mut MessageBuilder) -> &mut MessageBuilder,
+) -> Result<!, ErrorMessage> {
+    let mut builder = MessageBuilder::new();
+    builder
+        .push("The module group specifier ")
+        .push_mono_safe(input);
+    f(&mut builder);
+    let msg = builder.push(". This has no defined meaning.").build();
+    Err(("Syntax error".to_owned(), msg))
 }
 
 fn parse_group(input: &str) -> Result<HashSet<HashableModuleNew>, ErrorMessage> {
@@ -143,15 +197,86 @@ fn parse_group(input: &str) -> Result<HashSet<HashableModuleNew>, ErrorMessage> 
     for (index, ch) in input.char_indices() {
         if ch == '+' || ch == '-' {
             let name = &input[starting_index..index];
+
+            if name.is_empty() {
+                specifier_no_meaning(input, |m| {
+                    if index == 0 {
+                        m.push(" starts with an operator")
+                    } else {
+                        m.push(
+                            " contains two operators without a module or group between them, after ",
+                        )
+                        .push_mono_safe(&input[..index - 1])
+                    }
+                })?;
+            }
+
             handle_group(&mut output, name, removing)?;
 
-            starting_index = index;
+            starting_index = index + 1;
             removing = ch == '-';
         }
     }
 
+    let name = &input[starting_index..];
+
+    if name.is_empty() {
+        specifier_no_meaning(input, |m| m.push(" ends with an operator"))?;
+    }
+
     handle_group(&mut output, &input[starting_index..], removing)?;
     Ok(output)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_group_test() {
+        assert_eq!(parse_group("thing"),
+            Err((
+                "No such module".to_owned(),
+                "`thing` is not recognized as a module or module group name. Try **!modules** to get a list."
+                .to_owned()
+            ))
+        );
+
+        for valid_single in &[
+            "wires",
+            "wires+wires",
+            "wires+wires+wires",
+            "wires-wires+wires",
+        ] {
+            let result = parse_group(valid_single).unwrap();
+            assert_eq!(result.len(), 1);
+            assert_eq!(
+                result.iter().next(),
+                Some(&HashableModuleNew(crate::modules::wires::init))
+            );
+        }
+
+        for valid_empty in &["wires-wires", "wires-all", "wires+wires-wires"] {
+            let result = parse_group(valid_empty).unwrap();
+            assert_eq!(result.len(), 0);
+        }
+
+        assert_eq!(parse_group("+"), Err((
+            "Syntax error".to_owned(),
+            "The module group specifier `+` starts with an operator. This has no defined meaning.".to_owned(),
+        )));
+
+        assert_eq!(parse_group("wires+"), Err((
+            "Syntax error".to_owned(),
+            "The module group specifier `wires+` ends with an operator. This has no defined meaning.".to_owned(),
+        )));
+
+        assert_eq!(parse_group("wires+-mods"), Err((
+            "Syntax error".to_owned(),
+            "The module group specifier `wires+-mods` contains two operators without a module or \
+             group between them, after `wires`. This has no defined meaning.".to_owned(),
+        )));
+    }
 }
 
 fn handle_group(
@@ -202,7 +327,7 @@ fn consolidate_named_parameters(
     for param in params {
         match param {
             NamedParameter::Ruleseed(seed) => {
-                if let Some(_) = ruleseed.replace(seed) {
+                if ruleseed.replace(seed).is_some() {
                     return Err((
                         "Repeated parameter".to_owned(),
                         "It does not make sense to specify more than one rule seed.".to_owned(),
@@ -210,7 +335,7 @@ fn consolidate_named_parameters(
                 }
             }
             NamedParameter::Timer(specifier) => {
-                if let Some(_) = timer.replace(specifier) {
+                if timer.replace(specifier).is_some() {
                     return Err((
                         "Repeated parameter".to_owned(),
                         "It does not make sense to specify more than one timer value.".to_owned(),

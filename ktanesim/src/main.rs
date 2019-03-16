@@ -4,7 +4,8 @@
     try_blocks,
     type_ascription,
     try_trait,
-    int_error_matching
+    int_error_matching,
+    never_type
 )]
 #![warn(rust_2018_idioms)]
 
