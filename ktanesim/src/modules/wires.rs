@@ -54,7 +54,7 @@ impl Module for Wires {
 
     fn view(&self, light: SolveLight) -> Render {
         let wires = self.wires;
-        let cut_state = self.cut_state.clone();
+        let mut cut_state = self.cut_state.clone();
         Box::new(move || {
             let (surface, ctx) = module_canvas(light);
 
@@ -67,30 +67,32 @@ impl Module for Wires {
             ctx.stroke();
 
             ctx.set_line_cap(cairo::LineCap::Square);
-            let mut cut_state = cut_state.into_iter();
-            for ((wire, path), path_cut) in wires.into_iter().zip(PATHS).zip(PATHS_CUT) {
-                if let Some(wire) = wire {
-                    if cut_state.next().unwrap() {
-                        path_cut(&ctx);
-                    } else {
-                        path(&ctx);
-                    }
-
-                    ctx.set_source_rgb(0.0, 0.0, 0.0);
-                    ctx.set_line_width(8.0);
-                    ctx.stroke_preserve();
-
-                    match wire {
-                        Color::Black => ctx.set_source_rgb(0.0, 0.0, 0.0),
-                        Color::Blue => ctx.set_source_rgb(0.0, 0.0, 1.0),
-                        Color::Red => ctx.set_source_rgb(1.0, 0.0, 0.0),
-                        Color::White => ctx.set_source_rgb(1.0, 1.0, 1.0),
-                        Color::Yellow => ctx.set_source_rgb(1.0, 1.0, 0.0),
-                    }
-
-                    ctx.set_line_width(4.0);
-                    ctx.stroke();
+            for ((wire, (path, path_cut)), cut) in wires
+                .iter()
+                .zip(PATHS.iter().zip(PATHS_CUT))
+                .filter_map(|(maybe_wire, paths)| maybe_wire.map(|wire| (wire, paths)))
+                .zip(cut_state.iter())
+            {
+                if cut {
+                    path_cut(&ctx);
+                } else {
+                    path(&ctx);
                 }
+
+                ctx.set_source_rgb(0.0, 0.0, 0.0);
+                ctx.set_line_width(8.0);
+                ctx.stroke_preserve();
+
+                match wire {
+                    Color::Black => ctx.set_source_rgb(0.0, 0.0, 0.0),
+                    Color::Blue => ctx.set_source_rgb(0.0, 0.0, 1.0),
+                    Color::Red => ctx.set_source_rgb(1.0, 0.0, 0.0),
+                    Color::White => ctx.set_source_rgb(1.0, 1.0, 1.0),
+                    Color::Yellow => ctx.set_source_rgb(1.0, 1.0, 0.0),
+                }
+
+                ctx.set_line_width(4.0);
+                ctx.stroke();
             }
 
             output_png(surface)
