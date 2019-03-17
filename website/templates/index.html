@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+	{% if page %}
+	{% set subtitle = page.title %}
+	{% else %}
+	{% set subtitle = section.title %}
+	{% endif %}
+	{% set title = config.title ~ " &mdash; " ~ subtitle %}
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" href="{{ get_url(path="index.css") }}">
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono|Open+Sans:400,400i,700">
+		<title>{{title | safe}}</title>
+	</head>
+	<body>
+		{% block toc %}
+		<div id="topbar">
+			<label for="toc-toggle"><i class="icon-menu"></i></label>
+			<div id="title">{{title | safe}}</div>
+		</div>
+		<input id="toc-toggle" type="checkbox">
+		<div id="toc">
+			<h3>Table of contents</h3>
+			<label for="toc-toggle">
+			<ul>
+				{% for h1 in section.toc %}
+				<li>
+					<a href="#{{ h1.id | safe }}">{{ h1.title }}</a>
+					{% if h1.children %}
+						<ul>
+						{% for h2 in h1.children %}
+							<li>
+								<a href="#{{ h2.id | safe }}">{{ h2.title }}</a>
+							</li>
+						{% endfor %}
+						</ul>
+					{% endif %}
+				</li>
+				{% endfor %}
+			</ul>
+		</div>
+		{% endblock toc %}
+
+		<div id="content">
+			{% block content %}
+			{{ section.content | safe }}
+			{% endblock content %}
+		</div>
+		<script>
+			document.querySelectorAll('#toc a').forEach(function(elem) {
+				elem.addEventListener('click', function() {
+					document.getElementById('toc-toggle').checked = false;
+				});
+			});
+		</script>
+	</body>
+</html>
