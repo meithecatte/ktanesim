@@ -4,14 +4,116 @@ use std::boxed::FnBox;
 use std::sync::MutexGuard;
 use typemap::ShareMap;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum ModuleOrigin {
+    Vanilla,
+    Modded,
+    Novelty,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum ModuleCategory {
+    Solvable,
+    Needy,
+    Boss,
+}
+
+pub struct ModuleDescriptor {
+    pub constructor: ModuleNew,
+    pub origin: ModuleOrigin,
+    pub category: ModuleCategory,
+    pub ruleseed: bool,
+}
+
+// Comparing constructor is enough, the rest is just metadata. This could be derived, but ModuleNew
+// does not implement PartialEq because of higher-ranked trait bounds caused by the references.
+// Compare rust-lang/rust#46989
+impl Eq for ModuleDescriptor {}
+impl PartialEq for ModuleDescriptor {
+    fn eq(&self, other: &Self) -> bool {
+        self.constructor as usize == other.constructor as usize
+    }
+}
+
+use std::hash::{Hash, Hasher};
+impl Hash for ModuleDescriptor {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        (self.constructor as usize).hash(state);
+    }
+}
+
+use std::fmt;
+impl fmt::Debug for ModuleDescriptor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "<module@{:x}>", self.constructor as usize)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ModuleGroup {
+    Single(&'static ModuleDescriptor),
+    Category(ModuleCategory),
+    Origin(ModuleOrigin),
+    Ruleseed,
+    All,
+}
+
+use std::collections::HashSet;
+
+impl ModuleGroup {
+    pub fn add_to_set(&self, set: &mut HashSet<&'static ModuleDescriptor>) {
+        fn add_matching<F>(set: &mut HashSet<&'static ModuleDescriptor>, f: F)
+        where
+            F: Fn(&'static ModuleDescriptor) -> bool,
+        {
+            for module in MODULE_GROUPS
+                .values()
+                .filter_map(|&group| {
+                    if let ModuleGroup::Single(module) = group {
+                        Some(module)
+                    } else {
+                        None
+                    }
+                })
+                .filter(|&m| f(m))
+            {
+                set.insert(module);
+            }
+        }
+
+        match *self {
+            ModuleGroup::Single(module) => {
+                set.insert(module);
+            }
+            ModuleGroup::Category(cat) => add_matching(set, |m| m.category == cat),
+            ModuleGroup::Origin(origin) => add_matching(set, |m| m.origin == origin),
+            ModuleGroup::Ruleseed => add_matching(set, |m| m.ruleseed),
+            ModuleGroup::All => add_matching(set, |_| true),
+        }
+    }
+
+    pub fn remove_from_set(&self, set: &mut HashSet<&'static ModuleDescriptor>) {
+        match *self {
+            ModuleGroup::Single(module) => {
+                set.remove(module);
+            }
+            ModuleGroup::Category(cat) => set.retain(|m| m.category != cat),
+            ModuleGroup::Origin(origin) => set.retain(|m| m.origin != origin),
+            ModuleGroup::Ruleseed => set.retain(|m| !m.ruleseed),
+            ModuleGroup::All => set.clear(),
+        }
+    }
+}
+
 pub type ModuleNew = fn(bomb: &mut Bomb, rule_cache: MutexGuard<'_, ShareMap>) -> Box<dyn Module>;
 
 use phf_macros::phf_map;
+use ModuleGroup::Single;
 
 /// A perfect hash map of all modules and module groups
-pub static MODULE_GROUPS: phf::Map<&'static str, &'static [ModuleNew]> = phf_map! {
-    "wires"       => &[wires::init],
-    "simplewires" => &[wires::init],
+pub static MODULE_GROUPS: phf::Map<&'static str, ModuleGroup> = phf_map! {
+    "wires"       => Single(&wires::DESCRIPTOR),
+    "simplewires" => Single(&wires::DESCRIPTOR),
 
     "vanilla"      => VANILLA_MODULES,
     "base"         => VANILLA_MODULES,
@@ -19,16 +121,14 @@ pub static MODULE_GROUPS: phf::Map<&'static str, &'static [ModuleNew]> = phf_map
     "solvable"     => SOLVABLE_MODULES,
     "regular"      => SOLVABLE_MODULES,
     "normal"       => SOLVABLE_MODULES,
-    "ruleseed"     => RULESEED_MODULES,
-    "ruleseedable" => RULESEED_MODULES,
-    "all"          => ALL_MODULES,
-    "any"          => ALL_MODULES,
+    "ruleseed"     => ModuleGroup::Ruleseed,
+    "ruleseedable" => ModuleGroup::Ruleseed,
+    "all"          => ModuleGroup::All,
+    "any"          => ModuleGroup::All,
 };
 
-static VANILLA_MODULES: &[ModuleNew] = &[wires::init];
-static SOLVABLE_MODULES: &[ModuleNew] = &[wires::init];
-static RULESEED_MODULES: &[ModuleNew] = &[wires::init];
-static ALL_MODULES: &[ModuleNew] = &[wires::init];
+static VANILLA_MODULES: ModuleGroup = ModuleGroup::Origin(ModuleOrigin::Vanilla);
+static SOLVABLE_MODULES: ModuleGroup = ModuleGroup::Category(ModuleCategory::Solvable);
 
 pub mod wires;
 

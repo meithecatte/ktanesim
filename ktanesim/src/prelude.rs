@@ -2,7 +2,8 @@
 
 pub use crate::bomb::Bomb;
 pub use crate::modules::{
-    module_canvas, output_png, EventResponse, Module, Render, RenderType, SolveLight,
+    module_canvas, output_png, EventResponse, Module, ModuleCategory, ModuleDescriptor,
+    ModuleOrigin, Render, RenderType, SolveLight,
 };
 pub use crate::utils::*;
 

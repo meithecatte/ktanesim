@@ -1,11 +1,12 @@
 use crate::bomb::TimerMode;
-use crate::modules::ModuleNew;
+use crate::modules::{ModuleGroup, ModuleNew};
 use crate::prelude::*;
 use itertools::Itertools;
 use rand::prelude::*;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::utils::MessageBuilder;
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::time::Duration;
 
@@ -31,9 +32,61 @@ fn start_bomb(
     msg: &Message,
     timer: TimerMode,
     ruleseed: u32,
-    modules: &[ModuleNew],
+    modules: Cow<'static, [ModuleSet]>,
 ) {
     unimplemented!();
+    /*
+    if group_modules.is_empty() {
+        return Err((
+            "Empty module set".to_owned(),
+            MessageBuilder::new()
+                .push("The module group specifier ")
+                .push_mono_safe(specifier)
+                .push(" excludes all implemented modules.")
+                .build(),
+        ));
+    }
+
+    if each {
+        for _ in 0..count {
+            chosen_modules.extend(group_modules.iter().map(|module| module.0));
+        }
+    } else {
+        let group_modules: Vec<_> = group_modules.iter().map(|module| module.0).collect();
+
+        for _ in 0..count {
+            chosen_modules.push(*group_modules.choose(rng).unwrap());
+        }
+    }
+    */
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SetOperation {
+    Add,
+    Remove,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ModuleSet {
+    base: ModuleGroup,
+    operations: Cow<'static, [(SetOperation, ModuleGroup)]>,
+}
+
+impl ModuleSet {
+    fn evaluate(&self) -> HashSet<&'static ModuleDescriptor> {
+        let mut set = HashSet::new();
+        self.base.add_to_set(&mut set);
+
+        for (operation, group) in self.operations.as_ref() {
+            match operation {
+                SetOperation::Add => group.add_to_set(&mut set),
+                SetOperation::Remove => group.remove_from_set(&mut set),
+            };
+        }
+
+        set
+    }
 }
 
 pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(), ErrorMessage> {
@@ -55,9 +108,8 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(
         static ref REGEX: Regex = Regex::new(r"(\w|[+-]) (\w|[+-])").unwrap();
     };
 
-    let mut chosen_modules = vec![];
+    let mut module_groups = vec![];
 
-    let rng = &mut rand::thread_rng();
     for group in params
         .join(" ")
         .split(',')
@@ -120,112 +172,95 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(
             ));
         }
 
-        let group_modules = parse_group(specifier)?;
-
-        if group_modules.is_empty() {
-            return Err((
-                "Empty module set".to_owned(),
-                MessageBuilder::new()
-                    .push("The module group specifier ")
-                    .push_mono_safe(specifier)
-                    .push(" excludes all implemented modules.")
-                    .build(),
-            ));
-        }
-
-        if each {
-            for _ in 0..count {
-                chosen_modules.extend(group_modules.iter().map(|module| module.0));
-            }
-        } else {
-            let group_modules: Vec<_> = group_modules.iter().map(|module| module.0).collect();
-
-            for _ in 0..count {
-                chosen_modules.push(*group_modules.choose(rng).unwrap());
-            }
-        }
+        module_groups.push(parse_group(specifier)?);
     }
 
     Ok(())
 }
 
-// Work around rust-lang/rust#46989
-#[derive(Clone, Copy)]
-struct HashableModuleNew(ModuleNew);
-
-impl PartialEq for HashableModuleNew {
-    fn eq(&self, other: &HashableModuleNew) -> bool {
-        self.0 as usize == other.0 as usize
+fn parse_group(input: &str) -> Result<ModuleSet, ErrorMessage> {
+    fn no_meaning(
+        input: &str,
+        f: impl FnOnce(&mut MessageBuilder) -> &mut MessageBuilder,
+    ) -> Result<!, ErrorMessage> {
+        let mut builder = MessageBuilder::new();
+        builder
+            .push("The module group specifier ")
+            .push_mono_safe(input);
+        f(&mut builder);
+        let msg = builder.push(". This has no defined meaning.").build();
+        Err(("Syntax error".to_owned(), msg))
     }
-}
 
-use std::fmt;
-impl fmt::Debug for HashableModuleNew {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        (self.0 as usize).fmt(f)
+    fn get_group(name: &str) -> Result<ModuleGroup, ErrorMessage> {
+        crate::modules::MODULE_GROUPS.get(name).copied().ok_or_else(|| (
+            "No such module".to_owned(),
+            MessageBuilder::new()
+            .push_mono_safe(name)
+            .push(" is not recognized as a module or module group name. Try **!modules** to get a list.")
+            .build()))
     }
-}
 
-impl Eq for HashableModuleNew {}
+    let mut separators = input
+        .match_indices(|c| match c {
+            '+' | '-' => true,
+            _ => false,
+        })
+        .peekable();
 
-use std::hash::{Hash, Hasher};
-impl Hash for HashableModuleNew {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        (self.0 as usize).hash(state);
-    }
-}
-
-fn specifier_no_meaning(
-    input: &str,
-    f: impl FnOnce(&mut MessageBuilder) -> &mut MessageBuilder,
-) -> Result<!, ErrorMessage> {
-    let mut builder = MessageBuilder::new();
-    builder
-        .push("The module group specifier ")
-        .push_mono_safe(input);
-    f(&mut builder);
-    let msg = builder.push(". This has no defined meaning.").build();
-    Err(("Syntax error".to_owned(), msg))
-}
-
-fn parse_group(input: &str) -> Result<HashSet<HashableModuleNew>, ErrorMessage> {
-    let mut output = HashSet::new();
-
-    let mut starting_index = 0;
-    let mut removing = false;
-
-    for (index, ch) in input.char_indices() {
-        if ch == '+' || ch == '-' {
-            let name = &input[starting_index..index];
-
-            if name.is_empty() {
-                specifier_no_meaning(input, |m| {
-                    if index == 0 {
-                        m.push(" starts with an operator")
-                    } else {
-                        m.push(
-                            " contains two operators without a module or group between them, after ",
-                        )
-                        .push_mono_safe(&input[..index - 1])
-                    }
-                })?;
-            }
-
-            handle_group(&mut output, name, removing)?;
-
-            starting_index = index + 1;
-            removing = ch == '-';
+    let base = match separators.peek() {
+        Some(&(0, _)) => no_meaning(input, |m| m.push(" starts with an operator"))?,
+        Some(&(index, _)) => get_group(&input[0..index])?,
+        None => {
+            return Ok(ModuleSet {
+                base: get_group(input)?,
+                operations: Cow::Borrowed(&[]),
+            });
         }
+    };
+
+    let mut operations = vec![];
+
+    while let Some((left, op)) = separators.next() {
+        let start = left + 1;
+        let name = match separators.peek() {
+            Some(&(end, _)) => {
+                let name = &input[start..end];
+
+                if name.is_empty() {
+                    no_meaning(input, |m| {
+                        m
+                            .push(" contains two operators without a module or group between them, after ")
+                            .push_mono_safe(&input[..left])
+                    })?;
+                }
+
+                name
+            }
+            None => {
+                let name = &input[start..];
+
+                if name.is_empty() {
+                    no_meaning(input, |m| m.push(" ends with an operator"))?;
+                }
+
+                name
+            }
+        };
+
+        let op = match op {
+            "+" => SetOperation::Add,
+            "-" => SetOperation::Remove,
+            _ => unreachable!(),
+        };
+
+        operations.push((op, get_group(name)?));
     }
 
-    let name = &input[starting_index..];
-
-    if name.is_empty() {
-        specifier_no_meaning(input, |m| m.push(" ends with an operator"))?;
-    }
-
-    handle_group(&mut output, &input[starting_index..], removing)?;
-    Ok(output)
+    Ok(ModuleSet {
+        base,
+        operations: Cow::from(operations),
+    })
 }
 
 #[cfg(test)]
@@ -248,16 +283,16 @@ mod tests {
             "wires+wires+wires",
             "wires-wires+wires",
         ] {
-            let result = parse_group(valid_single).unwrap();
+            let result = parse_group(valid_single).unwrap().evaluate();
             assert_eq!(result.len(), 1);
             assert_eq!(
-                result.iter().next(),
-                Some(&HashableModuleNew(crate::modules::wires::init))
+                result.into_iter().next(),
+                Some(&crate::modules::wires::DESCRIPTOR),
             );
         }
 
         for valid_empty in &["wires-wires", "wires-all", "wires+wires-wires"] {
-            let result = parse_group(valid_empty).unwrap();
+            let result = parse_group(valid_empty).unwrap().evaluate();
             assert_eq!(result.len(), 0);
         }
 
@@ -277,33 +312,6 @@ mod tests {
              group between them, after `wires`. This has no defined meaning.".to_owned(),
         )));
     }
-}
-
-fn handle_group(
-    output: &mut HashSet<HashableModuleNew>,
-    name: &str,
-    removing: bool,
-) -> Result<(), ErrorMessage> {
-    match crate::modules::MODULE_GROUPS.get(name) {
-        Some(&group) => {
-            for &module in group {
-                if removing {
-                    output.remove(&HashableModuleNew(module));
-                } else {
-                    output.insert(HashableModuleNew(module));
-                }
-            }
-        }
-        // TODO: fuzzy suggestions
-        None => return Err((
-            "No such module".to_owned(),
-            MessageBuilder::new()
-            .push_mono_safe(name)
-            .push(" is not recognized as a module or module group name. Try **!modules** to get a list.")
-            .build())),
-    }
-
-    Ok(())
 }
 
 /// The value of a single named parameter.

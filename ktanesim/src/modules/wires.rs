@@ -4,6 +4,13 @@ use smallbitvec::SmallBitVec;
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 
+pub static DESCRIPTOR: ModuleDescriptor = ModuleDescriptor {
+    constructor: init,
+    origin: ModuleOrigin::Vanilla,
+    category: ModuleCategory::Solvable,
+    ruleseed: true,
+};
+
 pub struct Wires {
     rules: Arc<RuleSet>,
     wires: [Option<Color>; MAX_WIRES],
@@ -36,7 +43,7 @@ fn get_rules(seed: u32, mut rules_cache: MutexGuard<'_, ShareMap>) -> Arc<RuleSe
     }
 }
 
-pub fn init(bomb: &mut Bomb, rules_cache: MutexGuard<'_, ShareMap>) -> Box<dyn Module> {
+fn init(bomb: &mut Bomb, rules_cache: MutexGuard<'_, ShareMap>) -> Box<dyn Module> {
     let rules = get_rules(bomb.rule_seed, rules_cache);
     let (wires, wire_count) = generate(&mut rand::thread_rng());
 
