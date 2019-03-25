@@ -2,16 +2,19 @@ use crate::Bomb;
 use serenity::model::id::UserId;
 use std::boxed::FnBox;
 use std::sync::MutexGuard;
+use strum_macros::Display;
 use typemap::ShareMap;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Display)]
+#[strum(serialize_all = "snake_case")]
 pub enum ModuleOrigin {
     Vanilla,
     Modded,
     Novelty,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Display)]
+#[strum(serialize_all = "snake_case")]
 pub enum ModuleCategory {
     Solvable,
     Needy,
@@ -19,10 +22,11 @@ pub enum ModuleCategory {
 }
 
 pub struct ModuleDescriptor {
+    pub identifier: &'static str,
     pub constructor: ModuleNew,
     pub origin: ModuleOrigin,
     pub category: ModuleCategory,
-    pub ruleseed: bool,
+    pub rule_seed: bool,
 }
 
 // Comparing constructor is enough, the rest is just metadata. This could be derived, but ModuleNew
@@ -87,7 +91,7 @@ impl ModuleGroup {
             }
             ModuleGroup::Category(cat) => add_matching(set, |m| m.category == cat),
             ModuleGroup::Origin(origin) => add_matching(set, |m| m.origin == origin),
-            ModuleGroup::Ruleseed => add_matching(set, |m| m.ruleseed),
+            ModuleGroup::Ruleseed => add_matching(set, |m| m.rule_seed),
             ModuleGroup::All => add_matching(set, |_| true),
         }
     }
@@ -99,13 +103,25 @@ impl ModuleGroup {
             }
             ModuleGroup::Category(cat) => set.retain(|m| m.category != cat),
             ModuleGroup::Origin(origin) => set.retain(|m| m.origin != origin),
-            ModuleGroup::Ruleseed => set.retain(|m| !m.ruleseed),
+            ModuleGroup::Ruleseed => set.retain(|m| !m.rule_seed),
             ModuleGroup::All => set.clear(),
         }
     }
 }
 
-pub type ModuleNew = fn(bomb: &mut Bomb, rule_cache: MutexGuard<'_, ShareMap>) -> Box<dyn Module>;
+impl fmt::Display for ModuleGroup {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ModuleGroup::Single(descriptor) => f.write_str(descriptor.identifier),
+            ModuleGroup::Category(cat) => cat.fmt(f),
+            ModuleGroup::Origin(origin) => origin.fmt(f),
+            ModuleGroup::Ruleseed => f.write_str("ruleseedable"),
+            ModuleGroup::All => f.write_str("all"),
+        }
+    }
+}
+
+pub type ModuleNew = fn(bomb: &mut Bomb) -> Box<dyn Module>;
 
 use phf_macros::phf_map;
 use ModuleGroup::Single;
@@ -145,7 +161,6 @@ pub struct EventResponse {
     message: Option<String>,
 }
 
-use strum_macros::Display;
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Display)]
 #[strum(serialize_all = "snake_case")]
 pub enum RenderType {

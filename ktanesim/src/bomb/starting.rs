@@ -1,4 +1,5 @@
-use crate::bomb::TimerMode;
+use super::Timer;
+use crate::bomb::{Bombs, TimerMode};
 use crate::modules::{ModuleGroup, ModuleNew};
 use crate::prelude::*;
 use itertools::Itertools;
@@ -6,8 +7,11 @@ use rand::prelude::*;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::utils::MessageBuilder;
+use smallbitvec::SmallBitVec;
 use std::borrow::Cow;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+use std::fmt;
+use std::sync::Arc;
 use std::time::Duration;
 
 const MAX_MODULES: u32 = 101;
@@ -31,40 +35,53 @@ fn start_bomb(
     ctx: &Context,
     msg: &Message,
     timer: TimerMode,
-    ruleseed: u32,
-    modules: Cow<'static, [ModuleSet]>,
+    strikes: u32,
+    rule_seed: u32,
+    modules: &[&'static ModuleDescriptor],
 ) {
-    unimplemented!();
-    /*
-    if group_modules.is_empty() {
-        return Err((
-            "Empty module set".to_owned(),
-            MessageBuilder::new()
-                .push("The module group specifier ")
-                .push_mono_safe(specifier)
-                .push(" excludes all implemented modules.")
-                .build(),
-        ));
+    let mut bomb = Bomb {
+        edgework: random(),
+        rule_seed,
+        timer: Timer::new(timer),
+        modules: vec![],
+        solve_state: SmallBitVec::new(),
+        defusers: HashMap::new(),
+    };
+
+    for module in modules {
+        let module = (module.constructor)(&mut bomb);
+        bomb.modules.push(module);
+        bomb.solve_state.push(false);
     }
 
-    if each {
-        for _ in 0..count {
-            chosen_modules.extend(group_modules.iter().map(|module| module.0));
-        }
-    } else {
-        let group_modules: Vec<_> = group_modules.iter().map(|module| module.0).collect();
-
-        for _ in 0..count {
-            chosen_modules.push(*group_modules.choose(rng).unwrap());
-        }
-    }
-    */
+    assert!(
+        ctx.data
+        .write()
+        .get_mut::<Bombs>()
+        .and_then(|bombs| bombs.insert(msg.channel_id, Arc::new(RwLock::new(bomb))))
+        .is_none()
+    );
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum SetOperation {
     Add,
     Remove,
+}
+
+impl SetOperation {
+    fn as_char(self) -> char {
+        match self {
+            SetOperation::Add => '+',
+            SetOperation::Remove => '-',
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ModuleCount {
+    Each(u32),
+    Total(u32),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -89,6 +106,18 @@ impl ModuleSet {
     }
 }
 
+impl fmt::Display for ModuleSet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.base)?;
+
+        for (operation, group) in self.operations.iter() {
+            write!(f, "{}{}", operation.as_char(), group)?;
+        }
+
+        Ok(())
+    }
+}
+
 pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(), ErrorMessage> {
     ensure_no_bomb(&ctx, &msg)?;
 
@@ -105,7 +134,7 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(
     use lazy_static::lazy_static;
     use regex::Regex;
     lazy_static! {
-        static ref REGEX: Regex = Regex::new(r"(\w|[+-]) (\w|[+-])").unwrap();
+        static ref REGEX: Regex = Regex::new(r"([a-z+-]) ([a-z+-])").unwrap();
     };
 
     let mut module_groups = vec![];
@@ -143,14 +172,18 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(
             _ => {
                 return Err((
                     "Count too large".to_owned(),
-                    format!("I like your enthusiasm, but don't you think that's a bit too many modules? Could you limit yourself to {} for now?", MAX_MODULES),
+                    format!(
+                        "I like your enthusiasm, but don't you think that's a bit too many \
+                         modules? Could you limit yourself to {} for now?",
+                        MAX_MODULES
+                    ),
                 ));
             }
         };
 
-        let each = match parts.next() {
-            Some("each") => true,
-            None => false,
+        let count = match parts.next() {
+            Some("each") => ModuleCount::Each(count),
+            None => ModuleCount::Total(count),
             Some(other) => {
                 return Err((
                     "Syntax error".to_owned(),
@@ -172,10 +205,79 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(
             ));
         }
 
-        module_groups.push(parse_group(specifier)?);
+        module_groups.push((parse_group(specifier)?, count));
     }
 
-    Ok(())
+    // TODO: link help
+    if module_groups.is_empty() {
+        return Err((
+            "Missing module list".to_owned(),
+            "Please specify a module list. See the help for more details.".to_owned(),
+        ));
+    }
+
+    let modules = choose_modules(&module_groups)?;
+    assert!(!modules.is_empty());
+    let (strikes, timer) = calculate_settings(&modules);
+    let timer = named.timer.unwrap_or_else(|| TimerMode::Normal(timer));
+
+    Ok(start_bomb(
+        ctx,
+        msg,
+        timer,
+        strikes,
+        named.rule_seed,
+        &modules,
+    ))
+}
+
+fn choose_modules(sets: &[(ModuleSet, ModuleCount)])
+    -> Result<Vec<&'static ModuleDescriptor>, ErrorMessage>
+{
+    let mut chosen_modules = vec![];
+    let rng = &mut rand::thread_rng();
+
+    for (set, count) in sets {
+        let set_modules = set.evaluate().iter().copied().collect::<Vec<_>>();
+
+        match *count {
+            ModuleCount::Each(count) => {
+                for _ in 0..count {
+                    chosen_modules.extend_from_slice(&set_modules);
+                }
+            }
+            ModuleCount::Total(count) => {
+                for _ in 0..count {
+                    chosen_modules.push(set_modules.choose(rng).ok_or_else(|| (
+                        "Empty module set".to_owned(),
+                        MessageBuilder::new()
+                        .push("The module set specifier ")
+                        .push_mono_safe(set.to_string())
+                        .push(" excludes all available modules.")
+                        .build()
+                    ))?);
+                }
+            }
+        }
+    }
+
+    Ok(chosen_modules)
+}
+
+/// Given a module list, return the default strike count and timer length.
+fn calculate_settings(modules: &[&'static ModuleDescriptor])
+    -> (u32, Duration)
+{
+    let total_count = modules.len();
+    let vanilla_count = modules.iter().filter(|module| module.origin == ModuleOrigin::Vanilla).count();
+
+    // Shamelessly aped from Twitch Plays
+    let strikes = (total_count / 10).max(3);
+
+    // A minute for vanillas, two for anything else
+    let minutes = 2 * total_count - vanilla_count;
+
+    (strikes as u32, Duration::from_secs(60 * minutes as u64))
 }
 
 fn parse_group(input: &str) -> Result<ModuleSet, ErrorMessage> {
@@ -192,6 +294,7 @@ fn parse_group(input: &str) -> Result<ModuleSet, ErrorMessage> {
         Err(("Syntax error".to_owned(), msg))
     }
 
+    // TODO: link list on website
     fn get_group(name: &str) -> Result<ModuleGroup, ErrorMessage> {
         crate::modules::MODULE_GROUPS.get(name).copied().ok_or_else(|| (
             "No such module".to_owned(),
@@ -263,6 +366,105 @@ fn parse_group(input: &str) -> Result<ModuleSet, ErrorMessage> {
     })
 }
 
+/// The value of a single named parameter.
+enum NamedParameter {
+    Ruleseed(u32),
+    Timer(TimerMode),
+}
+
+/// A list of values for all named parameters
+struct NamedParameters {
+    rule_seed: u32,
+    timer: Option<TimerMode>,
+}
+
+fn consolidate_named_parameters(
+    params: impl Iterator<Item = NamedParameter>,
+) -> Result<NamedParameters, ErrorMessage> {
+    let mut rule_seed = None;
+    let mut timer = None;
+
+    for param in params {
+        match param {
+            NamedParameter::Ruleseed(seed) => {
+                if rule_seed.replace(seed).is_some() {
+                    return Err((
+                        "Repeated parameter".to_owned(),
+                        "It does not make sense to specify more than one rule seed.".to_owned(),
+                    ));
+                }
+            }
+            NamedParameter::Timer(specifier) => {
+                if timer.replace(specifier).is_some() {
+                    return Err((
+                        "Repeated parameter".to_owned(),
+                        "It does not make sense to specify more than one timer value.".to_owned(),
+                    ));
+                }
+            }
+        }
+    }
+
+    Ok(NamedParameters {
+        rule_seed: rule_seed.unwrap_or(ktane_utils::random::VANILLA_SEED),
+        timer,
+    })
+}
+
+fn get_named_parameter(name: &str, value: &str) -> Result<NamedParameter, ErrorMessage> {
+    match name {
+        "ruleseed" | "seed" | "rules" => {
+            use ktane_utils::random::MAX_VALUE;
+            match value.parse() {
+                Ok(seed) => {
+                    if seed <= MAX_VALUE {
+                        Ok(NamedParameter::Ruleseed(seed))
+                    } else {
+                        Err((
+                            "Seed too large".to_owned(),
+                            format!(
+                                "Please limit yourself to seeds not larger than {}",
+                                MAX_VALUE
+                            ),
+                        ))
+                    }
+                }
+                Err(_) => Err((
+                    "Couldn't parse argument".to_owned(),
+                    MessageBuilder::new()
+                        .push_mono_safe(value)
+                        .push(" is not a valid rule seed. Try using a natural number.")
+                        .build(),
+                )),
+            }
+        }
+        "timer" => {
+            if let Ok(mode) = value.parse() {
+                Ok(NamedParameter::Timer(mode))
+            } else if let Ok(time) = humantime::parse_duration(value) {
+                Ok(NamedParameter::Timer(TimerMode::Normal(time)))
+            } else {
+                Err(("Not a valid timer value".to_owned(),
+                MessageBuilder::new()
+                    .push_mono_safe(value)
+                    .push(" is not a valid argument for `timer`. Try *zen*, *time*, \
+                           a duration such as `8m30s` or omit the argument.")
+                    .build()))
+            }
+        }
+        _ => Err((
+            "Unknown parameter".to_owned(),
+            MessageBuilder::new()
+                .push_mono_safe(value)
+                .push(
+                    " is not a valid argument name. Try *timer* or *ruleseed* \
+                     (alias *seed* or *rules*).",
+                )
+                .build(),
+        )),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -311,103 +513,5 @@ mod tests {
             "The module group specifier `wires+-mods` contains two operators without a module or \
              group between them, after `wires`. This has no defined meaning.".to_owned(),
         )));
-    }
-}
-
-/// The value of a single named parameter.
-enum NamedParameter {
-    Ruleseed(u32),
-    Timer(TimerMode),
-}
-
-/// A list of values for all named parameters
-struct NamedParameters {
-    ruleseed: u32,
-    timer: Option<TimerMode>,
-}
-
-fn consolidate_named_parameters(
-    params: impl Iterator<Item = NamedParameter>,
-) -> Result<NamedParameters, ErrorMessage> {
-    let mut ruleseed = None;
-    let mut timer = None;
-
-    for param in params {
-        match param {
-            NamedParameter::Ruleseed(seed) => {
-                if ruleseed.replace(seed).is_some() {
-                    return Err((
-                        "Repeated parameter".to_owned(),
-                        "It does not make sense to specify more than one rule seed.".to_owned(),
-                    ));
-                }
-            }
-            NamedParameter::Timer(specifier) => {
-                if timer.replace(specifier).is_some() {
-                    return Err((
-                        "Repeated parameter".to_owned(),
-                        "It does not make sense to specify more than one timer value.".to_owned(),
-                    ));
-                }
-            }
-        }
-    }
-
-    Ok(NamedParameters {
-        ruleseed: ruleseed.unwrap_or(ktane_utils::random::VANILLA_SEED),
-        timer,
-    })
-}
-
-fn get_named_parameter(name: &str, value: &str) -> Result<NamedParameter, ErrorMessage> {
-    match name {
-        "ruleseed" | "seed" | "rules" => {
-            use ktane_utils::random::MAX_VALUE;
-            match value.parse() {
-                Ok(seed) => {
-                    if seed <= MAX_VALUE {
-                        Ok(NamedParameter::Ruleseed(seed))
-                    } else {
-                        Err((
-                            "Seed too large".to_owned(),
-                            format!(
-                                "Please limit yourself to seeds not larger than {}",
-                                MAX_VALUE
-                            ),
-                        ))
-                    }
-                }
-                Err(_) => Err((
-                    "Couldn't parse argument".to_owned(),
-                    MessageBuilder::new()
-                        .push_mono_safe(value)
-                        .push(" is not a valid rule seed. Try using a natural number.")
-                        .build(),
-                )),
-            }
-        }
-        "timer" => {
-            if let Ok(mode) = value.parse() {
-                Ok(NamedParameter::Timer(mode))
-            } else if let Ok(time) = humantime::parse_duration(value) {
-                Ok(NamedParameter::Timer(TimerMode::Normal(time)))
-            } else {
-                Err(("Not a valid timer value".to_owned(),
-                MessageBuilder::new()
-                    .push_mono_safe(value)
-                    .push(" is not a valid argument for `timer`. Try *zen*, *time*, a duration such as `8m30s` or omit the argument.")
-                    .build()))
-            }
-        }
-        _ => Err((
-            "Unknown parameter".to_owned(),
-            MessageBuilder::new()
-                .push_mono_safe(value)
-                .push(
-                    " is not a valid argument name. Try *timer* or *ruleseed* \
-                     (alias *seed* or *rules*).",
-                )
-                .build(),
-        )),
     }
 }

@@ -1,14 +1,16 @@
 use crate::prelude::*;
 use ktane_utils::modules::wires::{generate, Color, RuleSet, MAX_WIRES};
+use serenity::prelude::*;
 use smallbitvec::SmallBitVec;
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 
 pub static DESCRIPTOR: ModuleDescriptor = ModuleDescriptor {
+    identifier: "wires",
     constructor: init,
     origin: ModuleOrigin::Vanilla,
     category: ModuleCategory::Solvable,
-    ruleseed: true,
+    rule_seed: true,
 };
 
 pub struct Wires {
@@ -17,16 +19,12 @@ pub struct Wires {
     cut_state: SmallBitVec,
 }
 
-struct RuleCacheKey;
-impl typemap::Key for RuleCacheKey {
-    type Value = HashMap<u32, Weak<RuleSet>>;
+use lazy_static::lazy_static;
+lazy_static! {
+    static ref RULE_CACHE: Mutex<HashMap<u32, Weak<RuleSet>>> = Mutex::new(HashMap::new());
 }
 
-fn get_rules(seed: u32, mut rules_cache: MutexGuard<'_, ShareMap>) -> Arc<RuleSet> {
-    let rule_map = rules_cache
-        .entry::<RuleCacheKey>()
-        .or_insert_with(HashMap::new);
-
+fn get_rules(seed: u32) -> Arc<RuleSet> {
     use std::collections::hash_map::Entry::*;
     fn cache_miss<F: FnOnce(Weak<RuleSet>) -> X, X>(seed: u32, insert: F) -> Arc<RuleSet> {
         let rules = Arc::new(RuleSet::new(seed));
@@ -34,7 +32,7 @@ fn get_rules(seed: u32, mut rules_cache: MutexGuard<'_, ShareMap>) -> Arc<RuleSe
         rules
     }
 
-    match rule_map.entry(seed) {
+    match RULE_CACHE.lock().entry(seed) {
         Occupied(mut occupied) => match occupied.get().upgrade() {
             Some(rules) => rules,
             None => cache_miss(seed, |weak| occupied.insert(weak)),
@@ -43,8 +41,8 @@ fn get_rules(seed: u32, mut rules_cache: MutexGuard<'_, ShareMap>) -> Arc<RuleSe
     }
 }
 
-fn init(bomb: &mut Bomb, rules_cache: MutexGuard<'_, ShareMap>) -> Box<dyn Module> {
-    let rules = get_rules(bomb.rule_seed, rules_cache);
+fn init(bomb: &mut Bomb) -> Box<dyn Module> {
+    let rules = get_rules(bomb.rule_seed);
     let (wires, wire_count) = generate(&mut rand::thread_rng());
 
     Box::new(Wires {

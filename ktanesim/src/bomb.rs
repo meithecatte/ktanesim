@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use ktane_utils::edgework::Edgework;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use smallbitvec::SmallBitVec;
@@ -38,6 +39,7 @@ pub fn running_in(ctx: &Context, msg: &Message) -> bool {
 }
 
 pub struct Bomb {
+    pub edgework: Edgework,
     pub rule_seed: u32,
     pub timer: Timer,
     pub modules: Vec<Box<dyn Module>>,

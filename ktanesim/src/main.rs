@@ -5,7 +5,8 @@
     type_ascription,
     try_trait,
     int_error_matching,
-    never_type
+    never_type,
+    iter_copied,
 )]
 #![warn(rust_2018_idioms)]
 
