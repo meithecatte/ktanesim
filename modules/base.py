@@ -92,7 +92,7 @@ class Module(metaclass=CommandConsolidator):
 		return f'[{time}@{self}] {message}'
 
 	def get_manual(self):
-		return f"https://ktane.timwi.de/manual/{urlencode(self.manual_name)}.html" + ('?VanillaRuleSeed=2' if self.supports_hummus and self.bomb.hummus else '')
+		return f"https://ktane.timwi.de/HTML/{urlencode(self.manual_name)}.html"
 
 	def get_help(self):
 		return self.help_text.format(cmd=f"{PREFIX}{self.ident}")
@@ -106,7 +106,7 @@ class Module(metaclass=CommandConsolidator):
 			return 'unclaimed'
 
 	async def usage(self, author):
-		await self.bomb.channel.send(f"{author.mention} {self.get_help()} Manual: {self.get_manual()}")
+		await self.bomb.channel.send(f"{author.mention} Unknown command. Try `view` or `claimview`. Module specific commands: {self.get_help()} Manual: {self.get_manual()}")
 
 	async def handle_command(self, command, author, parts):
 		if command not in self.COMMANDS:

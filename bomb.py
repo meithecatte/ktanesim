@@ -73,6 +73,7 @@ class Bomb:
 
 	@staticmethod
 	async def cmd_run(channel, author, parts):
+		print(f"cmd_run: {author}: {channel}: {' '.join(parts)}")
 		if channel in Bomb.bombs:
 			return await channel.send(f"{author.mention} A bomb is already ticking in this channel!")
 
@@ -114,7 +115,9 @@ class Bomb:
 			return await channel.send(usage.format(author.mention, prefix=PREFIX))
 
 		hummus = parts[0].lower() == "hummus"
-		if hummus: parts.pop(0)
+		#if hummus: parts.pop(0)
+		if hummus:
+			return await channel.send(f"{author.mention} Sorry, hummus mode is not available right now")
 
 		if parts[0].isdigit():
 			if len(parts) < 2 or parts[1].lower() not in distributions:
