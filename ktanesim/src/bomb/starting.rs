@@ -54,13 +54,12 @@ fn start_bomb(
         bomb.solve_state.push(false);
     }
 
-    assert!(
-        ctx.data
+    assert!(ctx
+        .data
         .write()
         .get_mut::<Bombs>()
         .and_then(|bombs| bombs.insert(msg.channel_id, Arc::new(RwLock::new(bomb))))
-        .is_none()
-    );
+        .is_none());
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -231,9 +230,9 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(
     ))
 }
 
-fn choose_modules(sets: &[(ModuleSet, ModuleCount)])
-    -> Result<Vec<&'static ModuleDescriptor>, ErrorMessage>
-{
+fn choose_modules(
+    sets: &[(ModuleSet, ModuleCount)],
+) -> Result<Vec<&'static ModuleDescriptor>, ErrorMessage> {
     let mut chosen_modules = vec![];
     let rng = &mut rand::thread_rng();
 
@@ -248,14 +247,16 @@ fn choose_modules(sets: &[(ModuleSet, ModuleCount)])
             }
             ModuleCount::Total(count) => {
                 for _ in 0..count {
-                    chosen_modules.push(set_modules.choose(rng).ok_or_else(|| (
-                        "Empty module set".to_owned(),
-                        MessageBuilder::new()
-                        .push("The module set specifier ")
-                        .push_mono_safe(set.to_string())
-                        .push(" excludes all available modules.")
-                        .build()
-                    ))?);
+                    chosen_modules.push(set_modules.choose(rng).ok_or_else(|| {
+                        (
+                            "Empty module set".to_owned(),
+                            MessageBuilder::new()
+                                .push("The module set specifier ")
+                                .push_mono_safe(set.to_string())
+                                .push(" excludes all available modules.")
+                                .build(),
+                        )
+                    })?);
                 }
             }
         }
@@ -265,11 +266,12 @@ fn choose_modules(sets: &[(ModuleSet, ModuleCount)])
 }
 
 /// Given a module list, return the default strike count and timer length.
-fn calculate_settings(modules: &[&'static ModuleDescriptor])
-    -> (u32, Duration)
-{
+fn calculate_settings(modules: &[&'static ModuleDescriptor]) -> (u32, Duration) {
     let total_count = modules.len();
-    let vanilla_count = modules.iter().filter(|module| module.origin == ModuleOrigin::Vanilla).count();
+    let vanilla_count = modules
+        .iter()
+        .filter(|module| module.origin == ModuleOrigin::Vanilla)
+        .count();
 
     // Shamelessly aped from Twitch Plays
     let strikes = (total_count / 10).max(3);
@@ -444,12 +446,16 @@ fn get_named_parameter(name: &str, value: &str) -> Result<NamedParameter, ErrorM
             } else if let Ok(time) = humantime::parse_duration(value) {
                 Ok(NamedParameter::Timer(TimerMode::Normal(time)))
             } else {
-                Err(("Not a valid timer value".to_owned(),
-                MessageBuilder::new()
-                    .push_mono_safe(value)
-                    .push(" is not a valid argument for `timer`. Try *zen*, *time*, \
-                           a duration such as `8m30s` or omit the argument.")
-                    .build()))
+                Err((
+                    "Not a valid timer value".to_owned(),
+                    MessageBuilder::new()
+                        .push_mono_safe(value)
+                        .push(
+                            " is not a valid argument for `timer`. Try *zen*, *time*, \
+                             a duration such as `8m30s` or omit the argument.",
+                        )
+                        .build(),
+                ))
             }
         }
         _ => Err((

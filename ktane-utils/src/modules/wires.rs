@@ -135,10 +135,7 @@ impl RuleSet {
                 let forbidden: SolutionWeightKey = rules.last().unwrap().solution.into();
                 solutions.retain(|&mut solution| solution != forbidden);
 
-                let otherwise = rng
-                    .choice(&solutions)
-                    .unwrap()
-                    .colorize(&mut rng, &[]);
+                let otherwise = rng.choice(&solutions).unwrap().colorize(&mut rng, &[]);
 
                 RuleList { rules, otherwise }
             }))
