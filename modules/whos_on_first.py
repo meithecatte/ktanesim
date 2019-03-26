@@ -130,7 +130,7 @@ class WhosOnFirst(modules.Module):
 		button = ' '.join(parts).upper()
 
 		if self.third_base:
-			button = button.replace('0', 'O')
+			button = button.replace('0', 'O').replace('1', 'I')
 
 		if button not in sum(self.BUTTON_GROUPS, []):
 			return await self.bomb.channel.send(f"{author.mention} \"{button}\" isn't a valid word.")
