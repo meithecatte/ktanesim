@@ -107,17 +107,17 @@ impl RuleSet {
                 },
             ])
         } else {
-            let mut random = RuleseedRandom::new(seed);
+            let mut rng = RuleseedRandom::new(seed);
             RuleSet(array_init::array_init(|index| {
                 let wire_count = index + MIN_WIRES;
-                let rule_count = Self::roll_rule_count(&mut random);
+                let rule_count = Self::roll_rule_count(&mut rng);
                 let mut rules = smallvec![];
                 let mut query_weights: HashMap<QueryWeightKey, f64> = HashMap::new();
                 let mut solution_weights: HashMap<SolutionWeightKey, f64> = HashMap::new();
 
                 while rules.len() < rule_count {
                     let rule = Self::generate_rule(
-                        &mut random,
+                        &mut rng,
                         &mut query_weights,
                         &mut solution_weights,
                         wire_count,
@@ -135,10 +135,10 @@ impl RuleSet {
                 let forbidden: SolutionWeightKey = rules.last().unwrap().solution.into();
                 solutions.retain(|&mut solution| solution != forbidden);
 
-                let otherwise = random
+                let otherwise = rng
                     .choice(&solutions)
                     .unwrap()
-                    .colorize(&mut random, &[]);
+                    .colorize(&mut rng, &[]);
 
                 RuleList { rules, otherwise }
             }))
@@ -146,43 +146,48 @@ impl RuleSet {
     }
 
     /// Return a random rule count for a specific wire count.
-    fn roll_rule_count(random: &mut RuleseedRandom) -> usize {
-        if random.next_double() < 0.6 {
+    fn roll_rule_count(rng: &mut RuleseedRandom) -> usize {
+        if rng.next_double() < 0.6 {
             3
         } else {
             4
         }
     }
 
-    /// Return a random query count for a specific rule.
-    fn roll_compound(random: &mut RuleseedRandom) -> bool {
-        random.next_double() >= 0.6
+    /// Return whether the rule should have two queries.
+    fn roll_compound(rng: &mut RuleseedRandom) -> bool {
+        rng.next_double() >= 0.6
     }
 
     /// Generate a rule.
     fn generate_rule(
-        random: &mut RuleseedRandom,
+        rng: &mut RuleseedRandom,
         query_weights: &mut HashMap<QueryWeightKey, f64>,
         solution_weights: &mut HashMap<SolutionWeightKey, f64>,
         wire_count: usize,
     ) -> Rule {
-        let compound = Self::roll_compound(random);
+        let compound = Self::roll_compound(rng);
+
         use strum::IntoEnumIterator;
         let mut colors_available_for_queries: SmallVec<[Color; COLOR_COUNT]> =
             Color::iter().collect();
 
+        // Stores the query types that were not yet used in the rule.
         let available_queries: SmallVec<[_; WIREQUERYTYPE_COUNT]> =
             WireQueryType::iter().map(QueryWeightKey::Wire).collect();
         let main_query = Self::choose_query(
-            random,
+            rng,
             &available_queries,
             query_weights,
             &mut colors_available_for_queries,
         );
 
         let auxiliary_query = if compound {
-            let max_wires_involved = wire_count - main_query.wires_involved();
+            let uninvolved_wires = wire_count - main_query.wires_involved();
             use self::EdgeworkQuery::*;
+
+            // The serial number queries go first, then the wire colors, and ports at the end. This
+            // order is necessary to generate the correct rules.
             let available_queries: SmallVec<[_; QUERY_TYPE_COUNT]> =
                 [SerialStartsWithLetter, SerialOdd]
                     .iter()
@@ -190,7 +195,9 @@ impl RuleSet {
                     .map(QueryWeightKey::Edgework)
                     .chain(
                         WireQueryType::iter()
-                            .filter(|query_type| query_type.wires_involved() < max_wires_involved)
+                            // Can't use all uninvolved wires. Likely either off-by-one in the
+                            // original algorithm or a remaining wire is reserved for the solution.
+                            .filter(|query_type| query_type.wires_involved() < uninvolved_wires)
                             .map(QueryWeightKey::Wire),
                     )
                     .chain(
@@ -202,7 +209,7 @@ impl RuleSet {
                     .collect();
 
             Some(Self::choose_query(
-                random,
+                rng,
                 &available_queries,
                 query_weights,
                 &mut colors_available_for_queries,
@@ -216,29 +223,29 @@ impl RuleSet {
 
         let available_solutions = Self::possible_solutions(&queries, wire_count);
 
-        let solution = *random.weighted_select(&available_solutions, solution_weights);
+        let solution = *rng.weighted_select(&available_solutions, solution_weights);
         *solution_weights.entry(solution).or_insert(1.0) *= 0.05;
 
         let solution_colors: SmallVec<[Color; 2]> = queries
             .iter()
             .copied()
-            .filter_map(Query::solution_colors)
+            .filter_map(Query::solution_color)
             .collect();
 
-        let solution = solution.colorize(random, &solution_colors);
+        let solution = solution.colorize(rng, &solution_colors);
 
         Rule { queries, solution }
     }
 
     fn choose_query(
-        random: &mut RuleseedRandom,
+        rng: &mut RuleseedRandom,
         available_queries: &[QueryWeightKey],
         query_weights: &mut HashMap<QueryWeightKey, f64>,
         colors_available: &mut SmallVec<[Color; COLOR_COUNT]>,
     ) -> Query {
-        let query_type = *random.weighted_select(&available_queries, query_weights);
+        let query_type = *rng.weighted_select(&available_queries, query_weights);
         *query_weights.entry(query_type).or_insert(1.0) *= 0.1;
-        query_type.colorize(random, colors_available)
+        query_type.colorize(rng, colors_available)
     }
 
     fn possible_solutions(
@@ -375,22 +382,18 @@ impl Rule {
             return true;
         }
 
-        use self::Query::Wire;
-        if let Wire(first) = self.queries[0] {
-            if let Wire(second) = self.queries[1] {
-                // The original algorithm considers many cases of rules that use the same color for
-                // both queries. Because WireQueryType::colorize removes the chosen color from the
-                // list of available colors, this situation can never actually arise. Hence, the
-                // only thing we need to consider is two LastWireIs queries in the same rule, which
-                // will obviously never be true at the same time.
-                use self::WireQueryType::LastWireIs;
-                if first.query_type == LastWireIs && second.query_type == LastWireIs {
-                    return false;
-                }
+        // The original algorithm considers many cases of rules that use the same color for
+        // both queries. Because WireQueryType::colorize removes the chosen color from the
+        // list of available colors, this situation can never actually arise. Hence, the
+        // only thing we need to consider is two LastWireIs queries in the same rule, which
+        // will obviously never be true at the same time.
+        !self.queries.iter().all(|query| {
+            if let self::Query::Wire(wire) = query {
+                wire.query_type == self::WireQueryType::LastWireIs
+            } else {
+                false
             }
-        }
-
-        true
+        })
     }
 }
 
@@ -437,7 +440,9 @@ impl Query {
         solutions.iter().copied()
     }
 
-    fn solution_colors(self) -> Option<Color> {
+    /// If the condition being true makes the presence of a wire of a given color certain, return
+    /// that color.
+    fn solution_color(self) -> Option<Color> {
         use self::Query::*;
         use self::WireQueryType::*;
         match self {
@@ -472,13 +477,13 @@ impl From<Query> for QueryWeightKey {
 impl QueryWeightKey {
     fn colorize(
         self,
-        random: &mut RuleseedRandom,
+        rng: &mut RuleseedRandom,
         colors_available: &mut SmallVec<[Color; COLOR_COUNT]>,
     ) -> Query {
         use self::QueryWeightKey::*;
         match self {
             Edgework(q) => Query::Edgework(q),
-            Wire(query_type) => Query::Wire(query_type.colorize(random, colors_available)),
+            Wire(query_type) => Query::Wire(query_type.colorize(rng, colors_available)),
         }
     }
 }
@@ -561,10 +566,10 @@ impl WireQueryType {
 
     fn colorize(
         self,
-        random: &mut RuleseedRandom,
+        rng: &mut RuleseedRandom,
         colors_available: &mut SmallVec<[Color; COLOR_COUNT]>,
     ) -> WireQuery {
-        let index = random.next_below(colors_available.len() as u32) as usize;
+        let index = rng.next_below(colors_available.len() as u32) as usize;
         let color = colors_available.remove(index);
 
         WireQuery {
@@ -639,9 +644,9 @@ impl From<Solution> for SolutionWeightKey {
 }
 
 impl SolutionWeightKey {
-    fn colorize(self, random: &mut RuleseedRandom, colors_available: &[Color]) -> Solution {
+    fn colorize(self, rng: &mut RuleseedRandom, colors_available: &[Color]) -> Solution {
         use self::SolutionWeightKey::*;
-        let color = random.choice(colors_available).copied();
+        let color = rng.choice(colors_available).copied();
         match self {
             Index(n) => Solution::Index(n),
             TheOneOfColor => Solution::TheOneOfColor(color.unwrap()),

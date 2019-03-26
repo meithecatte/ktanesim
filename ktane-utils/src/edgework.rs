@@ -436,7 +436,7 @@ mod tests {
     fn edgework_parser() {
         use super::EdgeworkParseError::*;
 
-        // parse results are tested in the doccomment
+        // parse results are tested in the doc comment
         for &test in &[
             "2B 1H // KT4NE8",
             "0B 0H // FRK // AA0AA0",
