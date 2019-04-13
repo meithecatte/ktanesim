@@ -1,7 +1,5 @@
 use crate::prelude::*;
-use serenity::model::prelude::*;
-use serenity::prelude::*;
-use serenity::utils::{Colour, MessageBuilder};
+use serenity::utils::MessageBuilder;
 
 use phf_macros::phf_ordered_map;
 pub static COMMANDS: phf::OrderedMap<&'static str, Command> = phf_ordered_map! {

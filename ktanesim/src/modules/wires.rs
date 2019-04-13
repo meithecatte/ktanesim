@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use ktane_utils::modules::wires::{generate, Color, RuleSet, MAX_WIRES};
-use serenity::prelude::*;
 use smallbitvec::SmallBitVec;
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};

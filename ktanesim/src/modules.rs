@@ -1,6 +1,4 @@
 use crate::prelude::*;
-use serenity::model::prelude::*;
-use serenity::prelude::*;
 use std::boxed::FnBox;
 use strum_macros::Display;
 

@@ -22,8 +22,6 @@ mod utils;
 
 use config::Config;
 use prelude::*;
-use serenity::model::prelude::*;
-use serenity::prelude::*;
 use serenity::utils::Colour;
 use std::collections::HashMap;
 use std::error::Error;

@@ -1,11 +1,9 @@
 use super::Timer;
 use crate::bomb::{Bombs, TimerMode};
-use crate::modules::{ModuleGroup, ModuleNew};
+use crate::modules::ModuleGroup;
 use crate::prelude::*;
 use itertools::Itertools;
 use rand::prelude::*;
-use serenity::model::prelude::*;
-use serenity::prelude::*;
 use serenity::utils::MessageBuilder;
 use smallbitvec::SmallBitVec;
 use std::borrow::Cow;

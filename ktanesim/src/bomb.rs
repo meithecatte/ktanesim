@@ -1,7 +1,5 @@
 use crate::prelude::*;
 use ktane_utils::edgework::Edgework;
-use serenity::model::prelude::*;
-use serenity::prelude::*;
 use smallbitvec::SmallBitVec;
 use std::collections::HashMap;
 use std::sync::Arc;
