@@ -7,6 +7,7 @@ use std::sync::{Arc, Weak};
 
 pub static DESCRIPTOR: ModuleDescriptor = ModuleDescriptor {
     identifier: "wires",
+    aliases: &["simplewires"],
     constructor: init,
     origin: ModuleOrigin::Vanilla,
     category: ModuleCategory::Solvable,

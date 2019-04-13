@@ -1,9 +1,8 @@
-use crate::Bomb;
-use serenity::model::id::UserId;
+use crate::prelude::*;
+use serenity::model::prelude::*;
+use serenity::prelude::*;
 use std::boxed::FnBox;
-use std::sync::MutexGuard;
 use strum_macros::Display;
-use typemap::ShareMap;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Display)]
 #[strum(serialize_all = "snake_case")]
@@ -23,6 +22,7 @@ pub enum ModuleCategory {
 
 pub struct ModuleDescriptor {
     pub identifier: &'static str,
+    pub aliases: &'static [&'static str],
     pub constructor: ModuleNew,
     pub origin: ModuleOrigin,
     pub category: ModuleCategory,
@@ -49,7 +49,7 @@ impl Hash for ModuleDescriptor {
 use std::fmt;
 impl fmt::Debug for ModuleDescriptor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<module@{:x}>", self.constructor as usize)
+        write!(f, "<module {:?}>", self.identifier)
     }
 }
 
@@ -142,6 +142,17 @@ pub static MODULE_GROUPS: phf::Map<&'static str, ModuleGroup> = phf_map! {
     "all"          => ModuleGroup::All,
     "any"          => ModuleGroup::All,
 };
+
+#[cfg(test)]
+#[test]
+fn module_identifiers_consistent() {
+    for (&key, group) in MODULE_GROUPS.entries() {
+        if let Single(module) = group {
+            assert_eq!(Some(group), MODULE_GROUPS.get(module.identifier));
+            assert!(module.identifier == key || module.aliases.contains(&key));
+        }
+    }
+}
 
 static VANILLA_MODULES: ModuleGroup = ModuleGroup::Origin(ModuleOrigin::Vanilla);
 static SOLVABLE_MODULES: ModuleGroup = ModuleGroup::Category(ModuleCategory::Solvable);
