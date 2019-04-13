@@ -60,8 +60,8 @@ impl Module for Wires {
 
     fn view(&self, light: SolveLight) -> Render {
         let wires = self.wires;
-        let mut cut_state = self.cut_state.clone();
-        Box::new(move || {
+        let cut_state = self.cut_state.clone();
+        Render(Box::new(move || {
             let (surface, ctx) = module_canvas(light);
 
             // Draw the boxes at the end of the wires
@@ -102,7 +102,7 @@ impl Module for Wires {
             }
 
             output_png(surface)
-        })
+        }))
     }
 }
 

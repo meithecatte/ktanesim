@@ -160,7 +160,26 @@ static SOLVABLE_MODULES: ModuleGroup = ModuleGroup::Category(ModuleCategory::Sol
 pub mod wires;
 
 pub const MODULE_SIZE: i32 = 348;
-pub type Render = Box<dyn FnBox() -> (Vec<u8>, RenderType)>;
+
+pub struct Render(pub Box<dyn FnBox() -> (Vec<u8>, RenderType)>);
+
+use serenity::builder::CreateMessage;
+impl Render {
+    fn resolve<F>(self, ctx: &Context, channel_id: ChannelId, f: F)
+    where
+        for<'b> F: FnOnce(&'b mut CreateMessage<'b>, &str) -> &'b mut CreateMessage<'b>,
+    {
+        let (data, extension) = (self.0)();
+        let filename = format!("f.{}", extension);
+        if let Err(why) = channel_id.send_files(
+            &ctx.http,
+            std::iter::once((&data[..], &filename[..])),
+            |m| f(m, &format!("attachment://{}", filename)),
+        ) {
+            error!("Couldn't send message with attachment: {:?}", why);
+        }
+    }
+}
 
 pub trait Module: Send + Sync {
     fn handle_command(&mut self, bomb: &mut Bomb, user: UserId, command: &str) -> EventResponse;
@@ -186,12 +205,12 @@ pub enum SolveLight {
     Strike,
 }
 
-use cairo::{Context, ImageSurface};
-/// Return an `ImageSurface` with a blank module drawn on it, along with a `Context` that can be used
-/// to draw any further graphics.
-pub fn module_canvas(status: SolveLight) -> (ImageSurface, Context) {
+use cairo::{Context as CairoContext, ImageSurface};
+/// Return an `ImageSurface` with a blank module drawn on it, along with a `CairoContext` that can
+/// be used to draw any further graphics.
+pub fn module_canvas(status: SolveLight) -> (ImageSurface, CairoContext) {
     let surface = ImageSurface::create(cairo::Format::ARgb32, MODULE_SIZE, MODULE_SIZE).unwrap();
-    let ctx = Context::new(&surface);
+    let ctx = CairoContext::new(&surface);
 
     ctx.set_line_join(cairo::LineJoin::Round);
 
