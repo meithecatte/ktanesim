@@ -16,6 +16,7 @@ extern crate log;
 mod bomb;
 mod commands;
 mod config;
+mod edgework;
 mod modules;
 mod prelude;
 mod utils;

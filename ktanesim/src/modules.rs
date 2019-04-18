@@ -63,7 +63,9 @@ pub enum ModuleGroup {
 use std::collections::HashSet;
 
 impl ModuleGroup {
+    /// Add all modules in the module group to the `set`.
     pub fn add_to_set(&self, set: &mut HashSet<&'static ModuleDescriptor>) {
+        /// Helper function. Add all registered modules that match a predicate.
         fn add_matching<F>(set: &mut HashSet<&'static ModuleDescriptor>, f: F)
         where
             F: Fn(&'static ModuleDescriptor) -> bool,
@@ -94,6 +96,7 @@ impl ModuleGroup {
         }
     }
 
+    /// Remove all modules in the module group from the `set`.
     pub fn remove_from_set(&self, set: &mut HashSet<&'static ModuleDescriptor>) {
         match *self {
             ModuleGroup::Single(module) => {
@@ -180,7 +183,7 @@ impl Render {
 }
 
 pub trait Module: Send + Sync {
-    fn handle_command(&mut self, bomb: &mut Bomb, user: UserId, command: &str) -> EventResponse;
+    fn handle_command(&mut self, bomb: Arc<RwLock<Bomb>>, user: UserId, command: &str) -> EventResponse;
     fn view(&self, light: SolveLight) -> Render;
 }
 

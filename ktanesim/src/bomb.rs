@@ -42,6 +42,7 @@ pub struct Bomb {
     pub timer: Timer,
     pub modules: Vec<Box<dyn Module>>,
     solve_state: SmallBitVec,
+    pub channel: ChannelId,
     pub defusers: HashMap<UserId, Defuser>,
 }
 
@@ -49,4 +50,19 @@ pub struct Bomb {
 pub struct Defuser {
     /// The module number of the last module viewed. Zero-indexed.
     pub last_view: Option<u32>,
+}
+
+// TODO: Ack and stuff
+pub fn cmd_detonate(
+    ctx: &Context,
+    msg: &Message,
+    params: Parameters<'_>,
+) -> CommandResult {
+    // TODO: link help
+    if ctx.data.write().get_mut::<Bombs>().unwrap().remove(&msg.channel_id).is_none() {
+        Err(("No bomb in this channel".to_owned(),
+        "No bomb is currently running in this channel. Check out the help for more details.".to_owned()))
+    } else {
+        Ok(())
+    }
 }

@@ -43,6 +43,7 @@ fn start_bomb(
         timer: Timer::new(timer),
         modules: vec![],
         solve_state: SmallBitVec::new(),
+        channel: msg.channel_id,
         defusers: HashMap::new(),
     };
 
@@ -115,7 +116,7 @@ impl fmt::Display for ModuleSet {
     }
 }
 
-pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(), ErrorMessage> {
+pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandResult {
     ensure_no_bomb(&ctx, &msg)?;
 
     let mut params = params.peekable();
@@ -218,14 +219,16 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> Result<(
     let (strikes, timer) = calculate_settings(&modules);
     let timer = named.timer.unwrap_or_else(|| TimerMode::Normal(timer));
 
-    Ok(start_bomb(
+    start_bomb(
         ctx,
         msg,
         timer,
         strikes,
         named.rule_seed,
         &modules,
-    ))
+    );
+
+    Ok(())
 }
 
 fn choose_modules(

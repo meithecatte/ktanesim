@@ -11,4 +11,5 @@ where
     }
 }
 
+pub type CommandResult = Result<(), ErrorMessage>;
 pub type ErrorMessage = (String, String);
