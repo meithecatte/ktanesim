@@ -36,6 +36,9 @@ async def cmd_help(channel, author, parts):
 		f"`{PREFIX}rank`: Shows your leaderboard entry.\n"
 		)
 
+async def cmd_invite(channel, author, parts):
+	await channel.send("Here's one: https://discord.gg/VKwePp9")
+
 logging.basicConfig(level=logging.INFO)
 client = discord.Client()
 Bomb.client = client
@@ -66,6 +69,7 @@ async def on_message(msg):
 			"lb": leaderboard.cmd_leaderboard,
 			"rank": leaderboard.cmd_rank,
 			"help": cmd_help,
+			"invite": cmd_invite,
 		}
 
 		if command == "modules":
