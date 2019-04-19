@@ -215,7 +215,6 @@ pub enum SolveLight {
     Strike,
 }
 
-use cairo::{Context as CairoContext, ImageSurface};
 /// Return an `ImageSurface` with a blank module drawn on it, along with a `CairoContext` that can
 /// be used to draw any further graphics.
 pub fn module_canvas(status: SolveLight) -> (ImageSurface, CairoContext) {

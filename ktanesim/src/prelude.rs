@@ -1,6 +1,7 @@
 //! Reexports everything needed in an average module.
-pub use serenity::prelude::*;
 pub use serenity::model::prelude::*;
+pub use serenity::prelude::*;
+pub use cairo::{Context as CairoContext, ImageSurface};
 
 pub use crate::bomb::Bomb;
 pub use crate::commands::Parameters;
