@@ -10,8 +10,8 @@ use crate::prelude::*;
 pub struct SharedTexture {
     format: cairo::Format,
     // Yes, signed integer. That's just how the API works. Yes, I know that's ugly.
-    width: i32,
-    height: i32,
+    pub width: i32,
+    pub height: i32,
     stride: i32,
     data: Vec<u8>,
 }
