@@ -80,6 +80,17 @@ ul {
 	padding-left: 2em;
 }
 
+blockquote {
+	margin-bottom: 10px;
+	padding: 10px;
+	background-color: #fff8dc;
+	border-left: 5px solid #ffeb8e;
+}
+
+blockquote > p:last-child {
+	padding-bottom: 0;
+}
+
 #content > ul {
 	margin-bottom: $font-size;
 }

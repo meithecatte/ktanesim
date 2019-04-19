@@ -50,11 +50,11 @@ It is possible to add named parameters before the mission name to control some a
   - This is equivalent to the [Rule Seed Modifier] mod.
 - **timer** &mdash; change the behavior of the timer.
   - `!mission timer=1m30s the first bomb` &mdash; change the amount of time on the timer. This will
-    make the bomb either easier or harder to defuse, and will be reflected in how much [Leaderboard]
+    make the bomb either easier or harder to defuse, and will be reflected in how much [leaderboard]
     points will be awarded.
   - `!mission timer=zen centurion` &mdash; make the timer run up and remove the strike limit, making
     the bomb never explode. Useful if you want some chilled out puzzlesolving experience.
-  - `!mission timer=time fiendish` &mdash; enable [Time Mode] <s>(explanation aped from there)</s>:
+  - `!mission timer=time fiendish` &mdash; enable [Time Mode]. As explained by the linked website,
     - The timer starts at 5 minutes.
     - When a strike is earned, the timer does not speed up; instead a fixed *proportion* of the
       remaining time is deducted.
@@ -73,5 +73,34 @@ does not matter.
 ## Creating custom bombs using `!run`
 
 Should you be unsatisfied with the missions available, you can use the `!run` command to start a
-custom bomb. Apart from the same [Named Parameters] as available for `!mission`, you should specify
-a list of [modules] you want on the bomb.
+custom bomb. Because simply enumerating all the modules you want would be cumbersome, a powerful,
+yet still quite simple system for specifying sets of modules is used. Consider these examples:
+
+ - `!run wires 2, button 1` &mdash; a small bomb with 3 modules, a button and two sets of wires.
+ - `!run vanilla 5` &mdash; 5 randomly selected modules from the `vanilla` category.
+ - `!run vanilla 5, mods 1 each` &mdash; 5 randomly selected vanilla modules as above, as well as
+   one of each module in the `mods` category.
+ - `!run vanilla-morseCode-needy 2 each, hexamaze+connectionCheck 3 each` &mdash; 2 instances of
+   each non-`needy` vanilla module except `morseCode`, as well as 3 hexamazes and 3 connection
+   checks.
+
+To learn about the available modules, visit the [modules] page.
+
+While I expect the above to be sufficient for understanding the module, here's a detailed
+description:
+
+> In general, the command contains comma-separated *module list specifiers*. The specifiers are
+> processed independently, and the results are combined. Each specifier consists of a set of modules
+> and a count, optionally followed by the word `each`, which instructs the bot to choose each module
+> in the set a number of times &mdash; if `each` is *not* present, modules from the set are chosen
+> at random, with the total number equal to the count.
+> 
+> The module sets themselves are a combination of module names and categories. The separators `+`
+> and `-` are supported. `A+B` denotes modules in either A or B, while `A-B` denotes modules in A,
+> but not in B. The module sets are evaluated left-to-right.
+
+It's also possible to use the same [named parameters] as in the `!mission` command. Please put them
+immediately after the command name, before listing any modules. For example, to use a rule seed,
+you can do `!run ruleseed=1337 vanilla 3 each`.
+
+[named parameters]: #named-parameters
