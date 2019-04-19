@@ -57,8 +57,9 @@ pub fn update_presence(ctx: &Context) {
     };
     ctx.set_presence(
         Some(Activity::playing(&format!(
-            "{} bombs. !help for help",
-            bomb_count
+            "{} bomb{}. !help for help",
+            bomb_count,
+            if bomb_count == 1 { "" } else { "s" },
         ))),
         status,
     );
