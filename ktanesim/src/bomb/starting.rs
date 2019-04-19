@@ -141,7 +141,7 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandR
 
     while let Some(index) = params.peek().and_then(|param| param.find('=')) {
         let (name, value) = params.next().unwrap().split_at(index);
-        named.push(get_named_parameter(name, value)?);
+        named.push(get_named_parameter(name, &value[1..])?);
     }
 
     let named = consolidate_named_parameters(named.into_iter())?;
