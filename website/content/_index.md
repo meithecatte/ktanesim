@@ -54,7 +54,7 @@ It is possible to add named parameters before the mission name to control some a
     points will be awarded.
   - `!mission timer=zen centurion` &mdash; make the timer run up and remove the strike limit, making
     the bomb never explode. Useful if you want some chilled out puzzlesolving experience.
-  - `!mission timer=time fiendish` &mdash; enable [Time Mode]:
+  - `!mission timer=time fiendish` &mdash; enable [Time Mode] <s>(explanation aped from there)</s>:
     - The timer starts at 5 minutes.
     - When a strike is earned, the timer does not speed up; instead a fixed *proportion* of the
       remaining time is deducted.
@@ -72,4 +72,6 @@ does not matter.
 
 ## Creating custom bombs using `!run`
 
-
+Should you be unsatisfied with the missions available, you can use the `!run` command to start a
+custom bomb. Apart from the same [Named Parameters] as available for `!mission`, you should specify
+a list of [modules] you want on the bomb.

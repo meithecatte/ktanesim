@@ -4,7 +4,7 @@ use crate::modules::ModuleGroup;
 use crate::prelude::*;
 use itertools::Itertools;
 use rand::prelude::*;
-use serenity::utils::MessageBuilder;
+use serenity::utils::{Colour, MessageBuilder};
 use smallbitvec::SmallBitVec;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -42,7 +42,7 @@ fn start_bomb(
         rule_seed,
         timer: Timer::new(timer),
         modules: vec![],
-        solve_state: SmallBitVec::new(),
+        solve_state: SmallBitVec::from_elem(modules.len(), false),
         channel: msg.channel_id,
         defusers: HashMap::new(),
     };
@@ -50,8 +50,9 @@ fn start_bomb(
     for module in modules {
         let module = (module.constructor)(&mut bomb);
         bomb.modules.push(module);
-        bomb.solve_state.push(false);
     }
+
+    let render = bomb.render_edgework();
 
     assert!(ctx
         .data
@@ -59,6 +60,21 @@ fn start_bomb(
         .get_mut::<Bombs>()
         .and_then(|bombs| bombs.insert(msg.channel_id, Arc::new(RwLock::new(bomb))))
         .is_none());
+
+    render.resolve(ctx, msg.channel_id, |m, file| {
+        m.embed(|e| {
+            e
+                .color(Colour::DARK_GREEN)
+                .title("Bomb armed")
+                .description(format!("A bomb with {} module{} has been armed! \
+                                     Type `!cvany` to claim one of the modules and start defusing!",
+                                     modules.len(),
+                                     if modules.len() == 1 { "" } else { "s" }))
+                .image(file)
+        })
+    });
+
+    crate::bomb::update_presence(ctx);
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

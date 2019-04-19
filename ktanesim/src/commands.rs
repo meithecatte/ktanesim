@@ -33,7 +33,13 @@ pub fn dispatch(ctx: &Context, msg: &Message, cmd: String) -> CommandResult {
             if let Some(handler) = COMMANDS.get(first) {
                 match handler {
                     AnyTime(f) => f(ctx, msg, parts),
-                    _ => unimplemented!(),
+                    NeedsBomb(f) => {
+                        if let Some(bomb) = crate::bomb::get_bomb(&ctx, &msg) {
+                            f(ctx, msg, bomb, parts)
+                        } else {
+                            crate::bomb::no_bomb()
+                        }
+                    }
                 }
             } else {
                 return Err(("No such command".to_owned(), {

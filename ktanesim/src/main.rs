@@ -1,6 +1,5 @@
 #![feature(
     proc_macro_hygiene,
-    fnbox,
     try_blocks,
     type_ascription,
     try_trait,
@@ -50,8 +49,9 @@ struct Handler {
 }
 
 impl EventHandler for Handler {
-    fn ready(&self, _: Context, event: Ready) {
+    fn ready(&self, ctx: Context, event: Ready) {
         info!("Ready as {}", event.user.name);
+        crate::bomb::update_presence(&ctx);
     }
 
     fn message(&self, ctx: Context, msg: Message) {

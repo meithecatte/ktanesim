@@ -23,7 +23,8 @@ pub fn get_bomb(ctx: &Context, msg: &Message) -> Option<Arc<RwLock<Bomb>>> {
     ctx.data
         .read()
         .get::<Bombs>()
-        .and_then(|bombs| bombs.get(&msg.channel_id))
+        .unwrap()
+        .get(&msg.channel_id)
         .map(Arc::clone)
 }
 
@@ -33,7 +34,22 @@ pub fn running_in(ctx: &Context, msg: &Message) -> bool {
     ctx.data
         .read()
         .get::<Bombs>()
-        .map_or(false, |bombs| bombs.contains_key(&msg.channel_id))
+        .unwrap()
+        .contains_key(&msg.channel_id)
+}
+
+pub fn no_bomb() -> CommandResult {
+    // TODO: link help
+    Err(("No bomb in this channel".to_owned(),
+    "No bomb is currently running in this channel. \
+    Check out the help for more details.".to_owned()))
+}
+
+pub fn update_presence(ctx: &Context) {
+    let bomb_count = ctx.data.read().get::<Bombs>().unwrap().len();
+    let status = if bomb_count == 0 { OnlineStatus::Idle } else { OnlineStatus::Online };
+    ctx.set_presence(Some(Activity::playing(&format!("{} bombs. !help for help", bomb_count))),
+        status);
 }
 
 pub struct Bomb {
@@ -58,11 +74,11 @@ pub fn cmd_detonate(
     msg: &Message,
     params: Parameters<'_>,
 ) -> CommandResult {
-    // TODO: link help
     if ctx.data.write().get_mut::<Bombs>().unwrap().remove(&msg.channel_id).is_none() {
-        Err(("No bomb in this channel".to_owned(),
-        "No bomb is currently running in this channel. Check out the help for more details.".to_owned()))
+        no_bomb()
     } else {
+        update_presence(ctx);
+
         Ok(())
     }
 }

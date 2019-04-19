@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use std::boxed::FnBox;
 use strum_macros::Display;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Display)]
@@ -155,18 +154,23 @@ fn module_identifiers_consistent() {
     }
 }
 
-static VANILLA_MODULES: ModuleGroup = ModuleGroup::Origin(ModuleOrigin::Vanilla);
-static SOLVABLE_MODULES: ModuleGroup = ModuleGroup::Category(ModuleCategory::Solvable);
+const VANILLA_MODULES: ModuleGroup = ModuleGroup::Origin(ModuleOrigin::Vanilla);
+const SOLVABLE_MODULES: ModuleGroup = ModuleGroup::Category(ModuleCategory::Solvable);
 
 pub mod wires;
 
 pub const MODULE_SIZE: i32 = 348;
 
-pub struct Render(pub Box<dyn FnBox() -> (Vec<u8>, RenderType)>);
+pub struct Render(pub Box<dyn FnOnce() -> (Vec<u8>, RenderType)>);
 
 use serenity::builder::CreateMessage;
 impl Render {
-    fn resolve<F>(self, ctx: &Context, channel_id: ChannelId, f: F)
+    /// Helper method for simpler creation of Render objects
+    pub fn with(f: impl FnOnce() -> (Vec<u8>, RenderType) + 'static) -> Render {
+        Render(Box::new(f))
+    }
+
+    pub fn resolve<F>(self, ctx: &Context, channel_id: ChannelId, f: F)
     where
         for<'b> F: FnOnce(&'b mut CreateMessage<'b>, &str) -> &'b mut CreateMessage<'b>,
     {
