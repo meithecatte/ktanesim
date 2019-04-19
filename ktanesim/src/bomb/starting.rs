@@ -163,6 +163,7 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandR
     {
         let mut parts = group.split(' ');
         let specifier = parts.next().unwrap(); // always Some because we filter on is_empty
+        let group = parse_group(specifier)?;
         let count = parts.next().ok_or_else(|| {
             (
                 "Missing count".to_owned(),
@@ -220,7 +221,7 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandR
             ));
         }
 
-        module_groups.push((parse_group(specifier)?, count));
+        module_groups.push((group, count));
     }
 
     // TODO: link help
