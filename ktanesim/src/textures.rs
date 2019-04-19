@@ -33,10 +33,11 @@ impl SharedTexture {
     pub fn to_surface(&self) -> ImageSurface {
         ImageSurface::create_for_data(
             self.data.clone(),
-            self.format, 
+            self.format,
             self.width,
             self.height,
             self.stride,
-        ).unwrap()
+        )
+        .unwrap()
     }
 }
