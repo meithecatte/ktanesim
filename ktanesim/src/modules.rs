@@ -215,6 +215,17 @@ pub enum SolveLight {
     Strike,
 }
 
+impl SolveLight {
+    fn get_color(self) -> (f64, f64, f64) {
+        use SolveLight::*;
+        match self {
+            Normal => (1.0, 1.0, 1.0),
+            Solved => (0.0, 1.0, 0.0),
+            Strike => (1.0, 0.0, 0.0),
+        }
+    }
+}
+
 /// Return an `ImageSurface` with a blank module drawn on it, along with a `CairoContext` that can
 /// be used to draw any further graphics.
 pub fn module_canvas(status: SolveLight) -> (ImageSurface, CairoContext) {
@@ -229,15 +240,9 @@ pub fn module_canvas(status: SolveLight) -> (ImageSurface, CairoContext) {
     ctx.set_source_rgb(0.0, 0.0, 0.0);
     ctx.stroke();
 
+    let (r, g, b) = status.get_color();
     ctx.arc(298.0, 40.5, 15.0, 0.0, 2.0 * std::f64::consts::PI);
-
-    use SolveLight::*;
-    match status {
-        Normal => ctx.set_source_rgb(1.0, 1.0, 1.0),
-        Solved => ctx.set_source_rgb(0.0, 1.0, 0.0),
-        Strike => ctx.set_source_rgb(1.0, 0.0, 0.0),
-    }
-
+    ctx.set_source_rgb(r, g, b);
     ctx.fill_preserve();
     ctx.set_source_rgb(0.0, 0.0, 0.0);
     ctx.stroke();
