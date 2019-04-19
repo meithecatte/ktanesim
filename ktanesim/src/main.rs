@@ -18,6 +18,7 @@ mod config;
 mod edgework;
 mod modules;
 mod prelude;
+mod textures;
 mod utils;
 
 use config::Config;

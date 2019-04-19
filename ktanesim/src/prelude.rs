@@ -10,6 +10,7 @@ pub use crate::modules::{
     ModuleOrigin, Render, RenderType, SolveLight,
 };
 pub use crate::utils::{send_message, CommandResult, ErrorMessage};
+pub use crate::textures::SharedTexture;
 
 // Reexported because of function signatures in important traits
 pub use std::sync::Arc;
