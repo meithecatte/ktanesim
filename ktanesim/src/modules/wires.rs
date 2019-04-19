@@ -53,7 +53,12 @@ fn init(bomb: &mut Bomb) -> Box<dyn Module> {
 }
 
 impl Module for Wires {
-    fn handle_command(&mut self, bomb: Arc<RwLock<Bomb>>, user: UserId, command: &str) -> EventResponse {
+    fn handle_command(
+        &mut self,
+        bomb: Arc<RwLock<Bomb>>,
+        user: UserId,
+        command: &str,
+    ) -> EventResponse {
         unimplemented!();
     }
 

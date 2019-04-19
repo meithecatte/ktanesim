@@ -63,13 +63,14 @@ fn start_bomb(
 
     render.resolve(ctx, msg.channel_id, |m, file| {
         m.embed(|e| {
-            e
-                .color(Colour::DARK_GREEN)
+            e.color(Colour::DARK_GREEN)
                 .title("Bomb armed")
-                .description(format!("A bomb with {} module{} has been armed! \
-                                     Type `!cvany` to claim one of the modules and start defusing!",
-                                     modules.len(),
-                                     if modules.len() == 1 { "" } else { "s" }))
+                .description(format!(
+                    "A bomb with {} module{} has been armed! \
+                     Type `!cvany` to claim one of the modules and start defusing!",
+                    modules.len(),
+                    if modules.len() == 1 { "" } else { "s" }
+                ))
                 .image(file)
         })
     });
@@ -235,14 +236,7 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandR
     let (strikes, timer) = calculate_settings(&modules);
     let timer = named.timer.unwrap_or_else(|| TimerMode::Normal(timer));
 
-    start_bomb(
-        ctx,
-        msg,
-        timer,
-        strikes,
-        named.rule_seed,
-        &modules,
-    );
+    start_bomb(ctx, msg, timer, strikes, named.rule_seed, &modules);
 
     Ok(())
 }

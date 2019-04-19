@@ -187,7 +187,12 @@ impl Render {
 }
 
 pub trait Module: Send + Sync {
-    fn handle_command(&mut self, bomb: Arc<RwLock<Bomb>>, user: UserId, command: &str) -> EventResponse;
+    fn handle_command(
+        &mut self,
+        bomb: Arc<RwLock<Bomb>>,
+        user: UserId,
+        command: &str,
+    ) -> EventResponse;
     fn view(&self, light: SolveLight) -> Render;
 }
 
