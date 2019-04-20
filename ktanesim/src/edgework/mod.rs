@@ -18,7 +18,7 @@ pub fn cmd_edgework(
     Ok(())
 }
 
-const RENDER_SLOT_DIM: (i32, i32) = (269, 136);
+const RENDER_SLOT_DIM: (i32, i32) = (300, 150);
 const RENDER_SLOTS: (i32, i32) = (3, 2);
 
 impl crate::bomb::Bomb {
@@ -39,8 +39,8 @@ impl crate::bomb::Bomb {
                 let (x, y) = slots.next().unwrap();
                 ctx.save();
                 ctx.translate(
-                    (RENDER_SLOT_DIM.0 * x) as f64,
-                    (RENDER_SLOT_DIM.1 * y) as f64,
+                    (RENDER_SLOT_DIM.0 * x + RENDER_SLOT_DIM.0 / 2) as f64,
+                    (RENDER_SLOT_DIM.1 * y + RENDER_SLOT_DIM.1 / 2) as f64,
                 );
 
                 widget.render(&ctx);
@@ -67,8 +67,8 @@ impl crate::bomb::Bomb {
 fn draw_centered_texture(ctx: &CairoContext, texture: &SharedTexture) {
     ctx.set_source_surface(
         &texture.to_surface(),
-        ((RENDER_SLOT_DIM.0 - texture.width) / 2) as f64,
-        ((RENDER_SLOT_DIM.1 - texture.height) / 2) as f64,
+        (-texture.width / 2) as f64,
+        (-texture.height / 2) as f64,
     );
     ctx.paint();
 }
