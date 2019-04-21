@@ -1,5 +1,4 @@
-use super::Timer;
-use crate::bomb::{Bombs, TimerMode};
+use crate::bomb::{Bombs, Timer, TimerMode, MAX_MODULES};
 use crate::modules::ModuleGroup;
 use crate::prelude::*;
 use itertools::Itertools;
@@ -11,8 +10,6 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::sync::Arc;
 use std::time::Duration;
-
-const MAX_MODULES: u32 = 101;
 
 fn ensure_no_bomb(ctx: &Context, msg: &Message) -> Result<(), ErrorMessage> {
     if crate::bomb::running_in(ctx, msg) {
@@ -27,6 +24,19 @@ fn ensure_no_bomb(ctx: &Context, msg: &Message) -> Result<(), ErrorMessage> {
     }
 
     Ok(())
+}
+
+// FIXME: This (and crate::bomb::no_bomb, to name a few) might mean we actually want a proper error
+// enum.
+fn too_many_modules() -> Result<!, ErrorMessage> {
+    Err((
+        "Count too large".to_owned(),
+        format!(
+            "I like your enthusiasm, but that's too many modules for me to handle. \
+             Could you limit yourself to {} for now?",
+            MAX_MODULES
+        ),
+    ))
 }
 
 fn start_bomb(
@@ -96,8 +106,8 @@ impl SetOperation {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ModuleCount {
-    Each(u32),
-    Total(u32),
+    Each(ModuleNumber),
+    Total(ModuleNumber),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -175,7 +185,7 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandR
             )
         })?;
 
-        let count: u32 = match count.parse() {
+        let count: ModuleNumber = match count.parse() {
             Ok(count) if count <= MAX_MODULES => count,
             Err(ref why) if why.kind() != &core::num::IntErrorKind::Overflow => {
                 return Err((
@@ -186,16 +196,7 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandR
                         .build(),
                 ));
             }
-            _ => {
-                return Err((
-                    "Count too large".to_owned(),
-                    format!(
-                        "I like your enthusiasm, but don't you think that's a bit too many \
-                         modules? Could you limit yourself to {} for now?",
-                        MAX_MODULES
-                    ),
-                ));
-            }
+            _ => too_many_modules()?,
         };
 
         let count = match parts.next() {
@@ -254,11 +255,20 @@ fn choose_modules(
 
         match *count {
             ModuleCount::Each(count) => {
+                if chosen_modules.len() + count as usize * set_modules.len() > MAX_MODULES as usize
+                {
+                    too_many_modules()?;
+                }
+
                 for _ in 0..count {
                     chosen_modules.extend_from_slice(&set_modules);
                 }
             }
             ModuleCount::Total(count) => {
+                if chosen_modules.len() + count as usize > MAX_MODULES as usize {
+                    too_many_modules()?;
+                }
+
                 for _ in 0..count {
                     chosen_modules.push(set_modules.choose(rng).ok_or_else(|| {
                         (
@@ -272,6 +282,11 @@ fn choose_modules(
                     })?);
                 }
             }
+        }
+
+        // fail-safe, should not happen
+        if chosen_modules.len() > MAX_MODULES as usize {
+            too_many_modules()?;
         }
     }
 

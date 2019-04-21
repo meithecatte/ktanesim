@@ -3,7 +3,7 @@ pub use cairo::{Context as CairoContext, ImageSurface};
 pub use serenity::model::prelude::*;
 pub use serenity::prelude::*;
 
-pub use crate::bomb::Bomb;
+pub use crate::bomb::{Bomb, ModuleNumber};
 pub use crate::commands::Parameters;
 pub use crate::modules::{
     module_canvas, output_png, EventResponse, Module, ModuleCategory, ModuleDescriptor,

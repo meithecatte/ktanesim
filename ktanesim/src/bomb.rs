@@ -70,15 +70,21 @@ pub struct Bomb {
     pub rule_seed: u32,
     pub timer: Timer,
     pub modules: Vec<Box<dyn Module>>,
+    // This field is not public to prevent the temptation to just flip the relevant bit in the
+    // module code when solved. Some bookkeeping is necessary, and as such the proper method of
+    // registering a solve is TODO
     solve_state: SmallBitVec,
     pub channel: ChannelId,
     pub defusers: HashMap<UserId, Defuser>,
 }
 
+pub type ModuleNumber = u8;
+pub const MAX_CLAIMS: usize = 3;
+pub const MAX_MODULES: ModuleNumber = 101;
+
 /// Stores information about a user that has interacted with the current bomb.
 pub struct Defuser {
-    /// The module number of the last module viewed. Zero-indexed.
-    pub last_view: Option<u32>,
+    pub last_view: Option<ModuleNumber>,
 }
 
 // TODO: Ack and stuff
