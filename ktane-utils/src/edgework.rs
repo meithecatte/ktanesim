@@ -416,14 +416,14 @@ pub struct Indicator {
 }
 
 impl Edgework {
-    pub fn indicator_iter<'a>(&'a self) -> impl Iterator<Item=Indicator> + 'a {
-        self.indicators.iter().filter_map(|(code, state)| {
-            match state {
+    pub fn indicator_iter<'a>(&'a self) -> impl Iterator<Item = Indicator> + 'a {
+        self.indicators
+            .iter()
+            .filter_map(|(code, state)| match state {
                 IndicatorState::NotPresent => None,
                 IndicatorState::Unlit => Some(Indicator { code, lit: false }),
-                IndicatorState::Lit => Some(Indicator { code, lit: true}),
-            }
-        })
+                IndicatorState::Lit => Some(Indicator { code, lit: true }),
+            })
     }
 }
 
