@@ -53,6 +53,7 @@ fn start_bomb(
     }
 
     let render = bomb.render_edgework();
+    info!("Bomb edgework: {:#?}", bomb.edgework);
 
     assert!(ctx
         .data

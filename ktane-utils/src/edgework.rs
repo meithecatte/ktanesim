@@ -401,6 +401,26 @@ impl Default for IndicatorState {
     }
 }
 
+/// Represents an indicator. Not stored in the edgework struct, but still returned by some utility
+/// functions.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Indicator {
+    pub code: IndicatorCode,
+    pub lit: bool,
+}
+
+impl Edgework {
+    pub fn indicator_iter<'a>(&'a self) -> impl Iterator<Item=Indicator> + 'a {
+        self.indicators.iter().filter_map(|(code, state)| {
+            match state {
+                IndicatorState::NotPresent => None,
+                IndicatorState::Unlit => Some(Indicator { code, lit: false }),
+                IndicatorState::Lit => Some(Indicator { code, lit: true}),
+            }
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
