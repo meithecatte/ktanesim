@@ -1,6 +1,42 @@
 use crate::prelude::*;
 use strum_macros::Display;
 
+use phf_macros::phf_map;
+use ModuleGroup::Single;
+
+/// A perfect hash map of all modules and module groups
+pub static MODULE_GROUPS: phf::Map<&'static str, ModuleGroup> = phf_map! {
+    "wires"       => Single(&wires::DESCRIPTOR),
+    "simplewires" => Single(&wires::DESCRIPTOR),
+
+    "vanilla"      => VANILLA_MODULES,
+    "base"         => VANILLA_MODULES,
+    "unmodded"     => VANILLA_MODULES,
+    "solvable"     => SOLVABLE_MODULES,
+    "regular"      => SOLVABLE_MODULES,
+    "normal"       => SOLVABLE_MODULES,
+    "ruleseed"     => ModuleGroup::Ruleseed,
+    "ruleseedable" => ModuleGroup::Ruleseed,
+    "all"          => ModuleGroup::All,
+    "any"          => ModuleGroup::All,
+};
+
+const VANILLA_MODULES: ModuleGroup = ModuleGroup::Origin(ModuleOrigin::Vanilla);
+const SOLVABLE_MODULES: ModuleGroup = ModuleGroup::Category(ModuleCategory::Solvable);
+
+pub mod wires;
+
+#[cfg(test)]
+#[test]
+fn module_identifiers_consistent() {
+    for (&key, group) in MODULE_GROUPS.entries() {
+        if let Single(module) = group {
+            assert_eq!(Some(group), MODULE_GROUPS.get(module.identifier));
+            assert!(module.identifier == key || module.aliases.contains(&key));
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Display)]
 #[strum(serialize_all = "snake_case")]
 pub enum ModuleOrigin {
@@ -122,42 +158,6 @@ impl fmt::Display for ModuleGroup {
 }
 
 pub type ModuleNew = fn(bomb: &mut Bomb) -> Box<dyn Module>;
-
-use phf_macros::phf_map;
-use ModuleGroup::Single;
-
-/// A perfect hash map of all modules and module groups
-pub static MODULE_GROUPS: phf::Map<&'static str, ModuleGroup> = phf_map! {
-    "wires"       => Single(&wires::DESCRIPTOR),
-    "simplewires" => Single(&wires::DESCRIPTOR),
-
-    "vanilla"      => VANILLA_MODULES,
-    "base"         => VANILLA_MODULES,
-    "unmodded"     => VANILLA_MODULES,
-    "solvable"     => SOLVABLE_MODULES,
-    "regular"      => SOLVABLE_MODULES,
-    "normal"       => SOLVABLE_MODULES,
-    "ruleseed"     => ModuleGroup::Ruleseed,
-    "ruleseedable" => ModuleGroup::Ruleseed,
-    "all"          => ModuleGroup::All,
-    "any"          => ModuleGroup::All,
-};
-
-#[cfg(test)]
-#[test]
-fn module_identifiers_consistent() {
-    for (&key, group) in MODULE_GROUPS.entries() {
-        if let Single(module) = group {
-            assert_eq!(Some(group), MODULE_GROUPS.get(module.identifier));
-            assert!(module.identifier == key || module.aliases.contains(&key));
-        }
-    }
-}
-
-const VANILLA_MODULES: ModuleGroup = ModuleGroup::Origin(ModuleOrigin::Vanilla);
-const SOLVABLE_MODULES: ModuleGroup = ModuleGroup::Category(ModuleCategory::Solvable);
-
-pub mod wires;
 
 pub const MODULE_SIZE: i32 = 348;
 
