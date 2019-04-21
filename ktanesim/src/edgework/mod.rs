@@ -1,8 +1,8 @@
 use crate::prelude::*;
 use cairo::ImageSurface;
+use ktane_utils::edgework::{Indicator, PortPlate, PortType, SerialNumber};
 use lazy_static::lazy_static;
 use serenity::utils::Colour;
-use ktane_utils::edgework::{SerialNumber, Indicator};
 
 pub fn cmd_edgework(
     ctx: &Context,
@@ -19,7 +19,7 @@ pub fn cmd_edgework(
     Ok(())
 }
 
-const RENDER_SLOT_DIM: (i32, i32) = (300, 150);
+const RENDER_SLOT_DIM: (i32, i32) = (280, 150);
 const RENDER_SLOTS: (i32, i32) = (3, 2);
 
 impl crate::bomb::Bomb {
@@ -35,7 +35,8 @@ impl crate::bomb::Bomb {
             .unwrap();
 
             let ctx = CairoContext::new(&surface);
-            let mut slots = (0..RENDER_SLOTS.0).flat_map(|x| (0..RENDER_SLOTS.1).map(move |y| (x, y)));
+            let mut slots =
+                (0..RENDER_SLOTS.0).flat_map(|x| (0..RENDER_SLOTS.1).map(move |y| (x, y)));
             let mut render = |widget: &dyn Widget| {
                 let (x, y) = slots.next().unwrap();
                 ctx.save();
@@ -64,6 +65,10 @@ impl crate::bomb::Bomb {
                 render(&indicator);
             }
 
+            for port_plate in &edgework.port_plates {
+                render(port_plate);
+            }
+
             output_png(surface)
         })
     }
@@ -78,6 +83,9 @@ fn centered_texture(ctx: &CairoContext, texture: &SharedTexture) {
     ctx.paint();
 }
 
+// FIXME: The text is rendered using Cairo's "toy" text API. We might want to figure out how to use
+// FreeType or similar. This could allow us to keep the fonts in the repository and just include
+// them like the textures, making setup easier. The downside is that the docs are a clusterfuck.
 fn centered_text(ctx: &CairoContext, text: &str, x: f64, y: f64) {
     // The "current point" used by show_text is the same as the one used for paths. This behavior
     // made only the first text object render properly. As a fix, `new_path` is called before each
@@ -92,11 +100,21 @@ trait Widget {
     fn render(&self, ctx: &CairoContext);
 }
 
+macro_rules! texture {
+    ($($name:ident = $file:tt;)+) => {
+        $(
+            lazy_static! {
+                static ref $name: SharedTexture =
+                    SharedTexture::new(include_bytes!($file));
+            }
+        )+
+    };
+}
+
 impl Widget for SerialNumber {
     fn render(&self, ctx: &CairoContext) {
-        lazy_static! {
-            static ref TEXTURE: SharedTexture =
-                SharedTexture::new(include_bytes!("Serial number.png"));
+        texture! {
+            TEXTURE = "Serial number.png";
         }
 
         centered_texture(ctx, &TEXTURE);
@@ -122,11 +140,9 @@ enum Battery {
 
 impl Widget for Battery {
     fn render(&self, ctx: &CairoContext) {
-        lazy_static! {
-            static ref TEXTURE_AA: SharedTexture =
-                SharedTexture::new(include_bytes!("BatteryAA.png"));
-            static ref TEXTURE_D: SharedTexture =
-                SharedTexture::new(include_bytes!("BatteryD.png"));
+        texture! {
+            TEXTURE_AA = "BatteryAA.png";
+            TEXTURE_D = "BatteryD.png";
         }
 
         match self {
@@ -138,19 +154,16 @@ impl Widget for Battery {
 
 impl Widget for Indicator {
     fn render(&self, ctx: &CairoContext) {
-        lazy_static! {
-            static ref TEXTURE_UNLIT: SharedTexture =
-                SharedTexture::new(include_bytes!("UnlitIndicator.png"));
-            static ref TEXTURE_LIT: SharedTexture =
-                SharedTexture::new(include_bytes!("LitIndicator.png"));
+        texture! {
+            TEXTURE_UNLIT = "UnlitIndicator.png";
+            TEXTURE_LIT = "LitIndicator.png";
         }
 
-        let texture: &SharedTexture = match self.lit {
-            true => &TEXTURE_LIT,
-            false => &TEXTURE_UNLIT,
+        match self.lit {
+            true => centered_texture(ctx, &TEXTURE_LIT),
+            false => centered_texture(ctx, &TEXTURE_UNLIT),
         };
 
-        centered_texture(ctx, texture);
         ctx.select_font_face(
             "Ostrich Sans",
             cairo::FontSlant::Normal,
@@ -162,30 +175,72 @@ impl Widget for Indicator {
     }
 }
 
+impl Widget for PortPlate {
+    fn render(&self, ctx: &CairoContext) {
+        texture! {
+            TEXTURE_BG = "PortPlate.png";
+            TEXTURE_DVI = "PortDVI.png";
+            TEXTURE_PS2 = "PortPS2.png";
+            TEXTURE_RJ45 = "PortRJ.png";
+            TEXTURE_RCA = "PortRCA.png";
+            TEXTURE_PARALLEL = "PortParallel.png";
+            TEXTURE_SERIAL = "PortSerial.png";
+        }
+
+        centered_texture(ctx, &TEXTURE_BG);
+
+        for port in self.ports().iter() {
+            match port {
+                PortType::DVI => {
+                    ctx.set_source_surface(&TEXTURE_DVI.to_surface(), -119.0, -5.0);
+                }
+                PortType::PS2 => {
+                    ctx.set_source_surface(&TEXTURE_PS2.to_surface(), 31.0, -47.0);
+                }
+                PortType::RJ45 => {
+                    ctx.set_source_surface(&TEXTURE_RJ45.to_surface(), -122.0, -49.0);
+                }
+                PortType::StereoRCA => {
+                    ctx.set_source_surface(&TEXTURE_RCA.to_surface(), 81.0, -26.0);
+                }
+                PortType::Parallel => {
+                    ctx.set_source_surface(&TEXTURE_PARALLEL.to_surface(), -103.0, -46.0);
+                }
+                PortType::Serial => {
+                    ctx.set_source_surface(&TEXTURE_SERIAL.to_surface(), -54.0, 0.0);
+                }
+            }
+
+            ctx.paint();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     fn render_comparison(widget: impl Widget, mut expected: &[u8], actual: &str) {
-        let mut surface = ImageSurface::create(
-            cairo::Format::ARgb32,
-            RENDER_SLOT_DIM.0,
-            RENDER_SLOT_DIM.1,
-        ).expect("Cannot create test surface");
+        let mut surface =
+            ImageSurface::create(cairo::Format::ARgb32, RENDER_SLOT_DIM.0, RENDER_SLOT_DIM.1)
+                .expect("Cannot create test surface");
         let ctx = CairoContext::new(&surface);
-        ctx.translate((RENDER_SLOT_DIM.0 / 2) as f64, (RENDER_SLOT_DIM.1 / 2) as f64);
+        ctx.translate(
+            (RENDER_SLOT_DIM.0 / 2) as f64,
+            (RENDER_SLOT_DIM.1 / 2) as f64,
+        );
         widget.render(&ctx);
         drop(ctx);
 
-        let mut expected = ImageSurface::create_from_png(
-            &mut expected
-        ).expect("Cannot parse expected result");
+        let mut expected =
+            ImageSurface::create_from_png(&mut expected).expect("Cannot parse expected result");
 
         if *expected.get_data().unwrap() != *surface.get_data().unwrap() {
-            surface.write_to_png(
-                &mut std::fs::File::create(actual)
-                .expect("Cannot create result file")
-            ).expect("Cannot write to result file");
+            surface
+                .write_to_png(
+                    &mut std::fs::File::create(actual).expect("Cannot create result file"),
+                )
+                .expect("Cannot write to result file");
             panic!("Pixels don't match");
         }
     }
@@ -193,12 +248,23 @@ mod tests {
     #[test]
     fn serial_number_font() {
         let serial: SerialNumber = "TW8LF0".parse().unwrap();
-        render_comparison(serial, include_bytes!("Serial-expected.png"), "Serial-actual.png");
+        render_comparison(
+            serial,
+            include_bytes!("Serial-expected.png"),
+            "Serial-actual.png",
+        );
     }
 
     #[test]
     fn indicator_font() {
-        let indicator = Indicator { code: ktane_utils::edgework::IndicatorCode::BOB, lit: true };
-        render_comparison(indicator, include_bytes!("Indicator-expected.png"), "Indicator-actual.png");
+        let indicator = Indicator {
+            code: ktane_utils::edgework::IndicatorCode::BOB,
+            lit: true,
+        };
+        render_comparison(
+            indicator,
+            include_bytes!("Indicator-expected.png"),
+            "Indicator-actual.png",
+        );
     }
 }
