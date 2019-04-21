@@ -301,7 +301,6 @@ pub enum PortType {
     #[strum(to_string = "PS/2", serialize = "PS2")]
     PS2 = 0b00_0010,
     #[strum(to_string = "RJ-45", serialize = "RJ45", serialize = "RJ")]
-    #[strum(props(article = "an"))]
     RJ45 = 0b00_0100,
     #[strum(to_string = "Stereo RCA", serialize = "StereoRCA", serialize = "RCA")]
     StereoRCA = 0b00_1000,
@@ -319,7 +318,9 @@ lazy_static! {
     /// Ports are divided into groups. All ports on a port plate must be from the same group,
     /// because they won't fit otherwise.
     ///
-    /// This is a lazily initialized static variable. See [`lazy_static`] for more details.
+    /// This is a lazily initialized static variable, but this will probably change when const
+    /// trait methods become a thing. See [`lazy_static`] for more details on lazily initialized
+    /// static variables.
     ///
     /// [`lazy_static`]: https://crates.io/crates/lazy_static
     pub static ref PORT_GROUPS: [BitFlags<PortType>; 2] = [

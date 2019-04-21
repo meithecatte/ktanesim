@@ -507,13 +507,12 @@ pub enum EdgeworkQuery {
 impl fmt::Display for EdgeworkQuery {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::EdgeworkQuery::*;
-        match self {
+        match *self {
             SerialStartsWithLetter => write!(f, "the serial number starts with a letter"),
             SerialOdd => write!(f, "the last digit of the serial number is odd"),
             HasEmptyPortPlate => write!(f, "there is an empty port plate present on the bomb"),
             PortPresent(port) => {
-                use strum::EnumProperty;
-                let article = port.get_str("article").unwrap_or("a");
+                let article = if port == PortType::RJ45 { "an" } else { "a" };
                 write!(f, "there is {} {} port present on the bomb", article, port)
             }
         }
