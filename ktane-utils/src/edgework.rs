@@ -354,6 +354,11 @@ impl PortPlate {
     pub fn has(self, port: PortType) -> bool {
         self.0.contains(port)
     }
+
+    /// Returns the [`BitFlags<PortType>`] describing this port plate
+    pub fn ports(self) -> BitFlags<PortType> {
+        self.0
+    }
 }
 
 impl From<PortPlate> for BitFlags<PortType> {
