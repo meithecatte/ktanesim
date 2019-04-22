@@ -41,8 +41,8 @@ impl crate::bomb::Bomb {
                 let (x, y) = slots.next().unwrap();
                 ctx.save();
                 ctx.translate(
-                    (RENDER_SLOT_DIM.0 * x + RENDER_SLOT_DIM.0 / 2) as f64,
-                    (RENDER_SLOT_DIM.1 * y + RENDER_SLOT_DIM.1 / 2) as f64,
+                    f64::from(RENDER_SLOT_DIM.0 * x + RENDER_SLOT_DIM.0 / 2),
+                    f64::from(RENDER_SLOT_DIM.1 * y + RENDER_SLOT_DIM.1 / 2),
                 );
 
                 widget.render(&ctx);
@@ -77,8 +77,8 @@ impl crate::bomb::Bomb {
 fn centered_texture(ctx: &CairoContext, texture: &SharedTexture) {
     ctx.set_source_surface(
         &texture.to_surface(),
-        (-texture.width / 2) as f64,
-        (-texture.height / 2) as f64,
+        f64::from(-texture.width / 2),
+        f64::from(-texture.height / 2),
     );
     ctx.paint();
 }
@@ -159,10 +159,11 @@ impl Widget for Indicator {
             TEXTURE_LIT = "LitIndicator.png";
         }
 
-        match self.lit {
-            true => centered_texture(ctx, &TEXTURE_LIT),
-            false => centered_texture(ctx, &TEXTURE_UNLIT),
-        };
+        if self.lit {
+            centered_texture(ctx, &TEXTURE_LIT);
+        } else {
+            centered_texture(ctx, &TEXTURE_UNLIT);
+        }
 
         ctx.select_font_face(
             "Ostrich Sans",
@@ -226,8 +227,8 @@ mod tests {
                 .expect("Cannot create test surface");
         let ctx = CairoContext::new(&surface);
         ctx.translate(
-            (RENDER_SLOT_DIM.0 / 2) as f64,
-            (RENDER_SLOT_DIM.1 / 2) as f64,
+            f64::from(RENDER_SLOT_DIM.0 / 2),
+            f64::from(RENDER_SLOT_DIM.1 / 2),
         );
         widget.render(&ctx);
         drop(ctx);
