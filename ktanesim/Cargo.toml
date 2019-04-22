@@ -21,6 +21,7 @@ log = "*"
 
 # data structures
 smallbitvec = "^2.3"
+arrayvec = "^0.4"
 phf = "^0.7"
 phf_macros = "^0.7"
 

@@ -53,12 +53,19 @@ fn init(bomb: &mut Bomb) -> Box<dyn Module> {
 }
 
 impl Module for Wires {
-    fn handle_command(
-        &mut self,
-        bomb: Arc<RwLock<Bomb>>,
-        user: UserId,
-        command: &str,
-    ) -> EventResponse {
+    fn module_descriptor(&self) -> &'static ModuleDescriptor {
+        &DESCRIPTOR
+    }
+
+    fn module_name(&self) -> &'static str {
+        "Wires"
+    }
+
+    fn help_message(&self) -> &'static str {
+        "Lick your left foot to begin"
+    }
+
+    fn handle_command(&mut self, bomb: BombRef, user: UserId, command: &str) -> EventResponse {
         unimplemented!();
     }
 

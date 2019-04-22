@@ -66,7 +66,18 @@ impl EventHandler for Handler {
         let normalized = normalize(cmd[1..].trim());
         if let Err((title, description)) = commands::dispatch(&ctx, &msg, normalized) {
             send_message(&ctx, msg.channel_id, |m| {
-                m.embed(|e| e.color(Colour::RED).title(title).description(description))
+                m.embed(|e| {
+                    e.color(Colour::RED)
+                        .title(title)
+                        .description(description)
+                        .footer(|ft| {
+                            ft.text(&msg.author.name).icon_url(
+                                &msg.author
+                                    .avatar_url()
+                                    .unwrap_or_else(|| msg.author.default_avatar_url()),
+                            )
+                        })
+                })
             });
         }
     }

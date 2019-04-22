@@ -7,7 +7,7 @@ use serenity::utils::Colour;
 pub fn cmd_edgework(
     ctx: &Context,
     msg: &Message,
-    bomb: Arc<RwLock<Bomb>>,
+    bomb: BombRef,
     params: Parameters<'_>,
 ) -> CommandResult {
     bomb.read()

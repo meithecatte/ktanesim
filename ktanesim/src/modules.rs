@@ -161,51 +161,12 @@ pub type ModuleNew = fn(bomb: &mut Bomb) -> Box<dyn Module>;
 
 pub const MODULE_SIZE: i32 = 348;
 
-pub struct Render(pub Box<dyn FnOnce() -> (Vec<u8>, RenderType)>);
-
-use serenity::builder::CreateMessage;
-impl Render {
-    /// Helper method for simpler creation of Render objects
-    pub fn with(f: impl FnOnce() -> (Vec<u8>, RenderType) + 'static) -> Render {
-        Render(Box::new(f))
-    }
-
-    pub fn resolve<F>(self, ctx: &Context, channel_id: ChannelId, f: F)
-    where
-        for<'b> F: FnOnce(&'b mut CreateMessage<'b>, &str) -> &'b mut CreateMessage<'b>,
-    {
-        let (data, extension) = (self.0)();
-        let filename = format!("f.{}", extension);
-        if let Err(why) = channel_id.send_files(
-            &ctx.http,
-            std::iter::once((&data[..], &filename[..])),
-            |m| f(m, &format!("attachment://{}", filename)),
-        ) {
-            error!("Couldn't send message with attachment: {:?}", why);
-        }
-    }
-}
-
 pub trait Module: Send + Sync {
-    fn handle_command(
-        &mut self,
-        bomb: Arc<RwLock<Bomb>>,
-        user: UserId,
-        command: &str,
-    ) -> EventResponse;
+    fn module_descriptor(&self) -> &'static ModuleDescriptor;
+    fn module_name(&self) -> &'static str;
+    fn help_message(&self) -> &'static str;
+    fn handle_command(&mut self, bomb: BombRef, user: UserId, command: &str) -> EventResponse;
     fn view(&self, light: SolveLight) -> Render;
-}
-
-pub struct EventResponse {
-    render: Option<Render>,
-    message: Option<String>,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Display)]
-#[strum(serialize_all = "snake_case")]
-pub enum RenderType {
-    PNG,
-    GIF,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]

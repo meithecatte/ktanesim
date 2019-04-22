@@ -3,7 +3,7 @@ use crate::modules::ModuleGroup;
 use crate::prelude::*;
 use itertools::Itertools;
 use rand::prelude::*;
-use serenity::utils::{Colour, MessageBuilder};
+use serenity::utils::Colour;
 use smallbitvec::SmallBitVec;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
