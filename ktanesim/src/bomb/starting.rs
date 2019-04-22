@@ -236,8 +236,12 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandR
 
     let modules = choose_modules(&module_groups)?;
     assert!(!modules.is_empty());
-    let (strikes, timer) = calculate_settings(&modules);
-    let timer = named.timer.unwrap_or_else(|| TimerMode::Normal(timer));
+    let (strikes, time) = calculate_settings(&modules);
+    let timer = match named.timer {
+        Some(TimerMode::Normal { time, .. }) => TimerMode::Normal { time, strikes },
+        Some(timer) => timer,
+        None => TimerMode::Normal { time, strikes },
+    };
 
     start_bomb(ctx, msg, timer, strikes, named.rule_seed, &modules);
 
@@ -472,7 +476,10 @@ fn get_named_parameter(name: &str, value: &str) -> Result<NamedParameter, ErrorM
             if let Ok(mode) = value.parse() {
                 Ok(NamedParameter::Timer(mode))
             } else if let Ok(time) = humantime::parse_duration(value) {
-                Ok(NamedParameter::Timer(TimerMode::Normal(time)))
+                Ok(NamedParameter::Timer(TimerMode::Normal {
+                    time,
+                    strikes: 0,
+                }))
             } else {
                 Err((
                     "Not a valid timer value".to_owned(),

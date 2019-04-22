@@ -13,7 +13,7 @@ use strum_macros::EnumString;
 #[derive(Clone, Copy, PartialEq, Eq, Debug, EnumString)]
 #[strum(serialize_all = "snake_case")]
 pub enum TimerMode {
-    Normal(Duration),
+    Normal { time: Duration, strikes: u32 },
     Zen,
     Time,
 }
@@ -21,7 +21,7 @@ pub enum TimerMode {
 impl Timer {
     pub fn new(mode: TimerMode) -> Timer {
         let starting_time = match mode {
-            TimerMode::Normal(time) => time,
+            TimerMode::Normal { time, .. } => time,
             TimerMode::Zen => Duration::from_secs(0),
             TimerMode::Time => Duration::from_secs(300),
         };
@@ -62,7 +62,7 @@ impl Timer {
 
     fn to_bomb_time(&self, duration: Duration) -> Duration {
         match self.mode {
-            TimerMode::Normal(_) => match self.strikes {
+            TimerMode::Normal { .. } => match self.strikes {
                 0 => duration,
                 1 => duration * 5 / 4,
                 2 => duration * 3 / 2,
@@ -74,7 +74,7 @@ impl Timer {
 
     fn to_real_time(&self, duration: Duration) -> Duration {
         match self.mode {
-            TimerMode::Normal(_) => match self.strikes {
+            TimerMode::Normal { .. } => match self.strikes {
                 0 => duration,
                 1 => duration * 4 / 5,
                 2 => duration * 2 / 3,
@@ -90,7 +90,7 @@ impl Timer {
 
     pub fn variable_speed(&self) -> bool {
         match self.mode {
-            TimerMode::Normal(_) => true,
+            TimerMode::Normal { .. } => true,
             _ => false,
         }
     }
