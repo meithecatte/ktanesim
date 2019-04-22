@@ -149,7 +149,7 @@ impl fmt::Display for ModuleGroup {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ModuleGroup::Single(descriptor) => f.write_str(descriptor.identifier),
-            ModuleGroup::Category(cat) => cat.fmt(f),
+            ModuleGroup::Category(category) => category.fmt(f),
             ModuleGroup::Origin(origin) => origin.fmt(f),
             ModuleGroup::Ruleseed => f.write_str("ruleseedable"),
             ModuleGroup::All => f.write_str("all"),
