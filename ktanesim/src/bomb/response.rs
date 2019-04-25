@@ -18,11 +18,14 @@ impl EventResponse {
                     m.embed(|e| {
                         e.image(file);
                         e.title(format!("{} (#{})", module.name(), module.number() + 1));
+                        let manual = crate::modules::manual_url(module, bomb.data.rule_seed);
+                        e.field("Manual", format!("[Click here]({})", manual), true);
 
-                        // TODO: manual links
+                        if !module.state().solved() {
+                            e.description(module.help_message());
+                        }
+
                         // TODO: notify about ruleseed
-                        // TODO: show help (not if solved)
-                        // TODO: contextual help?
                         // TODO: claimed by
                         if let Some((title, description)) = message {
                             e.field(title, description, false);

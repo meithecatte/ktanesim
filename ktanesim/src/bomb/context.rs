@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// A key for the [`ShareMap`] in the [`Context`], refers to a mapping from [`ChannelId`]s to
 /// [`Bomb`]s.

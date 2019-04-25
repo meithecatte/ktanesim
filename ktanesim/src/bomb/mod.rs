@@ -48,13 +48,15 @@ impl BombData {
     }
 
     pub fn need_last_view(&self, user: UserId) -> Result<ModuleNumber, ErrorMessage> {
-        self.get_last_view(user).ok_or_else(|| (
-            "You didn't view any modules".to_owned(),
-            "The `!!` prefix sends the command to the module you have last viewed. \
-             However, you didn't look at any modules on this bomb yet. \
-             Try `!cvany` to claim a random module and start defusing."
-                .to_owned(),
-        ))
+        self.get_last_view(user).ok_or_else(|| {
+            (
+                "You didn't view any modules".to_owned(),
+                "The `!!` prefix sends the command to the module you have last viewed. \
+                 However, you didn't look at any modules on this bomb yet. \
+                 Try `!cvany` to claim a random module and start defusing."
+                    .to_owned(),
+            )
+        })
     }
 
     pub fn record_view(&mut self, user: UserId, num: ModuleNumber) {
@@ -118,7 +120,12 @@ impl Bomb {
             "view" => modcmd_view(self, num, params),
             other => {
                 // TODO: handle claimed modules
-                self.modules[num as usize].handle_command(&mut self.data, msg.author.id, other, params)
+                self.modules[num as usize].handle_command(
+                    &mut self.data,
+                    msg.author.id,
+                    other,
+                    params,
+                )
             }
         }?;
 
@@ -145,22 +152,19 @@ pub fn modcmd_view(
 
     let render = module.view(light);
 
-    let message = if let Some(param) = params.next() {
-        let mut ignored = vec![param];
-        ignored.extend(params);
-        Some((
+    let message = crate::utils::trailing_parameters(params, |params| {
+        (
             "Note: trailing parameters".to_owned(),
             MessageBuilder::new()
                 .push(
                     "The `view` module command does not take any parameters. \
                      The following has been ignored: ",
                 )
-                .push_mono_safe(ignored.join(" "))
+                .push_mono_safe(params)
                 .build(),
-        ))
-    } else {
-        None
-    };
+        )
+    })
+    .err();
 
     Ok(EventResponse {
         render: Some(render),

@@ -24,7 +24,7 @@ fn too_many_modules() -> Result<!, ErrorMessage> {
     ))
 }
 
-fn bomb_already_running(ctx: &Context, msg: &Message) -> Result<!, ErrorMessage> {
+fn bomb_already_running(msg: &Message) -> Result<!, ErrorMessage> {
     Err((
         "Bomb already running".to_owned(),
         if msg.guild_id.is_some() {
@@ -37,7 +37,7 @@ fn bomb_already_running(ctx: &Context, msg: &Message) -> Result<!, ErrorMessage>
 
 fn ensure_no_bomb(ctx: &Context, msg: &Message) -> Result<(), ErrorMessage> {
     if crate::bomb::running_in(ctx, msg) {
-        bomb_already_running(ctx, msg)?
+        bomb_already_running(msg)?
     } else {
         Ok(())
     }
@@ -53,10 +53,16 @@ fn start_bomb(
 ) -> CommandResult {
     use std::collections::hash_map::Entry;
     let render;
-    match ctx.data.write().get_mut::<Bombs>().unwrap().entry(msg.channel_id) {
+    match ctx
+        .data
+        .write()
+        .get_mut::<Bombs>()
+        .unwrap()
+        .entry(msg.channel_id)
+    {
         // the starting commands make sure that there is no bomb running, but commands are
         // processed across multiple threads...
-        Entry::Occupied(_) => bomb_already_running(ctx, msg)?,
+        Entry::Occupied(_) => bomb_already_running(msg)?,
         Entry::Vacant(entry) => {
             let mut data = BombData {
                 edgework: random(),
@@ -66,9 +72,13 @@ fn start_bomb(
                 defusers: HashMap::new(),
             };
 
-            let modules = modules.iter().enumerate().map(|(num, module)| {
-                (module.constructor)(&mut data, ModuleState::new(num as ModuleNumber))
-            }).collect();
+            let modules = modules
+                .iter()
+                .enumerate()
+                .map(|(num, module)| {
+                    (module.constructor)(&mut data, ModuleState::new(num as ModuleNumber))
+                })
+                .collect();
 
             let bomb = Bomb { modules, data };
             render = bomb.data.render_edgework();

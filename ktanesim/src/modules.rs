@@ -1,4 +1,6 @@
 use crate::prelude::*;
+use lazy_format::prelude::*;
+use std::fmt;
 use strum_macros::Display;
 
 use phf_macros::phf_map;
@@ -79,7 +81,6 @@ impl Hash for ModuleDescriptor {
     }
 }
 
-use std::fmt;
 impl fmt::Debug for ModuleDescriptor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "<module {:?}>", self.identifier)
@@ -182,6 +183,27 @@ pub trait Module: Send + Sync {
     fn number(&self) -> ModuleNumber {
         self.state().number
     }
+}
+
+/// Get the manual URL for a module and rule seed combination. Returns `impl Display` to take
+/// advantage of lazy formatting.
+pub fn manual_url(module: &dyn Module, rule_seed: u32) -> impl fmt::Display {
+    // TODO: manual mirror? (might be necessary for novelty modules)
+    // OTOH, if choosing the stored preferred manual gets implemented...
+
+    use percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
+    // RIGHT SINGLE QUOTATION MARK, used in the URLs of the manual repository
+    let name = module.name().replace("\'", "\u{2019}");
+    let seed = if module.descriptor().rule_seed {
+        rule_seed
+    } else {
+        1
+    };
+    lazy_format!(
+        "https://ktane.timwi.de/HTML/{}.html#{}",
+        utf8_percent_encode(&name, DEFAULT_ENCODE_SET),
+        seed
+    )
 }
 
 /// A struct used to store all the state common between modules.

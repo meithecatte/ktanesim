@@ -8,31 +8,30 @@ publish = false
 [dependencies]
 ktane-utils = { path = "../ktane-utils" }
 # Use the same version as ktane-utils
+lazy_static = "*"
 rand = "*"
+regex = "*"
 smallvec = "*"
 strum = "*"
 strum_macros = "*"
-lazy_static = "*"
-regex = "*"
 
-# Use the same version as serenity
-typemap = "*"
+# Use the same version as serenity. If the version used changes and the new version is breaking.
+# it's a problem either way.
 log = "*"
 
-# data structures
-smallbitvec = "^2.3"
 arrayvec = "^0.4"
-phf = "^0.7"
-phf_macros = "^0.7"
-
 cairo-rs = { version = "^0.5", features = ["png"] }
 cairo-svgpath = "^0.1"
-
-kankyo = "^0.2"
 env_logger = "^0.6"
-
 humantime = "^1.2"
 itertools = "^0.8"
+joinery = "^2.0"
+kankyo = "^0.2"
+lazy_format = "^1.5"
+percent-encoding = "^1.0"
+phf = "^0.7"
+phf_macros = "^0.7"
+smallbitvec = "^2.3"
 
 [dependencies.serenity]
 git = "https://github.com/serenity-rs/serenity"
