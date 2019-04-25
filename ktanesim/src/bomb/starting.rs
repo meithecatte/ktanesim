@@ -1,6 +1,7 @@
 use crate::bomb::{Bombs, Timer, TimerMode, MAX_MODULES};
 use crate::modules::ModuleGroup;
 use crate::prelude::*;
+use crate::utils::{ranged_int_parse, RangedIntError};
 use itertools::Itertools;
 use rand::prelude::*;
 use serenity::utils::Colour;
@@ -185,9 +186,10 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandR
             )
         })?;
 
-        let count: ModuleNumber = match count.parse() {
-            Ok(count) if count <= MAX_MODULES => count,
-            Err(ref why) if why.kind() != &core::num::IntErrorKind::Overflow => {
+        let count: ModuleNumber = match ranged_int_parse(count, MAX_MODULES) {
+            Ok(count) => count,
+            Err(RangedIntError::TooLarge) => too_many_modules()?,
+            Err(_) => {
                 return Err((
                     "Syntax error".to_owned(),
                     MessageBuilder::new()
@@ -196,7 +198,6 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandR
                         .build(),
                 ));
             }
-            _ => too_many_modules()?,
         };
 
         let count = match parts.next() {
@@ -449,27 +450,33 @@ fn get_named_parameter(name: &str, value: &str) -> Result<NamedParameter, ErrorM
     match name {
         "ruleseed" | "seed" | "rules" => {
             use ktane_utils::random::MAX_VALUE;
-            match value.parse() {
-                Ok(seed) => {
-                    if seed <= MAX_VALUE {
-                        Ok(NamedParameter::Ruleseed(seed))
-                    } else {
-                        Err((
-                            "Seed too large".to_owned(),
-                            format!(
-                                "Please limit yourself to seeds not larger than {}",
-                                MAX_VALUE
-                            ),
-                        ))
-                    }
+            if value == "random" {
+                // 0 is a valid seed, let's try to generate it.
+                let mut seed = rand::thread_rng().gen_range(1, MAX_VALUE + 1);
+
+                if seed == 1 {
+                    seed = 0;
                 }
-                Err(_) => Err((
-                    "Couldn't parse argument".to_owned(),
-                    MessageBuilder::new()
-                        .push_mono_safe(value)
-                        .push(" is not a valid rule seed. Try using a natural number.")
-                        .build(),
-                )),
+
+                Ok(NamedParameter::Ruleseed(seed))
+            } else {
+                match ranged_int_parse(value, MAX_VALUE) {
+                    Ok(seed) => Ok(NamedParameter::Ruleseed(seed)),
+                    Err(RangedIntError::TooLarge) => Err((
+                        "Seed too large".to_owned(),
+                        format!(
+                            "Please limit yourself to seeds not larger than {}",
+                            MAX_VALUE
+                        ),
+                    )),
+                    Err(_) => Err((
+                        "Couldn't parse argument".to_owned(),
+                        MessageBuilder::new()
+                            .push_mono_safe(value)
+                            .push(" is not a valid rule seed. Try using `random` or a natural number.")
+                            .build(),
+                    )),
+                }
             }
         }
         "timer" => {

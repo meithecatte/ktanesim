@@ -40,11 +40,14 @@ only followed by a [mission name][missions]: `!mission pick up the pace IV`
 
 It is possible to add named parameters before the mission name to control some aspects of the bomb:
 
-- **ruleseed** (also: **seed**, **rules**) &mdash; for modules that support it, generate the rules
-  procedurally with the specified seed.
+- **ruleseed** (also: **seed**, **rules**) &mdash; some modules support procedural rule generation
+  to keep the game fresh when you start memorizing too much. This option sets the rule seed for
+  the bomb, enabling this capability.
   - Examples:
     - `!mission seed=7 blinkenlights`
     - `!mission ruleseed=6502 I am hardcore`
+  - Use `random` to have the bot choose a random seed for you:
+    - `!mission seed=random double your money`
   - A seed is a positive number smaller than 2,147,483,648.
   - The bot will show you the link to the appropriate manuals.
   - This is equivalent to the [Rule Seed Modifier] mod.
@@ -80,7 +83,7 @@ yet still quite simple system for specifying sets of modules is used. Consider t
  - `!run vanilla 5` &mdash; 5 randomly selected modules from the `vanilla` category.
  - `!run vanilla 5, mods 1 each` &mdash; 5 randomly selected vanilla modules as above, as well as
    one of each module in the `mods` category.
- - `!run vanilla-morseCode-needy 2 each, hexamaze+connectionCheck 3 each` &mdash; 2 instances of
+ - `!run vanilla-morseCode-needy 2 each, hexamaze+connection check 3 each` &mdash; 2 instances of
    each non-`needy` vanilla module except `morseCode`, as well as 3 hexamazes and 3 connection
    checks.
 
@@ -89,7 +92,7 @@ To learn about the available modules, visit the [modules] page.
 While I expect the above to be sufficient for understanding the module, here's a detailed
 description:
 
-> In general, the command contains comma-separated *module list specifiers*. The specifiers are
+> The command contains comma-separated *module list specifiers*. The specifiers are
 > processed independently, and the results are combined. Each specifier consists of a set of modules
 > and a count, optionally followed by the word `each`, which instructs the bot to choose each module
 > in the set a number of times &mdash; if `each` is *not* present, modules from the set are chosen

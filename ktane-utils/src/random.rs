@@ -4,6 +4,7 @@ use std::hash::Hash;
 const SEED_LEN: usize = 55;
 
 /// The upper bound of the half-open range of values returned by [`RuleseedRandom::next_int`].
+/// Also: the largest allowed rule seed.
 pub const MAX_VALUE: u32 = <i32>::max_value() as u32;
 
 /// The seed used for vanilla manuals
