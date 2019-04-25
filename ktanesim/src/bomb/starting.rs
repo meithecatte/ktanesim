@@ -5,27 +5,11 @@ use crate::utils::{ranged_int_parse, RangedIntError};
 use itertools::Itertools;
 use rand::prelude::*;
 use serenity::utils::Colour;
-use smallbitvec::SmallBitVec;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::sync::Arc;
 use std::time::Duration;
-
-fn ensure_no_bomb(ctx: &Context, msg: &Message) -> Result<(), ErrorMessage> {
-    if crate::bomb::running_in(ctx, msg) {
-        return Err((
-            "Bomb already running".to_owned(),
-            if msg.guild_id.is_some() {
-                "A bomb is already running in this channel. Join in with the fun, run your own bomb by messaging the bot in private, or suggest detonating with `!detonate` (majority has to agree).".to_owned()
-            } else {
-                "A bomb is already running in this channel. If you don't want to defuse this bomb anymore, consider using `!detonate`.".to_owned()
-            },
-        ));
-    }
-
-    Ok(())
-}
 
 // FIXME: This (and crate::bomb::no_bomb, to name a few) might mean we actually want a proper error
 // enum.
@@ -40,6 +24,25 @@ fn too_many_modules() -> Result<!, ErrorMessage> {
     ))
 }
 
+fn bomb_already_running(ctx: &Context, msg: &Message) -> Result<!, ErrorMessage> {
+    Err((
+        "Bomb already running".to_owned(),
+        if msg.guild_id.is_some() {
+            "A bomb is already running in this channel. Join in with the fun, run your own bomb by messaging the bot in private, or suggest detonating with `!detonate` (majority has to agree).".to_owned()
+        } else {
+            "A bomb is already running in this channel. If you don't want to defuse this bomb anymore, consider using `!detonate`.".to_owned()
+        },
+    ))
+}
+
+fn ensure_no_bomb(ctx: &Context, msg: &Message) -> Result<(), ErrorMessage> {
+    if crate::bomb::running_in(ctx, msg) {
+        bomb_already_running(ctx, msg)?
+    } else {
+        Ok(())
+    }
+}
+
 fn start_bomb(
     ctx: &Context,
     msg: &Message,
@@ -47,47 +50,48 @@ fn start_bomb(
     strikes: u32,
     rule_seed: u32,
     modules: &[&'static ModuleDescriptor],
-) {
-    let mut bomb = Bomb {
-        edgework: random(),
-        rule_seed,
-        timer: Timer::new(timer),
-        modules: vec![],
-        solve_state: SmallBitVec::from_elem(modules.len(), false),
-        channel: msg.channel_id,
-        defusers: HashMap::new(),
-    };
+) -> CommandResult {
+    use std::collections::hash_map::Entry;
+    let render;
+    match ctx.data.write().get_mut::<Bombs>().unwrap().entry(msg.channel_id) {
+        // the starting commands make sure that there is no bomb running, but commands are
+        // processed across multiple threads...
+        Entry::Occupied(_) => bomb_already_running(ctx, msg)?,
+        Entry::Vacant(entry) => {
+            let mut data = BombData {
+                edgework: random(),
+                rule_seed,
+                timer: Timer::new(timer),
+                channel: msg.channel_id,
+                defusers: HashMap::new(),
+            };
 
-    for module in modules {
-        let module = (module.constructor)(&mut bomb);
-        bomb.modules.push(module);
+            let modules = modules.iter().enumerate().map(|(num, module)| {
+                (module.constructor)(&mut data, ModuleState::new(num as ModuleNumber))
+            }).collect();
+
+            let bomb = Bomb { modules, data };
+            render = bomb.data.render_edgework();
+            entry.insert(Arc::new(RwLock::new(bomb)));
+        }
     }
-
-    let render = bomb.render_edgework();
-    info!("Bomb edgework: {:#?}", bomb.edgework);
-
-    assert!(ctx
-        .data
-        .write()
-        .get_mut::<Bombs>()
-        .and_then(|bombs| bombs.insert(msg.channel_id, Arc::new(RwLock::new(bomb))))
-        .is_none());
 
     render.resolve(ctx, msg.channel_id, |m, file| {
         m.embed(|e| {
             e.color(Colour::DARK_GREEN)
                 .title("Bomb armed")
                 .description(format!(
-                    "A bomb with {} module{} has been armed! \
+                    "A {}-module bomb has been armed! \
                      Type `!cvany` to claim one of the modules and start defusing!",
                     modules.len(),
-                    if modules.len() == 1 { "" } else { "s" }
                 ))
                 .image(file)
         })
     });
 
     crate::bomb::update_presence(ctx);
+
+    Ok(())
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -244,9 +248,7 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandR
         None => TimerMode::Normal { time, strikes },
     };
 
-    start_bomb(ctx, msg, timer, strikes, named.rule_seed, &modules);
-
-    Ok(())
+    start_bomb(ctx, msg, timer, strikes, named.rule_seed, &modules)
 }
 
 fn choose_modules(

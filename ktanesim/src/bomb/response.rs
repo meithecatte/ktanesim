@@ -8,17 +8,39 @@ pub struct EventResponse {
 
 impl EventResponse {
     /// Turn the EventResponse into a message and send it.
-    pub fn resolve(self, ctx: &Context, msg: &Message, module: &dyn Module) {
+    pub fn resolve(self, ctx: &Context, msg: &Message, bomb: &Bomb, module: &dyn Module) {
         match self {
             EventResponse {
                 render: Some(render),
-                message: None,
+                message,
             } => {
                 render.resolve(ctx, msg.channel_id, |m, file| {
-                    m.embed(|e| e.title(module.module_name()).image(file))
+                    m.embed(|e| {
+                        e.image(file);
+                        e.title(format!("{} (#{})", module.name(), module.number() + 1));
+
+                        // TODO: manual links
+                        // TODO: notify about ruleseed
+                        // TODO: show help (not if solved)
+                        // TODO: contextual help?
+                        // TODO: claimed by
+                        if let Some((title, description)) = message {
+                            e.field(title, description, false);
+                        }
+
+                        e
+                    })
                 });
             }
-            _ => unimplemented!(),
+            EventResponse {
+                render: None,
+                message: Some((title, description)),
+            } => unimplemented!(),
+            // some events don't need any response.
+            EventResponse {
+                render: None,
+                message: None,
+            } => {}
         }
     }
 }

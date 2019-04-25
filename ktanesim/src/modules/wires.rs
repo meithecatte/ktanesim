@@ -14,6 +14,7 @@ pub static DESCRIPTOR: ModuleDescriptor = ModuleDescriptor {
 };
 
 pub struct Wires {
+    state: ModuleState,
     rules: Arc<RuleSet>,
     wires: [Option<Color>; MAX_WIRES],
     cut_state: SmallBitVec,
@@ -41,11 +42,12 @@ fn get_rules(seed: u32) -> Arc<RuleSet> {
     }
 }
 
-fn init(bomb: &mut Bomb) -> Box<dyn Module> {
+fn init(bomb: &mut BombData, state: ModuleState) -> Box<dyn Module> {
     let rules = get_rules(bomb.rule_seed);
     let (wires, wire_count) = generate(&mut rand::thread_rng());
 
     Box::new(Wires {
+        state,
         rules,
         wires,
         cut_state: SmallBitVec::from_elem(wire_count as usize, false),
@@ -53,11 +55,11 @@ fn init(bomb: &mut Bomb) -> Box<dyn Module> {
 }
 
 impl Module for Wires {
-    fn module_descriptor(&self) -> &'static ModuleDescriptor {
+    fn descriptor(&self) -> &'static ModuleDescriptor {
         &DESCRIPTOR
     }
 
-    fn module_name(&self) -> &'static str {
+    fn name(&self) -> &'static str {
         "Wires"
     }
 
@@ -65,8 +67,12 @@ impl Module for Wires {
         "Lick your left foot to begin"
     }
 
-    fn handle_command(&mut self, bomb: BombRef, user: UserId, command: &str) -> EventResponse {
-        unimplemented!();
+    fn state(&self) -> &ModuleState {
+        &self.state
+    }
+
+    fn state_mut(&mut self) -> &mut ModuleState {
+        &mut self.state
     }
 
     fn view(&self, light: SolveLight) -> Render {
@@ -114,6 +120,16 @@ impl Module for Wires {
 
             output_png(surface)
         })
+    }
+
+    fn handle_command(
+        &mut self,
+        bomb: &mut BombData,
+        user: UserId,
+        command: &str,
+        params: Parameters<'_>,
+    ) -> Result<EventResponse, ErrorMessage> {
+        unimplemented!();
     }
 }
 

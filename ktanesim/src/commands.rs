@@ -38,19 +38,14 @@ pub fn dispatch(ctx: &Context, msg: &Message, cmd: String) -> CommandResult {
                     .write()
                     .dispatch_module_command(ctx, msg, Some(first), params)
             } else {
+                // TODO: fuzzy suggestions?
                 let mut builder = MessageBuilder::new();
                 builder
                     .push_mono_safe(first)
                     .push(" is not recognized as a command.");
 
                 if let Some(bomb) = crate::bomb::get_bomb(&ctx, &msg) {
-                    let last = bomb
-                        .read()
-                        .defusers
-                        .get(&msg.author.id)
-                        .map(|defuser| defuser.last_view)
-                        .unwrap_or(0)
-                        + 1;
+                    let last = bomb.read().data.get_last_view(msg.author.id).unwrap_or(0);
 
                     builder
                         .push(
@@ -59,7 +54,7 @@ pub fn dispatch(ctx: &Context, msg: &Message, cmd: String) -> CommandResult {
                              module number: `!!",
                         )
                         .push_safe(&cmd)
-                        .push(format!("`, or `!{} ", last))
+                        .push(format!("`, or `!{} ", last + 1))
                         .push_safe(&cmd)
                         .push("`");
                 }

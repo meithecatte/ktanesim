@@ -4,10 +4,11 @@ pub use serenity::model::prelude::*;
 pub use serenity::prelude::*;
 pub use serenity::utils::MessageBuilder;
 
-pub use crate::bomb::{Bomb, BombRef, EventResponse, ModuleNumber, Render, RenderType};
+pub use crate::bomb::{Bomb, BombRef, BombData, EventResponse, ModuleNumber, Render, RenderType};
 pub use crate::commands::Parameters;
 pub use crate::modules::{
-    module_canvas, output_png, Module, ModuleCategory, ModuleDescriptor, ModuleOrigin, SolveLight,
+    module_canvas, output_png, Module, ModuleCategory, ModuleDescriptor, ModuleOrigin, ModuleState,
+    SolveLight,
 };
 pub use crate::textures::SharedTexture;
 pub use crate::utils::{send_message, CommandResult, ErrorMessage};

@@ -11,6 +11,7 @@ pub fn cmd_edgework(
     params: Parameters<'_>,
 ) -> CommandResult {
     bomb.read()
+        .data
         .render_edgework()
         .resolve(ctx, msg.channel_id, |m, file| {
             m.embed(|e| e.color(Colour::DARK_GREEN).title("Edgework").image(file))
@@ -22,7 +23,7 @@ pub fn cmd_edgework(
 const RENDER_SLOT_DIM: (i32, i32) = (280, 150);
 const RENDER_SLOTS: (i32, i32) = (3, 2);
 
-impl crate::bomb::Bomb {
+impl BombData {
     pub fn render_edgework(&self) -> Render {
         let edgework = self.edgework.clone();
 

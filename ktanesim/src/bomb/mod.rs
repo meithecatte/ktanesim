@@ -1,7 +1,6 @@
 use crate::prelude::*;
 use arrayvec::ArrayVec;
 use ktane_utils::edgework::Edgework;
-use smallbitvec::SmallBitVec;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -16,15 +15,19 @@ pub use starting::cmd_run;
 pub use timer::{Timer, TimerMode};
 
 pub type BombRef = Arc<RwLock<Bomb>>;
+/// Because of borrowing concerns, bombs consist of [`BombData`] and a [`Vec`] of [`Module`]s.
 pub struct Bomb {
+    pub modules: Vec<Box<dyn Module>>,
+    pub data: BombData,
+}
+
+pub struct BombData {
     pub edgework: Edgework,
     pub rule_seed: u32,
     pub timer: Timer,
-    pub modules: Vec<Box<dyn Module>>,
     // This field is not public to prevent the temptation to just flip the relevant bit in the
     // module code when solved. Some bookkeeping is necessary, and as such the proper method of
     // registering a solve is TODO
-    solve_state: SmallBitVec,
     pub channel: ChannelId,
     pub defusers: HashMap<UserId, Defuser>,
 }
@@ -39,21 +42,22 @@ pub struct Defuser {
     pub claims: ArrayVec<[ModuleNumber; MAX_CLAIMS]>,
 }
 
-impl Bomb {
-    fn get_last_view(&self, user: UserId) -> Result<ModuleNumber, ErrorMessage> {
-        match self.defusers.get(&user) {
-            Some(defuser) => Ok(defuser.last_view),
-            None => Err((
-                "You didn't view any modules".to_owned(),
-                "The `!!` prefix sends the command to the module you have last viewed. \
-                 However, you didn't look at any modules on this bomb yet. \
-                 Try `!cvany` to claim a random module and start defusing."
-                    .to_owned(),
-            )),
-        }
+impl BombData {
+    pub fn get_last_view(&self, user: UserId) -> Option<ModuleNumber> {
+        self.defusers.get(&user).map(|defuser| defuser.last_view)
     }
 
-    fn record_view(&mut self, user: UserId, num: ModuleNumber) {
+    pub fn need_last_view(&self, user: UserId) -> Result<ModuleNumber, ErrorMessage> {
+        self.get_last_view(user).ok_or_else(|| (
+            "You didn't view any modules".to_owned(),
+            "The `!!` prefix sends the command to the module you have last viewed. \
+             However, you didn't look at any modules on this bomb yet. \
+             Try `!cvany` to claim a random module and start defusing."
+                .to_owned(),
+        ))
+    }
+
+    pub fn record_view(&mut self, user: UserId, num: ModuleNumber) {
         self.defusers
             .entry(user)
             .and_modify(|defuser| defuser.last_view = num)
@@ -62,7 +66,9 @@ impl Bomb {
                 claims: ArrayVec::new(),
             });
     }
+}
 
+impl Bomb {
     pub fn dispatch_module_command(
         &mut self,
         ctx: &Context,
@@ -104,20 +110,23 @@ impl Bomb {
                     }
                 }
             },
-            None => self.get_last_view(msg.author.id)?,
+            None => self.data.need_last_view(msg.author.id)?,
         };
 
         let cmd = params.next().unwrap_or("view");
         let response = match cmd {
             "view" => modcmd_view(self, num, params),
-            _ => unimplemented!(),
+            other => {
+                // TODO: handle claimed modules
+                self.modules[num as usize].handle_command(&mut self.data, msg.author.id, other, params)
+            }
         }?;
 
         if response.render.is_some() {
-            self.record_view(msg.author.id, num);
+            self.data.record_view(msg.author.id, num);
         }
 
-        response.resolve(ctx, msg, &*self.modules[num as usize]);
+        response.resolve(ctx, msg, self, &*self.modules[num as usize]);
         Ok(())
     }
 }
@@ -128,7 +137,7 @@ pub fn modcmd_view(
     mut params: Parameters<'_>,
 ) -> Result<EventResponse, ErrorMessage> {
     let module = &bomb.modules[num as usize];
-    let light = if bomb.solve_state[num as usize] {
+    let light = if module.state().solved() {
         SolveLight::Solved
     } else {
         SolveLight::Normal

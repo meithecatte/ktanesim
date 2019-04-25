@@ -157,19 +157,57 @@ impl fmt::Display for ModuleGroup {
     }
 }
 
-pub type ModuleNew = fn(bomb: &mut Bomb) -> Box<dyn Module>;
+pub type ModuleNew = fn(bomb: &mut BombData, state: ModuleState) -> Box<dyn Module>;
 
 pub const MODULE_SIZE: i32 = 348;
 
 pub trait Module: Send + Sync {
-    fn module_descriptor(&self) -> &'static ModuleDescriptor;
-    fn module_name(&self) -> &'static str;
+    fn descriptor(&self) -> &'static ModuleDescriptor;
+    fn name(&self) -> &'static str;
     fn help_message(&self) -> &'static str;
-    fn handle_command(&mut self, bomb: BombRef, user: UserId, command: &str) -> EventResponse;
+
+    fn state(&self) -> &ModuleState;
+    fn state_mut(&mut self) -> &mut ModuleState;
+
     fn view(&self, light: SolveLight) -> Render;
+    fn handle_command(
+        &mut self,
+        bomb: &mut BombData,
+        user: UserId,
+        command: &str,
+        params: Parameters<'_>,
+    ) -> Result<EventResponse, ErrorMessage>;
+
+    // Return the module number for this instance of the module
+    fn number(&self) -> ModuleNumber {
+        self.state().number
+    }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+/// A struct used to store all the state common between modules.
+#[derive(Debug)]
+pub struct ModuleState {
+    // private because of the need to trigger events on module solve.
+    solved: bool,
+    number: ModuleNumber,
+    pub claimed_by: Option<UserId>,
+}
+
+impl ModuleState {
+    pub fn new(number: ModuleNumber) -> Self {
+        ModuleState {
+            solved: false,
+            number,
+            claimed_by: None,
+        }
+    }
+
+    pub fn solved(&self) -> bool {
+        self.solved
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum SolveLight {
     Normal,
     Solved,
