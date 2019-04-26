@@ -5,6 +5,18 @@ This repository contains the source code for KTaNE Simulator, the Discord bot th
 
 [Keep Talking and Nobody Explodes]: https://keeptalkinggame.com/
 
+## Project organization
+
+The code is split into a few separate crates.
+
+ - `ktanesim` is the main bot binary. Everything specific to Discord or image rendering can be
+   found here.
+ - `ktane-utils` is a semi-independent library for ruleset, module instance and edgework generation
+   that encapsulates the business logic of the modules.
+ - `ktanesim-logging` handles the user-facing logging.
+ - `ktanesim-website` (TODO) handles the web-facing leaderboard and logs, as well as serves the
+   static help.
+
 ## Licensing
 
 The code in the `ktane-utils` directory is licensed under either of
