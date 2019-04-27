@@ -9,6 +9,7 @@ publish = false
 ktane-utils = { path = "../ktane-utils" }
 # Use the same version as ktane-utils
 lazy_static = "*"
+ordinal = "*"
 rand = "*"
 regex = "*"
 smallvec = "*"

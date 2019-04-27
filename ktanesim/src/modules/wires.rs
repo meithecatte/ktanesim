@@ -2,6 +2,7 @@ use crate::prelude::*;
 use crate::utils::{ranged_int_parse, RangedIntError};
 use ktane_utils::modules::wires::{generate, Color, RuleSet, MAX_WIRES};
 use smallbitvec::SmallBitVec;
+use smallvec::SmallVec;
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 
@@ -46,6 +47,7 @@ fn get_rules(seed: u32) -> Arc<RuleSet> {
 fn init(bomb: &mut BombData, state: ModuleState) -> Box<dyn Module> {
     let rules = get_rules(bomb.rule_seed);
     let (wire_slots, wire_count) = generate(&mut rand::thread_rng());
+    info!("Generated wires: {:?}", wire_slots);
 
     Box::new(Wires {
         state,
@@ -56,8 +58,13 @@ fn init(bomb: &mut BombData, state: ModuleState) -> Box<dyn Module> {
 }
 
 impl Wires {
-    fn get_wire_count(&self) -> usize {
-        self.cut_state.len()
+    fn get_wire_count(&self) -> u8 {
+        self.cut_state.len() as u8
+    }
+
+    fn validate_solution(&self, edgework: &Edgework, wire_number: u8) -> bool {
+        let colors = self.wire_slots.iter().filter_map(|&wire| wire).collect::<SmallVec<[_; MAX_WIRES]>>();
+        self.rules.evaluate(edgework, &colors).check(&colors, wire_number)
     }
 }
 
@@ -151,7 +158,7 @@ impl Module for Wires {
             ));
         }
 
-        let wire_number = if let Some(param) = params.next() {
+        let wire_number: u8 = if let Some(param) = params.next() {
             match ranged_int_parse(param, self.get_wire_count()) {
                 Ok(0) => {
                     return Err((
@@ -159,7 +166,7 @@ impl Module for Wires {
                         format!("Wire numbering starts at one."),
                     ))
                 }
-                Ok(n) => n,
+                Ok(n) => n - 1,
                 Err(RangedIntError::TooLarge) => {
                     return Err((
                         "Invalid wire number".to_owned(),
@@ -183,17 +190,33 @@ impl Module for Wires {
             ));
         };
 
-        crate::utils::trailing_parameters(params, |params| {
-            (
+        if let Some(params) = crate::utils::trailing_parameters(params) {
+            return Err((
                 "Trailing parameters".to_owned(),
                 MessageBuilder::new()
                     .push("Unexpected parameters: ")
                     .push_mono_safe(params)
                     .build(),
-            )
-        })?;
+            ));
+        }
 
-        unimplemented!();
+        if self.cut_state[wire_number as usize] {
+            return Ok(EventResponse {
+                message: Some((
+                    "Wire already cut".to_owned(),
+                    format!("The {} wire has already been cut.", ordinal::Ordinal(wire_number + 1)),
+                )),
+                render: Some(self.view(SolveLight::Normal)),
+            });
+        }
+
+        self.cut_state.set(wire_number as usize, true);
+
+        if self.validate_solution(&bomb.edgework, wire_number) {
+            Ok(self.solve(bomb, user))
+        } else {
+            Ok(self.strike(bomb, user))
+        }
     }
 }
 
@@ -240,18 +263,18 @@ const PATHS: [WirePaths; MAX_WIRES] = [
     },
     WirePaths {
         uncut: |ctx: &cairo::Context| {
-            svgpath!(ctx, "m61.133858 262.41208c9.028687 12.403412 31.701561 12.572601 45.6168 6.112854c10.123177 -4.699402 17.996696 -16.45932 29.157486 -16.45932c9.0716095 0 18.350845 1.4131927 26.80577 4.7008057c6.3217316 2.4580994 4.523987 16.401917 11.286087 16.931732c32.745956 2.565796 66.42221 0.9182739 98.2861 -7.0551147");
-        },
-        cut: |ctx: &cairo::Context| {
-            svgpath!(ctx, "m 61.133858,262.41208 c 9.028687,12.40341 31.701561,12.5726 45.616802,6.11285 10.12317,-4.6994 17.99669,-16.45932 29.15748,-16.45932 m 26.80577,4.70081 c 6.32174,2.4581 4.52399,16.40192 11.28609,16.93173 32.74596,2.5658 66.42221,0.91828 98.2861,-7.05511");
-        },
-    },
-    WirePaths {
-        uncut: |ctx: &cairo::Context| {
             svgpath!(ctx, "m66.30708 227.61273c46.126076 -8.542572 94.69835 5.857666 139.2021 20.690277c8.912521 2.9704437 16.024826 -11.53244 25.393707 -12.225723c14.25708 -1.0549774 28.499207 2.8215332 42.795258 2.8215332");
         },
         cut: |ctx: &cairo::Context| {
             svgpath!(ctx, "m 66.30708,227.61273 c 24.321074,-4.50427 49.32223,-2.63004 74.04847,2.32286 m 23.62109,5.59233 c 14.09816,3.79679 28.00335,8.26596 41.53254,12.77509 8.91252,2.97044 16.02483,-11.53244 25.39371,-12.22573 14.25708,-1.05497 28.4992,2.82154 42.79525,2.82154");
+        },
+    },
+    WirePaths {
+        uncut: |ctx: &cairo::Context| {
+            svgpath!(ctx, "m61.133858 262.41208c9.028687 12.403412 31.701561 12.572601 45.6168 6.112854c10.123177 -4.699402 17.996696 -16.45932 29.157486 -16.45932c9.0716095 0 18.350845 1.4131927 26.80577 4.7008057c6.3217316 2.4580994 4.523987 16.401917 11.286087 16.931732c32.745956 2.565796 66.42221 0.9182739 98.2861 -7.0551147");
+        },
+        cut: |ctx: &cairo::Context| {
+            svgpath!(ctx, "m 61.133858,262.41208 c 9.028687,12.40341 31.701561,12.5726 45.616802,6.11285 10.12317,-4.6994 17.99669,-16.45932 29.15748,-16.45932 m 26.80577,4.70081 c 6.32174,2.4581 4.52399,16.40192 11.28609,16.93173 32.74596,2.5658 66.42221,0.91828 98.2861,-7.05511");
         },
     },
 ];

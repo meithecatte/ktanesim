@@ -46,6 +46,22 @@ pub fn no_bomb() -> ErrorMessage {
     )
 }
 
+pub fn end_bomb(
+    ctx: &Context,
+    bomb: &mut BombData,
+    drop_callback: impl FnOnce(&mut BombData) + Send + Sync + 'static
+) {
+    ctx.data
+        .write()
+        .get_mut::<Bombs>()
+        .unwrap()
+        .remove(&bomb.channel)
+        .unwrap();
+    bomb.timer.freeze();
+    bomb.drop_callback = Some(Box::new(drop_callback));
+    update_presence(ctx);
+}
+
 pub fn update_presence(ctx: &Context) {
     let bomb_count = ctx.data.read().get::<Bombs>().unwrap().len();
     let status = if bomb_count == 0 {

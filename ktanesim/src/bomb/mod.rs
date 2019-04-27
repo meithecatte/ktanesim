@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use arrayvec::ArrayVec;
-use ktane_utils::edgework::Edgework;
 use std::collections::HashMap;
+use serenity::utils::Colour;
 use std::sync::Arc;
 
 mod context;
@@ -9,7 +9,7 @@ mod response;
 mod starting;
 mod timer;
 
-pub use context::{get_bomb, need_bomb, no_bomb, running_in, update_presence, Bombs};
+pub use context::{end_bomb, get_bomb, need_bomb, no_bomb, running_in, update_presence, Bombs};
 pub use response::{EventResponse, Render, RenderType};
 pub use starting::cmd_run;
 pub use timer::{Timer, TimerMode};
@@ -24,12 +24,14 @@ pub struct Bomb {
 pub struct BombData {
     pub edgework: Edgework,
     pub rule_seed: u32,
+    pub module_count: ModuleNumber,
+    /// Stores the number of non-needy modules on this bomb.
+    pub solvable_count: ModuleNumber,
+    pub solved_count: ModuleNumber,
     pub timer: Timer,
-    // This field is not public to prevent the temptation to just flip the relevant bit in the
-    // module code when solved. Some bookkeeping is necessary, and as such the proper method of
-    // registering a solve is TODO
     pub channel: ChannelId,
     pub defusers: HashMap<UserId, Defuser>,
+    drop_callback: Option<Box<dyn FnOnce(&mut BombData) + Send + Sync>>,
 }
 
 pub type ModuleNumber = u8;
@@ -40,6 +42,16 @@ pub const MAX_MODULES: ModuleNumber = 101;
 pub struct Defuser {
     pub last_view: ModuleNumber,
     pub claims: ArrayVec<[ModuleNumber; MAX_CLAIMS]>,
+}
+
+impl Drop for BombData {
+    fn drop(&mut self) {
+        if let Some(callback) = self.drop_callback.take() {
+            callback(self);
+        } else {
+            warn!("Bomb dropped without callback in channel {:?}", self.channel)
+        }
+    }
 }
 
 impl BombData {
@@ -115,12 +127,21 @@ impl Bomb {
             None => self.data.need_last_view(msg.author.id)?,
         };
 
-        let cmd = params.next().unwrap_or("view");
-        let response = match cmd {
-            "view" => modcmd_view(self, num, params),
-            other => {
+        let response = match params.next() {
+            Some("view") | None => modcmd_view(self, num, params),
+            Some(other) => {
+                let module = &mut self.modules[num as usize];
+
+                if module.state().solved() {
+                    return Err((
+                        "Module already solved".to_owned(),
+                        format!("Module #{} has already been solved. \
+                                 Try `!cvany` to claim a new module.", num + 1)
+                    ));
+                }
+
                 // TODO: handle claimed modules
-                self.modules[num as usize].handle_command(
+                module.handle_command(
                     &mut self.data,
                     msg.author.id,
                     other,
@@ -134,6 +155,21 @@ impl Bomb {
         }
 
         response.resolve(ctx, msg, self, &*self.modules[num as usize]);
+
+        if self.data.solved_count == self.data.solvable_count {
+            let http = Arc::clone(&ctx.http);
+            crate::bomb::end_bomb(ctx, &mut self.data, move |bomb| {
+                crate::utils::send_message(&http, bomb.channel, |m| m.embed(|e| {
+                    e.color(Colour::DARK_GREEN);
+                    e.title("Bomb defused \u{1f389}");
+                    e.description(
+                        format!("After {} strikes, the bomb has been **defused**, \
+                                 with {} on the timer.", bomb.timer.strikes(), bomb.timer)
+                    )
+                }));
+            });
+        }
+
         Ok(())
     }
 }
@@ -141,7 +177,7 @@ impl Bomb {
 pub fn modcmd_view(
     bomb: &mut Bomb,
     num: ModuleNumber,
-    mut params: Parameters<'_>,
+    params: Parameters<'_>,
 ) -> Result<EventResponse, ErrorMessage> {
     let module = &bomb.modules[num as usize];
     let light = if module.state().solved() {
@@ -151,8 +187,7 @@ pub fn modcmd_view(
     };
 
     let render = module.view(light);
-
-    let message = crate::utils::trailing_parameters(params, |params| {
+    let message = crate::utils::trailing_parameters(params).map(|params| {
         (
             "Note: trailing parameters".to_owned(),
             MessageBuilder::new()
@@ -163,8 +198,7 @@ pub fn modcmd_view(
                 .push_mono_safe(params)
                 .build(),
         )
-    })
-    .err();
+    });
 
     Ok(EventResponse {
         render: Some(render),

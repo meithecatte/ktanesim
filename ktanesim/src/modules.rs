@@ -183,6 +183,35 @@ pub trait Module: Send + Sync {
     fn number(&self) -> ModuleNumber {
         self.state().number
     }
+
+    fn solve(&mut self, bomb: &mut BombData, user: UserId) -> EventResponse {
+        assert!(!self.state().solved);
+        assert!(self.descriptor().category != ModuleCategory::Needy);
+        // TODO: leaderboard
+        self.state_mut().solved = true;
+        self.state_mut().user = Some(user);
+        bomb.solved_count += 1;
+
+        EventResponse {
+            render: Some(self.view(SolveLight::Solved)),
+            message: Some((
+                "Module solved".to_owned(),
+                "TODO: This is where you learn how much leaderboard points you just got.".to_owned(),
+            )),
+        }
+    }
+
+    fn strike(&self, bomb: &mut BombData, user: UserId) -> EventResponse {
+        // TODO: leaderboard
+        bomb.timer.strike();
+        EventResponse {
+            render: Some(self.view(SolveLight::Strike)),
+            message: Some((
+                "Strike!".to_owned(),
+                "TODO: This is where you learn how badly you fucked up.".to_owned(),
+            )),
+        }
+    }
 }
 
 /// Get the manual URL for a module and rule seed combination. Returns `impl Display` to take
@@ -212,7 +241,8 @@ pub struct ModuleState {
     // private because of the need to trigger events on module solve.
     solved: bool,
     number: ModuleNumber,
-    pub claimed_by: Option<UserId>,
+    // claimed_by or solved_by
+    pub user: Option<UserId>,
 }
 
 impl ModuleState {
@@ -220,7 +250,7 @@ impl ModuleState {
         ModuleState {
             solved: false,
             number,
-            claimed_by: None,
+            user: None,
         }
     }
 

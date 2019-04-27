@@ -52,6 +52,9 @@ fn start_bomb(
     modules: &[&'static ModuleDescriptor],
 ) -> CommandResult {
     use std::collections::hash_map::Entry;
+    let solvable_count = modules.iter()
+        .filter(|descriptor| descriptor.category != ModuleCategory::Needy)
+        .count() as ModuleNumber;
     let render;
     match ctx
         .data
@@ -67,9 +70,13 @@ fn start_bomb(
             let mut data = BombData {
                 edgework: random(),
                 rule_seed,
+                module_count: modules.len() as ModuleNumber,
+                solvable_count,
+                solved_count: 0,
                 timer: Timer::new(timer),
                 channel: msg.channel_id,
                 defusers: HashMap::new(),
+                drop_callback: None,
             };
 
             let modules = modules
