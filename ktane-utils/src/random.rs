@@ -36,7 +36,7 @@ impl RuleseedRandom {
     /// Creates a new RuleseedRandom instance using the provided seed.
     pub fn new(seed: u32) -> Self {
         let mut seed_array = [0; SEED_LEN];
-        let mut last = 161_803_398 - seed;
+        let mut last = Self::diffwrap(161_803_398, seed);
 
         seed_array[SEED_LEN - 1] = last;
 
@@ -181,6 +181,15 @@ mod tests {
     }
 
     #[test]
+    fn large_seed() {
+        let mut random = RuleseedRandom::new(1234567890);
+
+        for &expected in EXPECTED_LARGE_SEED.iter() {
+            assert_eq!(random.next_int(), expected);
+        }
+    }
+
+    #[test]
     fn doubles() {
         let mut random = get_rng();
 
@@ -251,6 +260,23 @@ mod tests {
         0x0f05925d, 0x48a8d9ec, 0x5d9fceff, 0x7c64ea05, 0x177f5ce9, 0x638b9202, 0x25f030af,
         0x67cfac63, 0x2f694cf3, 0x6c5e934e, 0x38f56b2e, 0x71ff8ec9, 0x7c271ef3, 0x070db041,
         0x02324667, 0x13f3f790, 0x0f0a1ab6, 0x6b0e5d36, 0x50bed04b,
+    ];
+
+    const EXPECTED_LARGE_SEED: [u32; 96] = [
+        0x0c8ed683, 0x5c36777f, 0x068eaf4f, 0x2eb485be, 0x136584ca, 0x22e745ad, 0x4c2c96a1,
+        0x5e4a7e94, 0x07ce32f8, 0x0f38fc87, 0x4f8872e9, 0x65681c0e, 0x41e9902a, 0x2055a762,
+        0x5f72927f, 0x44ab3531, 0x43d45690, 0x4f6ad0b7, 0x7191f740, 0x5efad5da, 0x1624add7,
+        0x4c0c931c, 0x2e88edf0, 0x3f74223a, 0x7e174d2d, 0x0603506e, 0x69eca177, 0x57ae9046,
+        0x08bd3152, 0x3e75c194, 0x4616e946, 0x7dc13a28, 0x2fb0bd74, 0x2193398d, 0x0d3c8d2b,
+        0x11881a8d, 0x75fc4492, 0x6cd79e4f, 0x678618e4, 0x76df9bdd, 0x28d1d310, 0x13026bb1,
+        0x3fea824b, 0x7b551d45, 0x6657687c, 0x72bdda9e, 0x61ea9c60, 0x1aab0c9f, 0x79393b78,
+        0x7b45fcd2, 0x21549146, 0x5f368b3e, 0x4dc29943, 0x70abfe10, 0x0a7b2bce, 0x0ecd9c5a,
+        0x2c85ba0b, 0x64fb75c2, 0x2177f893, 0x01dd6a3d, 0x2ceb011a, 0x5f54f851, 0x76c465af,
+        0x10ee971a, 0x66672976, 0x3c860738, 0x257d99c3, 0x469472e4, 0x39fe3ee5, 0x6cb4b7e0,
+        0x62c098d0, 0x292949f1, 0x5631953e, 0x764bfa6d, 0x3da64494, 0x36ee2298, 0x7e49f9d8,
+        0x3ddcefdf, 0x34f8f66c, 0x6f49b0d3, 0x597d9662, 0x04f12bb5, 0x363697b3, 0x06dfc715,
+        0x118ac07a, 0x66c1f0f4, 0x06fcd479, 0x1ec2265a, 0x3b2c1016, 0x50b685f2, 0x6c0a80c9,
+        0x2f67d1ae, 0x32d95f6a, 0x7ad16103, 0x141f030d, 0x7fa8891e,
     ];
 
     #[rustfmt::skip]

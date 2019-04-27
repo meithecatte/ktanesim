@@ -477,6 +477,8 @@ fn get_named_parameter(name: &str, value: &str) -> Result<NamedParameter, ErrorM
                     seed = 0;
                 }
 
+                info!("Chose rule seed: {:?}", seed);
+
                 Ok(NamedParameter::Ruleseed(seed))
             } else {
                 match ranged_int_parse(value, MAX_VALUE) {
