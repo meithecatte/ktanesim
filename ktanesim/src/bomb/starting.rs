@@ -52,7 +52,8 @@ fn start_bomb(
     modules: &[&'static ModuleDescriptor],
 ) -> CommandResult {
     use std::collections::hash_map::Entry;
-    let solvable_count = modules.iter()
+    let solvable_count = modules
+        .iter()
         .filter(|descriptor| descriptor.category != ModuleCategory::Needy)
         .count() as ModuleNumber;
     let render;

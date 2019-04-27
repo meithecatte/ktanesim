@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use arrayvec::ArrayVec;
-use std::collections::HashMap;
 use serenity::utils::Colour;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 mod context;
@@ -49,7 +49,10 @@ impl Drop for BombData {
         if let Some(callback) = self.drop_callback.take() {
             callback(self);
         } else {
-            warn!("Bomb dropped without callback in channel {:?}", self.channel)
+            warn!(
+                "Bomb dropped without callback in channel {:?}",
+                self.channel
+            )
         }
     }
 }
@@ -135,18 +138,16 @@ impl Bomb {
                 if module.state().solved() {
                     return Err((
                         "Module already solved".to_owned(),
-                        format!("Module #{} has already been solved. \
-                                 Try `!cvany` to claim a new module.", num + 1)
+                        format!(
+                            "Module #{} has already been solved. \
+                             Try `!cvany` to claim a new module.",
+                            num + 1
+                        ),
                     ));
                 }
 
                 // TODO: handle claimed modules
-                module.handle_command(
-                    &mut self.data,
-                    msg.author.id,
-                    other,
-                    params,
-                )
+                module.handle_command(&mut self.data, msg.author.id, other, params)
             }
         }?;
 
@@ -159,14 +160,18 @@ impl Bomb {
         if self.data.solved_count == self.data.solvable_count {
             let http = Arc::clone(&ctx.http);
             crate::bomb::end_bomb(ctx, &mut self.data, move |bomb| {
-                crate::utils::send_message(&http, bomb.channel, |m| m.embed(|e| {
-                    e.color(Colour::DARK_GREEN);
-                    e.title("Bomb defused \u{1f389}");
-                    e.description(
-                        format!("After {} strikes, the bomb has been **defused**, \
-                                 with {} on the timer.", bomb.timer.strikes(), bomb.timer)
-                    )
-                }));
+                crate::utils::send_message(&http, bomb.channel, |m| {
+                    m.embed(|e| {
+                        e.color(Colour::DARK_GREEN);
+                        e.title("Bomb defused \u{1f389}");
+                        e.description(format!(
+                            "After {} strikes, the bomb has been **defused**, \
+                             with {} on the timer.",
+                            bomb.timer.strikes(),
+                            bomb.timer
+                        ))
+                    })
+                });
             });
         }
 

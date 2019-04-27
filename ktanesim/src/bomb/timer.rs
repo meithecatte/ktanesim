@@ -1,5 +1,5 @@
-use std::time::{Duration, Instant};
 use std::fmt;
+use std::time::{Duration, Instant};
 
 pub struct Timer {
     mode: TimerMode,
@@ -60,7 +60,9 @@ impl Timer {
         if self.going_forward() {
             self.display + bomb_delta
         } else {
-            self.display.checked_sub(bomb_delta).unwrap_or_else(|| Duration::from_secs(0))
+            self.display
+                .checked_sub(bomb_delta)
+                .unwrap_or_else(|| Duration::from_secs(0))
         }
     }
 

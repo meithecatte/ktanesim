@@ -18,7 +18,8 @@ where
 
 /// Return the URL of a `user`'s Discord avatar.
 pub fn user_avatar(user: &User) -> String {
-    user.avatar_url().unwrap_or_else(|| user.default_avatar_url())
+    user.avatar_url()
+        .unwrap_or_else(|| user.default_avatar_url())
 }
 
 pub type CommandResult = Result<(), ErrorMessage>;
@@ -44,9 +45,7 @@ where
 }
 
 /// Turn a parameters iterator into a message about trailing parameters if there are any.
-pub fn trailing_parameters<'a>(
-    mut params: Parameters<'a>,
-) -> Option<impl std::fmt::Display + 'a> {
+pub fn trailing_parameters<'a>(mut params: Parameters<'a>) -> Option<impl std::fmt::Display + 'a> {
     if let Some(first) = params.next() {
         let params = std::iter::once(first)
             .chain(params)

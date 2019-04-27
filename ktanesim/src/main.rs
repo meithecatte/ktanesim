@@ -71,7 +71,8 @@ impl EventHandler for Handler {
                         .title(title)
                         .description(description)
                         .footer(|ft| {
-                            ft.text(&msg.author.name).icon_url(&utils::user_avatar(&msg.author))
+                            ft.text(&msg.author.name)
+                                .icon_url(&utils::user_avatar(&msg.author))
                         })
                 })
             });

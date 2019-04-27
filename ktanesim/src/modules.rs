@@ -196,7 +196,8 @@ pub trait Module: Send + Sync {
             render: Some(self.view(SolveLight::Solved)),
             message: Some((
                 "Module solved".to_owned(),
-                "TODO: This is where you learn how much leaderboard points you just got.".to_owned(),
+                "TODO: This is where you learn how much leaderboard points you just got."
+                    .to_owned(),
             )),
         }
     }

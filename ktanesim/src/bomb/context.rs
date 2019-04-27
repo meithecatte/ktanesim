@@ -49,7 +49,7 @@ pub fn no_bomb() -> ErrorMessage {
 pub fn end_bomb(
     ctx: &Context,
     bomb: &mut BombData,
-    drop_callback: impl FnOnce(&mut BombData) + Send + Sync + 'static
+    drop_callback: impl FnOnce(&mut BombData) + Send + Sync + 'static,
 ) {
     ctx.data
         .write()

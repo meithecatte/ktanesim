@@ -63,8 +63,14 @@ impl Wires {
     }
 
     fn validate_solution(&self, edgework: &Edgework, wire_number: u8) -> bool {
-        let colors = self.wire_slots.iter().filter_map(|&wire| wire).collect::<SmallVec<[_; MAX_WIRES]>>();
-        self.rules.evaluate(edgework, &colors).check(&colors, wire_number)
+        let colors = self
+            .wire_slots
+            .iter()
+            .filter_map(|&wire| wire)
+            .collect::<SmallVec<[_; MAX_WIRES]>>();
+        self.rules
+            .evaluate(edgework, &colors)
+            .check(&colors, wire_number)
     }
 }
 
@@ -204,7 +210,10 @@ impl Module for Wires {
             return Ok(EventResponse {
                 message: Some((
                     "Wire already cut".to_owned(),
-                    format!("The {} wire has already been cut.", ordinal::Ordinal(wire_number + 1)),
+                    format!(
+                        "The {} wire has already been cut.",
+                        ordinal::Ordinal(wire_number + 1)
+                    ),
                 )),
                 render: Some(self.view(SolveLight::Normal)),
             });
