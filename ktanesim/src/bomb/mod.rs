@@ -9,7 +9,7 @@ mod response;
 mod starting;
 mod timer;
 
-pub use context::{end_bomb, get_bomb, need_bomb, no_bomb, running_in, update_presence, Bombs};
+pub use context::{end_bomb, get_bomb, need_bomb, no_bomb, running_in, update_presence};
 pub use response::{EventResponse, Render, RenderType};
 pub use starting::cmd_run;
 pub use timer::{Timer, TimerMode};
@@ -88,6 +88,7 @@ impl BombData {
 impl Bomb {
     pub fn dispatch_module_command(
         &mut self,
+        handler: &Handler,
         ctx: &Context,
         msg: &Message,
         num: Option<&str>,
@@ -158,8 +159,9 @@ impl Bomb {
         response.resolve(ctx, msg, self, &*self.modules[num as usize]);
 
         if self.data.solved_count == self.data.solvable_count {
+            info!("Solved all modules");
             let http = Arc::clone(&ctx.http);
-            crate::bomb::end_bomb(ctx, &mut self.data, move |bomb| {
+            crate::bomb::end_bomb(handler, ctx, &mut self.data, move |bomb| {
                 crate::utils::send_message(&http, bomb.channel, |m| {
                     m.embed(|e| {
                         e.color(Colour::DARK_GREEN);
@@ -212,16 +214,15 @@ pub fn modcmd_view(
 }
 
 // TODO: Ack and stuff
-pub fn cmd_detonate(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandResult {
-    if ctx
-        .data
-        .write()
-        .get_mut::<Bombs>()
-        .unwrap()
-        .remove(&msg.channel_id)
-        .is_some()
-    {
-        update_presence(ctx);
+// TODO: use end_bomb
+pub fn cmd_detonate(
+    handler: &Handler,
+    ctx: &Context,
+    msg: &Message,
+    params: Parameters<'_>,
+) -> CommandResult {
+    if handler.bombs.write().remove(&msg.channel_id).is_some() {
+        update_presence(handler, ctx);
         Ok(())
     } else {
         Err(no_bomb())

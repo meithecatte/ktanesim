@@ -35,8 +35,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
     let token = env("DISCORD_TOKEN");
     let config = Config::parse()?;
-    let mut client = Client::new(&token, Handler { config })?;
-    client.data.write().insert::<bomb::Bombs>(HashMap::new());
+    let mut client = Client::new(
+        &token,
+        Handler {
+            config,
+            bombs: RwLock::new(HashMap::new()),
+        },
+    )?;
     client.start()?;
     Ok(())
 }
@@ -45,14 +50,15 @@ fn env(name: &'static str) -> String {
     kankyo::key(name).unwrap_or_else(|| panic!("Environment variable {} not found", name))
 }
 
-struct Handler {
+pub struct Handler {
     config: Config,
+    bombs: RwLock<HashMap<ChannelId, BombRef>>,
 }
 
 impl EventHandler for Handler {
     fn ready(&self, ctx: Context, event: Ready) {
         info!("Ready as {}", event.user.name);
-        crate::bomb::update_presence(&ctx);
+        crate::bomb::update_presence(self, &ctx);
     }
 
     fn message(&self, ctx: Context, msg: Message) {
@@ -64,7 +70,7 @@ impl EventHandler for Handler {
 
         info!("Processing command: {:?}", cmd);
         let normalized = normalize(cmd[1..].trim());
-        if let Err((title, description)) = commands::dispatch(&ctx, &msg, normalized) {
+        if let Err((title, description)) = commands::dispatch(self, &ctx, &msg, normalized) {
             utils::send_message(&ctx.http, msg.channel_id, |m| {
                 m.embed(|e| {
                     e.color(Colour::RED)

@@ -1,4 +1,4 @@
-use crate::bomb::{Bombs, Timer, TimerMode, MAX_MODULES};
+use crate::bomb::{Timer, TimerMode, MAX_MODULES};
 use crate::modules::ModuleGroup;
 use crate::prelude::*;
 use crate::utils::{ranged_int_parse, RangedIntError};
@@ -35,8 +35,8 @@ fn bomb_already_running(msg: &Message) -> Result<!, ErrorMessage> {
     ))
 }
 
-fn ensure_no_bomb(ctx: &Context, msg: &Message) -> Result<(), ErrorMessage> {
-    if crate::bomb::running_in(ctx, msg) {
+fn ensure_no_bomb(handler: &Handler, msg: &Message) -> Result<(), ErrorMessage> {
+    if crate::bomb::running_in(handler, msg.channel_id) {
         bomb_already_running(msg)?
     } else {
         Ok(())
@@ -44,10 +44,10 @@ fn ensure_no_bomb(ctx: &Context, msg: &Message) -> Result<(), ErrorMessage> {
 }
 
 fn start_bomb(
+    handler: &Handler,
     ctx: &Context,
     msg: &Message,
     timer: TimerMode,
-    strikes: u32,
     rule_seed: u32,
     modules: &[&'static ModuleDescriptor],
 ) -> CommandResult {
@@ -57,13 +57,7 @@ fn start_bomb(
         .filter(|descriptor| descriptor.category != ModuleCategory::Needy)
         .count() as ModuleNumber;
     let render;
-    match ctx
-        .data
-        .write()
-        .get_mut::<Bombs>()
-        .unwrap()
-        .entry(msg.channel_id)
-    {
+    match handler.bombs.write().entry(msg.channel_id) {
         // the starting commands make sure that there is no bomb running, but commands are
         // processed across multiple threads...
         Entry::Occupied(_) => bomb_already_running(msg)?,
@@ -91,6 +85,7 @@ fn start_bomb(
             let bomb = Bomb { modules, data };
             render = bomb.data.render_edgework();
             entry.insert(Arc::new(RwLock::new(bomb)));
+            info!("Bomb armed");
         }
     }
 
@@ -107,7 +102,7 @@ fn start_bomb(
         })
     });
 
-    crate::bomb::update_presence(ctx);
+    crate::bomb::update_presence(handler, ctx);
 
     Ok(())
 }
@@ -167,8 +162,13 @@ impl fmt::Display for ModuleSet {
     }
 }
 
-pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandResult {
-    ensure_no_bomb(&ctx, &msg)?;
+pub fn cmd_run(
+    handler: &Handler,
+    ctx: &Context,
+    msg: &Message,
+    params: Parameters<'_>,
+) -> CommandResult {
+    ensure_no_bomb(handler, msg)?;
 
     let mut params = params.peekable();
     let mut named = Vec::new();
@@ -266,7 +266,7 @@ pub fn cmd_run(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandR
         None => TimerMode::Normal { time, strikes },
     };
 
-    start_bomb(ctx, msg, timer, strikes, named.rule_seed, &modules)
+    start_bomb(handler, ctx, msg, timer, named.rule_seed, &modules)
 }
 
 fn choose_modules(

@@ -1,8 +1,8 @@
 use crate::prelude::*;
 
 use phf_macros::phf_ordered_map;
-use CommandHandler::*;
-pub static COMMANDS: phf::OrderedMap<&'static str, CommandHandler> = phf_ordered_map! {
+use Command::*;
+pub static COMMANDS: phf::OrderedMap<&'static str, Command> = phf_ordered_map! {
     "run" => AnyTime(crate::bomb::cmd_run),
     "detonate" => AnyTime(crate::bomb::cmd_detonate),
     "edgework" => NeedsBomb(crate::edgework::cmd_edgework),
@@ -11,32 +11,49 @@ pub static COMMANDS: phf::OrderedMap<&'static str, CommandHandler> = phf_ordered
 pub type Parameters<'a> = std::str::SplitWhitespace<'a>;
 
 #[derive(Clone, Copy)]
-pub enum CommandHandler {
+pub enum Command {
     NeedsBomb(
-        fn(ctx: &Context, msg: &Message, bomb: BombRef, params: Parameters<'_>) -> CommandResult,
+        fn(
+            handler: &Handler,
+            ctx: &Context,
+            msg: &Message,
+            bomb: BombRef,
+            params: Parameters<'_>,
+        ) -> CommandResult,
     ),
-    AnyTime(fn(ctx: &Context, msg: &Message, params: Parameters<'_>) -> CommandResult),
+    AnyTime(
+        fn(
+            handler: &Handler,
+            ctx: &Context,
+            msg: &Message,
+            params: Parameters<'_>,
+        ) -> CommandResult,
+    ),
 }
 
-pub fn dispatch(ctx: &Context, msg: &Message, cmd: String) -> CommandResult {
-    // Still starts with a `!`. Route directly to the last viewed module.
-    if cmd.starts_with('!') {
-        let params = cmd[1..].trim().split_whitespace();
-        crate::bomb::need_bomb(ctx, msg)?
+pub fn dispatch(handler: &Handler, ctx: &Context, msg: &Message, input: String) -> CommandResult {
+    // The event handler strips a `!`, so this is the `!!` case. Route directly to the last
+    // viewed module.
+    if input.starts_with('!') {
+        let params = input[1..].trim().split_whitespace();
+        crate::bomb::need_bomb(handler, msg.channel_id)?
             .write()
-            .dispatch_module_command(ctx, msg, None, params)
+            .dispatch_module_command(handler, ctx, msg, None, params)
     } else {
-        let mut params = cmd.split_whitespace();
+        let mut params = input.split_whitespace();
         if let Some(first) = params.next() {
-            if let Some(handler) = COMMANDS.get(first) {
-                match handler {
-                    AnyTime(f) => f(ctx, msg, params),
-                    NeedsBomb(f) => f(ctx, msg, crate::bomb::need_bomb(&ctx, &msg)?, params),
-                }
-            } else if first.chars().all(|c| c.is_ascii_digit()) {
-                crate::bomb::need_bomb(ctx, msg)?
+            if first.chars().all(|c| c.is_ascii_digit()) {
+                crate::bomb::need_bomb(handler, msg.channel_id)?
                     .write()
-                    .dispatch_module_command(ctx, msg, Some(first), params)
+                    .dispatch_module_command(handler, ctx, msg, Some(first), params)
+            } else if let Some(command) = COMMANDS.get(first) {
+                match command {
+                    AnyTime(f) => f(handler, ctx, msg, params),
+                    NeedsBomb(f) => {
+                        let bomb = crate::bomb::need_bomb(handler, msg.channel_id)?;
+                        f(handler, ctx, msg, bomb, params)
+                    }
+                }
             } else {
                 // TODO: fuzzy suggestions?
                 let mut builder = MessageBuilder::new();
@@ -44,7 +61,7 @@ pub fn dispatch(ctx: &Context, msg: &Message, cmd: String) -> CommandResult {
                     .push_mono_safe(first)
                     .push(" is not recognized as a command.");
 
-                if let Some(bomb) = crate::bomb::get_bomb(&ctx, &msg) {
+                if let Some(bomb) = crate::bomb::get_bomb(handler, msg.channel_id) {
                     let last = bomb.read().data.get_last_view(msg.author.id).unwrap_or(0);
 
                     builder
@@ -53,9 +70,9 @@ pub fn dispatch(ctx: &Context, msg: &Message, cmd: String) -> CommandResult {
                              If so, try using two exclamation marks or a \
                              module number: `!!",
                         )
-                        .push_safe(&cmd)
+                        .push_safe(&input)
                         .push(format!("`, or `!{} ", last + 1))
-                        .push_safe(&cmd)
+                        .push_safe(&input)
                         .push("`");
                 }
 

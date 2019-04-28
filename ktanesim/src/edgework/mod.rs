@@ -5,6 +5,7 @@ use lazy_static::lazy_static;
 use serenity::utils::Colour;
 
 pub fn cmd_edgework(
+    handler: &Handler,
     ctx: &Context,
     msg: &Message,
     bomb: BombRef,

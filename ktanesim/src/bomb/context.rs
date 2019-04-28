@@ -1,39 +1,21 @@
 use crate::prelude::*;
-use std::collections::HashMap;
 use std::sync::Arc;
-
-/// A key for the [`ShareMap`] in the [`Context`], refers to a mapping from [`ChannelId`]s to
-/// [`Bomb`]s.
-pub struct Bombs;
-
-impl TypeMapKey for Bombs {
-    type Value = HashMap<ChannelId, BombRef>;
-}
 
 /// Helper function that, given a [`Context`] returns the [`Bomb`] for a given [`Message`]. If no
 /// bomb is ticking in the message's channel, [`None`] is returned.
-pub fn get_bomb(ctx: &Context, msg: &Message) -> Option<BombRef> {
-    ctx.data
-        .read()
-        .get::<Bombs>()
-        .unwrap()
-        .get(&msg.channel_id)
-        .map(Arc::clone)
+pub fn get_bomb(handler: &Handler, channel: ChannelId) -> Option<BombRef> {
+    handler.bombs.read().get(&channel).map(Arc::clone)
 }
 
 /// Helper wrapper around [`get_bomb`] that returns an error message if there is no bomb.
-pub fn need_bomb(ctx: &Context, msg: &Message) -> Result<BombRef, ErrorMessage> {
-    get_bomb(ctx, msg).ok_or_else(no_bomb)
+pub fn need_bomb(handler: &Handler, channel: ChannelId) -> Result<BombRef, ErrorMessage> {
+    get_bomb(handler, channel).ok_or_else(no_bomb)
 }
 
 /// Helper function that, given a [`Context`] returns whether a bomb is ticking in the channel
 /// corresponding to a [`Message`].
-pub fn running_in(ctx: &Context, msg: &Message) -> bool {
-    ctx.data
-        .read()
-        .get::<Bombs>()
-        .unwrap()
-        .contains_key(&msg.channel_id)
+pub fn running_in(handler: &Handler, channel: ChannelId) -> bool {
+    handler.bombs.read().contains_key(&channel)
 }
 
 pub fn no_bomb() -> ErrorMessage {
@@ -47,23 +29,22 @@ pub fn no_bomb() -> ErrorMessage {
 }
 
 pub fn end_bomb(
+    handler: &Handler,
     ctx: &Context,
     bomb: &mut BombData,
     drop_callback: impl FnOnce(&mut BombData) + Send + Sync + 'static,
 ) {
-    ctx.data
-        .write()
-        .get_mut::<Bombs>()
-        .unwrap()
-        .remove(&bomb.channel)
-        .unwrap();
-    bomb.timer.freeze();
-    bomb.drop_callback = Some(Box::new(drop_callback));
-    update_presence(ctx);
+    // If .remove() returns None, the bomb is already going to end. The first callback is given
+    // priority.
+    if handler.bombs.write().remove(&bomb.channel).is_some() {
+        bomb.timer.freeze();
+        bomb.drop_callback = Some(Box::new(drop_callback));
+        update_presence(handler, ctx);
+    }
 }
 
-pub fn update_presence(ctx: &Context) {
-    let bomb_count = ctx.data.read().get::<Bombs>().unwrap().len();
+pub fn update_presence(handler: &Handler, ctx: &Context) {
+    let bomb_count = handler.bombs.read().len();
     let status = if bomb_count == 0 {
         OnlineStatus::Idle
     } else {

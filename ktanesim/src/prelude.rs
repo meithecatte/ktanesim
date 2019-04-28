@@ -12,5 +12,6 @@ pub use crate::modules::{
 };
 pub use crate::textures::SharedTexture;
 pub use crate::utils::{CommandResult, ErrorMessage};
+pub use crate::Handler;
 
 pub use ktane_utils::edgework::Edgework;
