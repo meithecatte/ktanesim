@@ -11,7 +11,7 @@ pub use crate::modules::{
     SolveLight,
 };
 pub use crate::textures::SharedTexture;
-pub use crate::utils::{CommandResult, ErrorMessage};
+pub use crate::errors::{CommandResult, ErrorMessage};
 pub use crate::Handler;
 
 pub use ktane_utils::edgework::Edgework;

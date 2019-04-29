@@ -16,6 +16,7 @@ mod bomb;
 mod commands;
 mod config;
 mod edgework;
+mod errors;
 mod modules;
 mod prelude;
 mod textures;
@@ -70,12 +71,12 @@ impl EventHandler for Handler {
 
         info!("Processing command: {:?}", cmd);
         let normalized = normalize(cmd[1..].trim());
-        if let Err((title, description)) = commands::dispatch(self, &ctx, &msg, normalized) {
+        if let Err(why) = commands::dispatch(self, &ctx, &msg, normalized) {
             utils::send_message(&ctx.http, msg.channel_id, |m| {
                 m.embed(|e| {
                     e.color(Colour::RED)
-                        .title(title)
-                        .description(description)
+                        .title(why.title())
+                        .description(why.description())
                         .footer(|ft| {
                             ft.text(&msg.author.name)
                                 .icon_url(&utils::user_avatar(&msg.author))

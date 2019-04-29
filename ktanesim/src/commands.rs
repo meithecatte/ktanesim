@@ -3,7 +3,7 @@ use crate::prelude::*;
 use phf_macros::phf_ordered_map;
 use Command::*;
 pub static COMMANDS: phf::OrderedMap<&'static str, Command> = phf_ordered_map! {
-    "run" => AnyTime(crate::bomb::cmd_run),
+    "run" => AnyTime(crate::bomb::starting::cmd_run),
     "detonate" => AnyTime(crate::bomb::cmd_detonate),
     "edgework" => NeedsBomb(crate::edgework::cmd_edgework),
 };
@@ -55,28 +55,17 @@ pub fn dispatch(handler: &Handler, ctx: &Context, msg: &Message, input: String) 
                     }
                 }
             } else {
-                // TODO: fuzzy suggestions?
-                let mut builder = MessageBuilder::new();
-                builder
-                    .push_mono_safe(first)
-                    .push(" is not recognized as a command.");
+                let last = if let Some(bomb) = crate::bomb::get_bomb(handler, msg.channel_id) {
+                    Some(bomb.read().data.get_last_view(msg.author.id).unwrap_or(0))
+                } else {
+                    None
+                };
 
-                if let Some(bomb) = crate::bomb::get_bomb(handler, msg.channel_id) {
-                    let last = bomb.read().data.get_last_view(msg.author.id).unwrap_or(0);
-
-                    builder
-                        .push(
-                            "Did you mean to send it to one of the modules? \
-                             If so, try using two exclamation marks or a \
-                             module number: `!!",
-                        )
-                        .push_safe(&input)
-                        .push(format!("`, or `!{} ", last + 1))
-                        .push_safe(&input)
-                        .push("`");
-                }
-
-                return Err(("No such command".to_owned(), builder.build()));
+                Err(ErrorMessage::NoSuchGlobalCommand {
+                    command: first.to_owned(),
+                    input: input.to_owned(),
+                    last,
+                })
             }
         } else {
             // A lone `!`. Probably not intended as a command.

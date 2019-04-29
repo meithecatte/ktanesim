@@ -9,23 +9,13 @@ pub fn get_bomb(handler: &Handler, channel: ChannelId) -> Option<BombRef> {
 
 /// Helper wrapper around [`get_bomb`] that returns an error message if there is no bomb.
 pub fn need_bomb(handler: &Handler, channel: ChannelId) -> Result<BombRef, ErrorMessage> {
-    get_bomb(handler, channel).ok_or_else(no_bomb)
+    get_bomb(handler, channel).ok_or(ErrorMessage::NoBomb)
 }
 
 /// Helper function that, given a [`Context`] returns whether a bomb is ticking in the channel
 /// corresponding to a [`Message`].
 pub fn running_in(handler: &Handler, channel: ChannelId) -> bool {
     handler.bombs.read().contains_key(&channel)
-}
-
-pub fn no_bomb() -> ErrorMessage {
-    // TODO: link help
-    (
-        "No bomb in this channel".to_owned(),
-        "No bomb is currently running in this channel. \
-         Check out the help for more details."
-            .to_owned(),
-    )
 }
 
 pub fn end_bomb(

@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::utils::{ranged_int_parse, RangedIntError};
 use arrayvec::ArrayVec;
 use serenity::utils::Colour;
 use std::collections::HashMap;
@@ -6,12 +7,11 @@ use std::sync::Arc;
 
 mod context;
 mod response;
-mod starting;
+pub mod starting;
 mod timer;
 
-pub use context::{end_bomb, get_bomb, need_bomb, no_bomb, running_in, update_presence};
+pub use context::{end_bomb, get_bomb, need_bomb, running_in, update_presence};
 pub use response::{EventResponse, Render, RenderType};
-pub use starting::cmd_run;
 pub use timer::{Timer, TimerMode};
 
 pub type BombRef = Arc<RwLock<Bomb>>;
@@ -62,18 +62,6 @@ impl BombData {
         self.defusers.get(&user).map(|defuser| defuser.last_view)
     }
 
-    pub fn need_last_view(&self, user: UserId) -> Result<ModuleNumber, ErrorMessage> {
-        self.get_last_view(user).ok_or_else(|| {
-            (
-                "You didn't view any modules".to_owned(),
-                "The `!!` prefix sends the command to the module you have last viewed. \
-                 However, you didn't look at any modules on this bomb yet. \
-                 Try `!cvany` to claim a random module and start defusing."
-                    .to_owned(),
-            )
-        })
-    }
-
     pub fn record_view(&mut self, user: UserId, num: ModuleNumber) {
         self.defusers
             .entry(user)
@@ -86,6 +74,8 @@ impl BombData {
 }
 
 impl Bomb {
+    // TODO: use upgradable read
+    // TODO: add !! hint to no such command errors
     pub fn dispatch_module_command(
         &mut self,
         handler: &Handler,
@@ -95,40 +85,18 @@ impl Bomb {
         mut params: Parameters<'_>,
     ) -> Result<(), ErrorMessage> {
         let num: ModuleNumber = match num {
-            Some(num) => match num.parse() {
-                Ok(num) if (1..=self.modules.len() as ModuleNumber).contains(&num) => num - 1,
-                // The string is all-numeric because of the code in commands.rs, so it's just too
-                // large.
-                _ => {
-                    if num == "0" {
-                        return Err((
-                            "Module numbers start at 1".to_owned(),
-                            "`0` is not a valid module number. The numbering starts at 1."
-                                .to_owned(),
-                        ));
-                    } else if self.modules.len() == 1 {
-                        return Err((
-                            "Module number too large".to_owned(),
-                            format!(
-                                "`{}` is not a valid module number. \
-                                 There is only one module on this bomb.",
-                                num,
-                            ),
-                        ));
-                    } else {
-                        return Err((
-                            "Module number too large".to_owned(),
-                            format!(
-                                "`{}` is not a valid module number. \
-                                 There are only {} modules on this bomb.",
-                                num,
-                                self.modules.len()
-                            ),
-                        ));
-                    }
+            Some(num) => match ranged_int_parse(num, self.data.module_count) {
+                Ok(0) => return Err(ErrorMessage::ModuleNumberZero),
+                Ok(n) => n - 1,
+                Err(RangedIntError::TooLarge) => {
+                    return Err(ErrorMessage::ModuleNumberTooLarge {
+                        num: num.to_owned(),
+                        max: self.data.module_count
+                    });
                 }
+                Err(_) => unreachable!(), // dispatch ensures the string is alphanumeric
             },
-            None => self.data.need_last_view(msg.author.id)?,
+            None => self.data.get_last_view(msg.author.id).ok_or(ErrorMessage::NoLastView)?,
         };
 
         let response = match params.next() {
@@ -137,14 +105,7 @@ impl Bomb {
                 let module = &mut self.modules[num as usize];
 
                 if module.state().solved() {
-                    return Err((
-                        "Module already solved".to_owned(),
-                        format!(
-                            "Module #{} has already been solved. \
-                             Try `!cvany` to claim a new module.",
-                            num + 1
-                        ),
-                    ));
+                    return Err(ErrorMessage::ModuleAlreadySolved(num));
                 }
 
                 // TODO: handle claimed modules
@@ -225,6 +186,6 @@ pub fn cmd_detonate(
         update_presence(handler, ctx);
         Ok(())
     } else {
-        Err(no_bomb())
+        Err(ErrorMessage::NoBomb)
     }
 }

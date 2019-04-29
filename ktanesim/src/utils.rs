@@ -22,9 +22,6 @@ pub fn user_avatar(user: &User) -> String {
         .unwrap_or_else(|| user.default_avatar_url())
 }
 
-pub type CommandResult = Result<(), ErrorMessage>;
-pub type ErrorMessage = (String, String);
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RangedIntError {
     TooLarge,

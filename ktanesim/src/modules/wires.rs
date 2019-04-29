@@ -151,59 +151,30 @@ impl Module for Wires {
         mut params: Parameters<'_>,
     ) -> Result<EventResponse, ErrorMessage> {
         if command != "cut" {
-            return Err((
-                "No such command".to_owned(),
-                MessageBuilder::new()
-                    .push_mono_safe(command)
-                    .push(
-                        " is not a valid command for the Wires module. \
-                         Try `!!cut `, followed by a wire number. \
-                         Use a single `!` if you don't want to refer to a specific module.",
-                    )
-                    .build(),
-            ));
+            return Err(ErrorMessage::NoSuchModuleCommand {
+                command: command.to_owned(),
+                module: self.name(),
+                hint: "Try `!!cut 3`, or any other number, to cut a wire.".to_owned(),
+            });
         }
 
         let wire_number: u8 = if let Some(param) = params.next() {
             match ranged_int_parse(param, self.get_wire_count()) {
-                Ok(0) => {
-                    return Err((
-                        "Invalid wire number".to_owned(),
-                        format!("Wire numbering starts at one."),
-                    ))
-                }
+                Ok(0) => return Err(ErrorMessage::WireNumberZero),
                 Ok(n) => n - 1,
                 Err(RangedIntError::TooLarge) => {
-                    return Err((
-                        "Invalid wire number".to_owned(),
-                        format!("This module has only {} wires.", self.get_wire_count()),
-                    ))
+                    return Err(ErrorMessage::WireNumberTooLarge { max: self.get_wire_count() })
                 }
                 Err(_) => {
-                    return Err((
-                        "Invalid wire number".to_owned(),
-                        MessageBuilder::new()
-                            .push_mono_safe(param)
-                            .push(" is not a number. A wire number needs to be a number. duh.")
-                            .build(),
-                    ))
+                    return Err(ErrorMessage::WireNumberUnparseable(param.to_owned()))
                 }
             }
         } else {
-            return Err((
-                "Missing parameter".to_owned(),
-                "The `cut` command needs a wire number as a parameter.".to_owned(),
-            ));
+            return Err(ErrorMessage::CutParameterMissing);
         };
 
         if let Some(params) = crate::utils::trailing_parameters(params) {
-            return Err((
-                "Trailing parameters".to_owned(),
-                MessageBuilder::new()
-                    .push("Unexpected parameters: ")
-                    .push_mono_safe(params)
-                    .build(),
-            ));
+            return Err(ErrorMessage::TrailingParameters(params.to_string()));
         }
 
         if self.cut_state[wire_number as usize] {

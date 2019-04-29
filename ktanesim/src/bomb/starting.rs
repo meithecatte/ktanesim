@@ -11,28 +11,8 @@ use std::fmt;
 use std::sync::Arc;
 use std::time::Duration;
 
-// FIXME: This (and crate::bomb::no_bomb, to name a few) might mean we actually want a proper error
-// enum.
-fn too_many_modules() -> Result<!, ErrorMessage> {
-    Err((
-        "Count too large".to_owned(),
-        format!(
-            "I like your enthusiasm, but that's too many modules for me to handle. \
-             Could you limit yourself to {} for now?",
-            MAX_MODULES
-        ),
-    ))
-}
-
 fn bomb_already_running(msg: &Message) -> Result<!, ErrorMessage> {
-    Err((
-        "Bomb already running".to_owned(),
-        if msg.guild_id.is_some() {
-            "A bomb is already running in this channel. Join in with the fun, run your own bomb by messaging the bot in private, or suggest detonating with `!detonate` (majority has to agree).".to_owned()
-        } else {
-            "A bomb is already running in this channel. If you don't want to defuse this bomb anymore, consider using `!detonate`.".to_owned()
-        },
-    ))
+    Err(ErrorMessage::BombAlreadyRunning { guild: msg.guild_id.is_some()})
 }
 
 fn ensure_no_bomb(handler: &Handler, msg: &Message) -> Result<(), ErrorMessage> {
@@ -57,6 +37,7 @@ fn start_bomb(
         .filter(|descriptor| descriptor.category != ModuleCategory::Needy)
         .count() as ModuleNumber;
     let render;
+    // TODO: use upgradable read
     match handler.bombs.write().entry(msg.channel_id) {
         // the starting commands make sure that there is no bomb running, but commands are
         // processed across multiple threads...
@@ -129,7 +110,7 @@ enum ModuleCount {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct ModuleSet {
+pub struct ModuleSet {
     base: ModuleGroup,
     operations: Cow<'static, [(SetOperation, ModuleGroup)]>,
 }
@@ -198,52 +179,35 @@ pub fn cmd_run(
         let mut parts = group.split(' ');
         let specifier = parts.next().unwrap(); // always Some because we filter on is_empty
         let group = parse_group(specifier)?;
-        let count = parts.next().ok_or_else(|| {
-            (
-                "Missing count".to_owned(),
-                MessageBuilder::new()
-                    .push("Please specify a count after ")
-                    .push_mono_safe(specifier)
-                    .build(),
-            )
-        })?;
+        let count = parts.next()
+            .ok_or_else(|| ErrorMessage::MissingModuleCount {
+                specifier: specifier.to_owned()
+            })?;
 
         let count: ModuleNumber = match ranged_int_parse(count, MAX_MODULES) {
             Ok(count) => count,
-            Err(RangedIntError::TooLarge) => too_many_modules()?,
-            Err(_) => {
-                return Err((
-                    "Syntax error".to_owned(),
-                    MessageBuilder::new()
-                        .push("Expected a count, found ")
-                        .push_mono_safe(count)
-                        .build(),
-                ));
-            }
+            Err(RangedIntError::TooLarge) => return Err(ErrorMessage::TooManyModules),
+            Err(_) => return Err(ErrorMessage::UnparseableModuleCount {
+                found: count.to_owned(),
+            }),
         };
 
-        let count = match parts.next() {
+        let count: ModuleCount = match parts.next() {
             Some("each") => ModuleCount::Each(count),
             None => ModuleCount::Total(count),
             Some(other) => {
-                return Err((
-                    "Syntax error".to_owned(),
-                    MessageBuilder::new()
-                        .push("Expected `each` or a comma, found ")
-                        .push_mono_safe(other)
-                        .build(),
-                ));
+                return Err(ErrorMessage::NeedCommaAfterModuleCount {
+                    found: other.to_owned(),
+                    allow_each: true,
+                });
             }
         };
 
-        if let Some(garbage) = parts.next() {
-            return Err((
-                "Trailing arguments".to_owned(),
-                MessageBuilder::new()
-                    .push("Expected a comma or message end, found ")
-                    .push_mono_safe(garbage)
-                    .build(),
-            ));
+        if let Some(unexpected_token) = parts.next() {
+            return Err(ErrorMessage::NeedCommaAfterModuleCount {
+                found: unexpected_token.to_owned(),
+                allow_each: false,
+            });
         }
 
         module_groups.push((group, count));
@@ -251,10 +215,7 @@ pub fn cmd_run(
 
     // TODO: link help
     if module_groups.is_empty() {
-        return Err((
-            "Missing module list".to_owned(),
-            "Please specify a module list. See the help for more details.".to_owned(),
-        ));
+        return Err(ErrorMessage::MissingModuleList);
     }
 
     let modules = choose_modules(&module_groups)?;
@@ -282,7 +243,7 @@ fn choose_modules(
             ModuleCount::Each(count) => {
                 if chosen_modules.len() + count as usize * set_modules.len() > MAX_MODULES as usize
                 {
-                    too_many_modules()?;
+                    return Err(ErrorMessage::TooManyModules);
                 }
 
                 for _ in 0..count {
@@ -291,27 +252,19 @@ fn choose_modules(
             }
             ModuleCount::Total(count) => {
                 if chosen_modules.len() + count as usize > MAX_MODULES as usize {
-                    too_many_modules()?;
+                    return Err(ErrorMessage::TooManyModules);
                 }
 
                 for _ in 0..count {
-                    chosen_modules.push(set_modules.choose(rng).ok_or_else(|| {
-                        (
-                            "Empty module set".to_owned(),
-                            MessageBuilder::new()
-                                .push("The module set specifier ")
-                                .push_mono_safe(set.to_string())
-                                .push(" excludes all available modules.")
-                                .build(),
-                        )
-                    })?);
+                    chosen_modules.push(set_modules.choose(rng)
+                        .ok_or(ErrorMessage::EmptyModuleSet(set.clone()))?);
                 }
             }
         }
 
         // fail-safe, should not happen
         if chosen_modules.len() > MAX_MODULES as usize {
-            too_many_modules()?;
+            return Err(ErrorMessage::TooManyModules);
         }
     }
 
@@ -336,27 +289,9 @@ fn calculate_settings(modules: &[&'static ModuleDescriptor]) -> (u32, Duration) 
 }
 
 fn parse_group(input: &str) -> Result<ModuleSet, ErrorMessage> {
-    fn no_meaning(
-        input: &str,
-        f: impl FnOnce(&mut MessageBuilder) -> &mut MessageBuilder,
-    ) -> Result<!, ErrorMessage> {
-        let mut builder = MessageBuilder::new();
-        builder
-            .push("The module group specifier ")
-            .push_mono_safe(input);
-        f(&mut builder);
-        let msg = builder.push(". This has no defined meaning.").build();
-        Err(("Syntax error".to_owned(), msg))
-    }
-
-    // TODO: link list on website
     fn get_group(name: &str) -> Result<ModuleGroup, ErrorMessage> {
-        crate::modules::MODULE_GROUPS.get(name).copied().ok_or_else(|| (
-            "No such module".to_owned(),
-            MessageBuilder::new()
-            .push_mono_safe(name)
-            .push(" is not recognized as a module or module group name. Try **!modules** to get a list.")
-            .build()))
+        crate::modules::MODULE_GROUPS.get(name).copied()
+            .ok_or_else(|| ErrorMessage::UnknownModuleName(name.to_owned()))
     }
 
     let mut separators = input
@@ -367,7 +302,9 @@ fn parse_group(input: &str) -> Result<ModuleSet, ErrorMessage> {
         .peekable();
 
     let base = match separators.peek() {
-        Some(&(0, _)) => no_meaning(input, |m| m.push(" starts with an operator"))?,
+        Some(&(0, _)) => return Err(ErrorMessage::ModuleGroupStartsWithOp {
+            input: input.to_owned(),
+        }),
         Some(&(index, _)) => get_group(&input[0..index])?,
         None => {
             return Ok(ModuleSet {
@@ -386,11 +323,10 @@ fn parse_group(input: &str) -> Result<ModuleSet, ErrorMessage> {
                 let name = &input[start..end];
 
                 if name.is_empty() {
-                    no_meaning(input, |m| {
-                        m
-                            .push(" contains two operators without a module or group between them, after ")
-                            .push_mono_safe(&input[..left])
-                    })?;
+                    return Err(ErrorMessage::ModuleGroupTwoOpsInARow {
+                        input: input.to_owned(),
+                        index: left,
+                    });
                 }
 
                 name
@@ -399,7 +335,9 @@ fn parse_group(input: &str) -> Result<ModuleSet, ErrorMessage> {
                 let name = &input[start..];
 
                 if name.is_empty() {
-                    no_meaning(input, |m| m.push(" ends with an operator"))?;
+                    return Err(ErrorMessage::ModuleGroupEndsWithOp {
+                        input: input.to_owned(),
+                    });
                 }
 
                 name
@@ -443,18 +381,12 @@ fn consolidate_named_parameters(
         match param {
             NamedParameter::Ruleseed(seed) => {
                 if rule_seed.replace(seed).is_some() {
-                    return Err((
-                        "Repeated parameter".to_owned(),
-                        "It does not make sense to specify more than one rule seed.".to_owned(),
-                    ));
+                    return Err(ErrorMessage::RepeatedRuleSeedParameter);
                 }
             }
             NamedParameter::Timer(specifier) => {
                 if timer.replace(specifier).is_some() {
-                    return Err((
-                        "Repeated parameter".to_owned(),
-                        "It does not make sense to specify more than one timer value.".to_owned(),
-                    ));
+                    return Err(ErrorMessage::RepeatedTimerParameter);
                 }
             }
         }
@@ -484,20 +416,8 @@ fn get_named_parameter(name: &str, value: &str) -> Result<NamedParameter, ErrorM
             } else {
                 match ranged_int_parse(value, MAX_VALUE) {
                     Ok(seed) => Ok(NamedParameter::Ruleseed(seed)),
-                    Err(RangedIntError::TooLarge) => Err((
-                        "Seed too large".to_owned(),
-                        format!(
-                            "Please limit yourself to seeds not larger than {}",
-                            MAX_VALUE
-                        ),
-                    )),
-                    Err(_) => Err((
-                        "Couldn't parse argument".to_owned(),
-                        MessageBuilder::new()
-                            .push_mono_safe(value)
-                            .push(" is not a valid rule seed. Try using `random` or a natural number.")
-                            .build(),
-                    )),
+                    Err(RangedIntError::TooLarge) => Err(ErrorMessage::RuleSeedParameterTooLarge),
+                    Err(_) => Err(ErrorMessage::RuleSeedParameterUnparseable(value.to_owned())),
                 }
             }
         }
@@ -510,28 +430,10 @@ fn get_named_parameter(name: &str, value: &str) -> Result<NamedParameter, ErrorM
                     strikes: 0,
                 }))
             } else {
-                Err((
-                    "Not a valid timer value".to_owned(),
-                    MessageBuilder::new()
-                        .push_mono_safe(value)
-                        .push(
-                            " is not a valid argument for `timer`. Try *zen*, *time*, \
-                             a duration such as `8m30s` or omit the argument.",
-                        )
-                        .build(),
-                ))
+                Err(ErrorMessage::TimerParameterUnparseable(value.to_owned()))
             }
         }
-        _ => Err((
-            "Unknown parameter".to_owned(),
-            MessageBuilder::new()
-                .push_mono_safe(value)
-                .push(
-                    " is not a valid argument name. Try *timer* or *ruleseed* \
-                     (alias *seed* or *rules*).",
-                )
-                .build(),
-        )),
+        _ => Err(ErrorMessage::UnknownNamedParameter(value.to_owned())),
     }
 }
 
