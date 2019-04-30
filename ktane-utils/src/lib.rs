@@ -1,4 +1,4 @@
-#![feature(stmt_expr_attributes, iter_copied)]
+#![feature(stmt_expr_attributes)]
 #![warn(rust_2018_idioms)]
 
 pub mod edgework;
