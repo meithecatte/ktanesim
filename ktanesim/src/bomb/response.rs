@@ -22,27 +22,31 @@ impl EventResponse {
                         e.field("Manual", format!("[Click here]({})", manual), true);
                         e.field("Time remaining", bomb.data.timer.to_string(), true);
 
+                        if module.descriptor().rule_seed
+                            && bomb.data.rule_seed != ktane_utils::random::VANILLA_SEED
+                        {
+                            e.field("Rule seed", bomb.data.rule_seed, true);
+                        }
+
                         if !module.state().solved() {
                             e.description(module.help_message());
                         }
 
                         if let Some(user_id) = module.state().user {
-                            e.footer(|ft| {
-                                if module.state().solved() {
-                                    ft.text(format!("Solved by {}", user_id.mention()));
-                                } else {
-                                    ft.text(format!("Claimed by {}", user_id.mention()));
-                                }
+                            if let Some(user) = user_id.to_user_cached(&ctx.cache) {
+                                let user = user.read();
+                                e.footer(|ft| {
+                                    if module.state().solved() {
+                                        ft.text(format!("Solved by {}", user.name));
+                                    } else {
+                                        ft.text(format!("Claimed by {}", user.name));
+                                    }
 
-                                if let Some(user) = user_id.to_user_cached(&ctx.cache) {
-                                    ft.icon_url(&crate::utils::user_avatar(&user.read()));
-                                }
-
-                                ft
-                            });
+                                    ft.icon_url(&crate::utils::user_avatar(&user))
+                                });
+                            }
                         }
 
-                        // TODO: notify about ruleseed
                         if let Some((title, description)) = message {
                             e.field(title, description, false);
                         }
