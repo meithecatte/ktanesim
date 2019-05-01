@@ -433,7 +433,7 @@ fn get_named_parameter(name: &str, value: &str) -> Result<NamedParameter, ErrorM
                 Err(ErrorMessage::TimerParameterUnparseable(value.to_owned()))
             }
         }
-        _ => Err(ErrorMessage::UnknownNamedParameter(value.to_owned())),
+        _ => Err(ErrorMessage::UnknownNamedParameter(name.to_owned())),
     }
 }
 
