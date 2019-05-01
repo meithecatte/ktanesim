@@ -421,7 +421,7 @@ fn get_named_parameter(name: &str, value: &str) -> Result<NamedParameter, ErrorM
                 }
             }
         }
-        "timer" => {
+        "time" | "timer" => {
             if let Ok(mode) = value.parse() {
                 Ok(NamedParameter::Timer(mode))
             } else if let Ok(time) = humantime::parse_duration(value) {
