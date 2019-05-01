@@ -227,8 +227,9 @@ pub fn manual_url(module: &dyn Module, rule_seed: u32) -> impl fmt::Display {
     let seed = if module.descriptor().rule_seed {
         rule_seed
     } else {
-        1
+        ktane_utils::random::VANILLA_SEED
     };
+
     lazy_format!(
         "https://ktane.timwi.de/HTML/{}.html#{}",
         utf8_percent_encode(&name, DEFAULT_ENCODE_SET),
