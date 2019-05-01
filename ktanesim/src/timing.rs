@@ -1,6 +1,8 @@
 //! Handles the various timeouts used by the bot.
 use crate::prelude::*;
+use serenity::http::raw::Http;
 use std::time::Duration;
+use std::sync::Arc;
 use timer_heap::{TimerHeap, TimerType};
 use parking_lot::Condvar;
 
@@ -15,12 +17,12 @@ pub enum TimingEvent {
 }
 
 impl TimingEvent {
-    fn handle(self, handler: &Handler) {
+    fn handle(self, handler: &Handler, http: Arc<Http>) {
         use TimingEvent::*;
         match self {
             Explode(channel) => {
-                if let Some(bomb) = handler.bombs.read().get(&channel) {
-                    //bomb.write().explode(
+                if let Some(bomb) = crate::bomb::get_bomb(handler, channel) {
+                    bomb.write().explode(handler, http, "Time ran out");
                 } else {
                     warn!("no bomb to explode");
                 }
@@ -38,12 +40,18 @@ impl TimingHandle {
     }
 
     // Started on another thread by main.
-    pub fn processing_loop(&self, handler: &'static Handler, pool: threadpool::ThreadPool) {
+    pub fn processing_loop(
+        &self,
+        handler: &'static Handler,
+        http: Arc<Http>,
+        pool: threadpool::ThreadPool
+    ) {
         let mut events = self.events.lock();
         loop {
             for event in events.expired() {
                 debug!("Handling event {:?}", event);
-                pool.execute(move || event.handle(handler));
+                let http = Arc::clone(&http);
+                pool.execute(move || event.handle(handler, http));
             }
 
             if let Some(time_next) = events.time_remaining() {

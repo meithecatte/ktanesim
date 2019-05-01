@@ -2,6 +2,7 @@ use crate::prelude::*;
 use crate::utils::{ranged_int_parse, RangedIntError};
 use arrayvec::ArrayVec;
 use serenity::utils::Colour;
+use serenity::http::raw::Http;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -141,7 +142,7 @@ impl Bomb {
 
         if self.data.timer.strike_explosion() {
             info!("Strikes ran out");
-            self.explode(handler, ctx, self.modules[num as usize].name());
+            self.explode(handler, Arc::clone(&ctx.http), self.modules[num as usize].name());
         }
 
         Ok(())
@@ -150,10 +151,9 @@ impl Bomb {
     pub fn explode(
         &mut self,
         handler: &Handler,
-        ctx: &Context,
+        http: Arc<Http>,
         cause: &'static str,
     ) {
-        let http = Arc::clone(&ctx.http);
         crate::bomb::end_bomb(handler, &mut self.data, move |bomb| {
             crate::utils::send_message(&http, bomb.channel, |m| {
                 m.embed(|e| {
@@ -207,6 +207,6 @@ pub fn cmd_detonate(
     bomb: BombRef,
     params: Parameters<'_>,
 ) -> CommandResult {
-    bomb.write().explode(handler, ctx, "Humans got bored");
+    bomb.write().explode(handler, Arc::clone(&ctx.http), "Humans got bored");
     Ok(())
 }

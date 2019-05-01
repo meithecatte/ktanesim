@@ -28,6 +28,7 @@ use timing::TimingHandle;
 use serenity::utils::Colour;
 use std::collections::HashMap;
 use std::error::Error;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -52,9 +53,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
 
     // ThreadPool's clone behaves like Arc
-    let threadpool = client.threadpool.clone();
+    let pool = client.threadpool.clone();
+    let http = Arc::clone(&client.cache_and_http.http);
     std::thread::spawn(move || {
-        timing.processing_loop(handler, threadpool);
+        timing.processing_loop(handler, http, pool);
     });
 
     client.start()?;

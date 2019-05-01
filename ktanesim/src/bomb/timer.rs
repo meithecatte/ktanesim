@@ -50,7 +50,7 @@ impl Timer {
         }
     }
 
-    /// Stop the timer. Called when the bomb is defused.
+    /// Stop the timer. Called when the bomb explodes or is defused.
     pub fn freeze(&mut self) {
         self.update();
         self.frozen = true;
