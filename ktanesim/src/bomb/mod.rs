@@ -1,8 +1,8 @@
 use crate::prelude::*;
 use crate::utils::{ranged_int_parse, RangedIntError};
 use arrayvec::ArrayVec;
-use serenity::utils::Colour;
 use serenity::http::raw::Http;
+use serenity::utils::Colour;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -92,12 +92,15 @@ impl Bomb {
                 Err(RangedIntError::TooLarge) => {
                     return Err(ErrorMessage::ModuleNumberTooLarge {
                         num: num.to_owned(),
-                        max: self.data.module_count
+                        max: self.data.module_count,
                     });
                 }
                 Err(_) => unreachable!(), // dispatch ensures the string is alphanumeric
             },
-            None => self.data.get_last_view(msg.author.id).ok_or(ErrorMessage::NoLastView)?,
+            None => self
+                .data
+                .get_last_view(msg.author.id)
+                .ok_or(ErrorMessage::NoLastView)?,
         };
 
         let response = match params.next() {
@@ -133,7 +136,7 @@ impl Bomb {
                             "After {} strikes, the bomb has been **defused**",
                             bomb.timer.strikes(),
                         ));
-                        
+
                         e.field(bomb.timer.field_name(), &bomb.timer, true)
                     })
                 });
@@ -142,18 +145,17 @@ impl Bomb {
 
         if self.data.timer.strike_explosion() {
             info!("Strikes ran out");
-            self.explode(handler, Arc::clone(&ctx.http), self.modules[num as usize].name());
+            self.explode(
+                handler,
+                Arc::clone(&ctx.http),
+                self.modules[num as usize].name(),
+            );
         }
 
         Ok(())
     }
 
-    pub fn explode(
-        &mut self,
-        handler: &Handler,
-        http: Arc<Http>,
-        cause: &'static str,
-    ) {
+    pub fn explode(&mut self, handler: &Handler, http: Arc<Http>, cause: &'static str) {
         crate::bomb::end_bomb(handler, &mut self.data, move |bomb| {
             crate::utils::send_message(&http, bomb.channel, |m| {
                 m.embed(|e| {
@@ -207,6 +209,7 @@ pub fn cmd_detonate(
     bomb: BombRef,
     params: Parameters<'_>,
 ) -> CommandResult {
-    bomb.write().explode(handler, Arc::clone(&ctx.http), "Humans got bored");
+    bomb.write()
+        .explode(handler, Arc::clone(&ctx.http), "Humans got bored");
     Ok(())
 }

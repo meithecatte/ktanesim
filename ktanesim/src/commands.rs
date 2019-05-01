@@ -31,7 +31,12 @@ pub enum Command {
     ),
 }
 
-pub fn dispatch(handler: &'static Handler, ctx: &Context, msg: &Message, input: String) -> CommandResult {
+pub fn dispatch(
+    handler: &'static Handler,
+    ctx: &Context,
+    msg: &Message,
+    input: String,
+) -> CommandResult {
     // The event handler strips a `!`, so this is the `!!` case. Route directly to the last
     // viewed module.
     if input.starts_with('!') {

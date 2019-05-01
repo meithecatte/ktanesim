@@ -163,11 +163,11 @@ impl Module for Wires {
                 Ok(0) => return Err(ErrorMessage::WireNumberZero),
                 Ok(n) => n - 1,
                 Err(RangedIntError::TooLarge) => {
-                    return Err(ErrorMessage::WireNumberTooLarge { max: self.get_wire_count() })
+                    return Err(ErrorMessage::WireNumberTooLarge {
+                        max: self.get_wire_count(),
+                    })
                 }
-                Err(_) => {
-                    return Err(ErrorMessage::WireNumberUnparseable(param.to_owned()))
-                }
+                Err(_) => return Err(ErrorMessage::WireNumberUnparseable(param.to_owned())),
             }
         } else {
             return Err(ErrorMessage::CutParameterMissing);

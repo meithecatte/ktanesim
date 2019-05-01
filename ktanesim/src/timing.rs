@@ -1,10 +1,10 @@
 //! Handles the various timeouts used by the bot.
 use crate::prelude::*;
-use serenity::http::raw::Http;
-use std::time::Duration;
-use std::sync::Arc;
-use timer_heap::{TimerHeap, TimerType};
 use parking_lot::Condvar;
+use serenity::http::raw::Http;
+use std::sync::Arc;
+use std::time::Duration;
+use timer_heap::{TimerHeap, TimerType};
 
 pub struct TimingHandle {
     events: Mutex<TimerHeap<TimingEvent>>,
@@ -44,7 +44,7 @@ impl TimingHandle {
         &self,
         handler: &'static Handler,
         http: Arc<Http>,
-        pool: threadpool::ThreadPool
+        pool: threadpool::ThreadPool,
     ) {
         let mut events = self.events.lock();
         loop {

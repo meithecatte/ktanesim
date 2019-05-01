@@ -4,7 +4,7 @@
     type_ascription,
     try_trait,
     int_error_matching,
-    never_type,
+    never_type
 )]
 #![warn(rust_2018_idioms)]
 
@@ -24,12 +24,12 @@ mod utils;
 
 use config::Config;
 use prelude::*;
-use timing::TimingHandle;
 use serenity::utils::Colour;
 use std::collections::HashMap;
 use std::error::Error;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use timing::TimingHandle;
 
 fn main() -> Result<(), Box<dyn Error>> {
     if let Err(err) = kankyo::load() {
@@ -47,10 +47,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         presence_update_pending: AtomicBool::new(false),
     }));
 
-    let mut client = Client::new(
-        &token,
-        handler,
-    )?;
+    let mut client = Client::new(&token, handler)?;
 
     // ThreadPool's clone behaves like Arc
     let pool = client.threadpool.clone();
@@ -118,7 +115,6 @@ impl EventHandler for &'static Handler {
         if self.presence_update_pending.swap(false, Ordering::SeqCst) {
             crate::bomb::update_presence(self, &ctx);
         }
-
     }
 }
 

@@ -11,12 +11,21 @@ use std::fmt;
 use std::sync::Arc;
 use std::time::Duration;
 
-type UpgradableBombsGuard = lock_api::RwLockUpgradableReadGuard<'static, parking_lot::RawRwLock, HashMap<ChannelId, BombRef>>;
+type UpgradableBombsGuard = lock_api::RwLockUpgradableReadGuard<
+    'static,
+    parking_lot::RawRwLock,
+    HashMap<ChannelId, BombRef>,
+>;
 
-fn ensure_no_bomb(handler: &'static Handler, msg: &Message) -> Result<UpgradableBombsGuard, ErrorMessage> {
+fn ensure_no_bomb(
+    handler: &'static Handler,
+    msg: &Message,
+) -> Result<UpgradableBombsGuard, ErrorMessage> {
     let bombs = handler.bombs.upgradable_read();
     if bombs.contains_key(&msg.channel_id) {
-        Err(ErrorMessage::BombAlreadyRunning { guild: msg.guild_id.is_some()})
+        Err(ErrorMessage::BombAlreadyRunning {
+            guild: msg.guild_id.is_some(),
+        })
     } else {
         Ok(bombs)
     }
@@ -50,9 +59,7 @@ fn start_bomb(
     let modules = module_descriptors
         .iter()
         .enumerate()
-        .map(|(num, module)| {
-            (module.constructor)(&mut data, ModuleState::new(num as ModuleNumber))
-        })
+        .map(|(num, module)| (module.constructor)(&mut data, ModuleState::new(num as ModuleNumber)))
         .collect();
 
     let bomb = Bomb { modules, data };
@@ -169,17 +176,20 @@ pub fn cmd_run(
         let mut parts = group.split(' ');
         let specifier = parts.next().unwrap(); // always Some because we filter on is_empty
         let group = parse_group(specifier)?;
-        let count = parts.next()
+        let count = parts
+            .next()
             .ok_or_else(|| ErrorMessage::MissingModuleCount {
-                specifier: specifier.to_owned()
+                specifier: specifier.to_owned(),
             })?;
 
         let count: ModuleNumber = match ranged_int_parse(count, MAX_MODULES) {
             Ok(count) => count,
             Err(RangedIntError::TooLarge) => return Err(ErrorMessage::TooManyModules),
-            Err(_) => return Err(ErrorMessage::UnparseableModuleCount {
-                found: count.to_owned(),
-            }),
+            Err(_) => {
+                return Err(ErrorMessage::UnparseableModuleCount {
+                    found: count.to_owned(),
+                })
+            }
         };
 
         let count: ModuleCount = match parts.next() {
@@ -246,8 +256,11 @@ fn choose_modules(
                 }
 
                 for _ in 0..count {
-                    chosen_modules.push(set_modules.choose(rng)
-                        .ok_or(ErrorMessage::EmptyModuleSet(set.clone()))?);
+                    chosen_modules.push(
+                        set_modules
+                            .choose(rng)
+                            .ok_or(ErrorMessage::EmptyModuleSet(set.clone()))?,
+                    );
                 }
             }
         }
@@ -280,7 +293,9 @@ fn calculate_settings(modules: &[&'static ModuleDescriptor]) -> (u32, Duration) 
 
 fn parse_group(input: &str) -> Result<ModuleSet, ErrorMessage> {
     fn get_group(name: &str) -> Result<ModuleGroup, ErrorMessage> {
-        crate::modules::MODULE_GROUPS.get(name).copied()
+        crate::modules::MODULE_GROUPS
+            .get(name)
+            .copied()
             .ok_or_else(|| ErrorMessage::UnknownModuleName(name.to_owned()))
     }
 
@@ -292,9 +307,11 @@ fn parse_group(input: &str) -> Result<ModuleSet, ErrorMessage> {
         .peekable();
 
     let base = match separators.peek() {
-        Some(&(0, _)) => return Err(ErrorMessage::ModuleGroupStartsWithOp {
-            input: input.to_owned(),
-        }),
+        Some(&(0, _)) => {
+            return Err(ErrorMessage::ModuleGroupStartsWithOp {
+                input: input.to_owned(),
+            })
+        }
         Some(&(index, _)) => get_group(&input[0..index])?,
         None => {
             return Ok(ModuleSet {

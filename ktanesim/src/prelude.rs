@@ -6,13 +6,13 @@ pub use serenity::utils::MessageBuilder;
 
 pub use crate::bomb::{Bomb, BombData, BombRef, EventResponse, ModuleNumber, Render, RenderType};
 pub use crate::commands::Parameters;
+pub use crate::errors::{CommandResult, ErrorMessage};
 pub use crate::modules::{
     module_canvas, output_png, Module, ModuleCategory, ModuleDescriptor, ModuleOrigin, ModuleState,
     SolveLight,
 };
 pub use crate::textures::SharedTexture;
 pub use crate::timing::{TimingEvent, TimingHandle};
-pub use crate::errors::{CommandResult, ErrorMessage};
 pub use crate::Handler;
 
 pub use ktane_utils::edgework::Edgework;

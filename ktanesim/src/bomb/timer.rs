@@ -66,7 +66,10 @@ impl Timer {
             self.update();
             self.strikes += 1;
 
-            if !self.timing.upsert(self.explosion_event, self.to_real_time(self.display)) {
+            if !self
+                .timing
+                .upsert(self.explosion_event, self.to_real_time(self.display))
+            {
                 warn!("upsert didn't find previous event");
             }
         } else {
