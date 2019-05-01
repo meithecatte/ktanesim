@@ -55,9 +55,7 @@ impl Timer {
         self.update();
         self.frozen = true;
         if self.mode != TimerMode::Zen {
-            if !self.timing.remove(self.explosion_event) {
-                warn!("couldn't find the explosion event to remove");
-            }
+            self.timing.remove(self.explosion_event);
         }
     }
 
