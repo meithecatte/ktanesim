@@ -20,7 +20,6 @@ pub fn running_in(handler: &Handler, channel: ChannelId) -> bool {
 
 pub fn end_bomb(
     handler: &Handler,
-    ctx: &Context,
     bomb: &mut BombData,
     drop_callback: impl FnOnce(&mut BombData) + Send + Sync + 'static,
 ) {
@@ -29,11 +28,12 @@ pub fn end_bomb(
     if handler.bombs.write().remove(&bomb.channel).is_some() {
         bomb.timer.freeze();
         bomb.drop_callback = Some(Box::new(drop_callback));
-        update_presence(handler, ctx);
+        handler.schedule_presence_update();
     }
 }
 
 pub fn update_presence(handler: &Handler, ctx: &Context) {
+    trace!("Updating Discord presence");
     let bomb_count = handler.bombs.read().len();
     let status = if bomb_count == 0 {
         OnlineStatus::Idle

@@ -123,7 +123,7 @@ impl Bomb {
         if self.data.solved_count == self.data.solvable_count {
             info!("Solved all modules");
             let http = Arc::clone(&ctx.http);
-            crate::bomb::end_bomb(handler, ctx, &mut self.data, move |bomb| {
+            crate::bomb::end_bomb(handler, &mut self.data, move |bomb| {
                 crate::utils::send_message(&http, bomb.channel, |m| {
                     m.embed(|e| {
                         e.color(Colour::DARK_GREEN);
@@ -154,7 +154,7 @@ impl Bomb {
         cause: &'static str,
     ) {
         let http = Arc::clone(&ctx.http);
-        crate::bomb::end_bomb(handler, ctx, &mut self.data, move |bomb| {
+        crate::bomb::end_bomb(handler, &mut self.data, move |bomb| {
             crate::utils::send_message(&http, bomb.channel, |m| {
                 m.embed(|e| {
                     e.color(Colour::RED);
