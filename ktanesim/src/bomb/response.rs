@@ -20,6 +20,7 @@ impl EventResponse {
                         e.title(format!("{} (#{})", module.name(), module.number() + 1));
                         let manual = crate::modules::manual_url(module, bomb.data.rule_seed);
                         e.field("Manual", format!("[Click here]({})", manual), true);
+                        e.field("Time remaining", bomb.data.timer.to_string(), true);
 
                         if !module.state().solved() {
                             e.description(module.help_message());

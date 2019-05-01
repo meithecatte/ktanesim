@@ -49,7 +49,7 @@ fn start_bomb(
                 module_count: modules.len() as ModuleNumber,
                 solvable_count,
                 solved_count: 0,
-                timer: Timer::new(timer),
+                timer: Timer::new(timer, handler.timing, msg.channel_id),
                 channel: msg.channel_id,
                 defusers: HashMap::new(),
                 drop_callback: None,

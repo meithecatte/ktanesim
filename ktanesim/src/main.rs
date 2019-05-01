@@ -19,10 +19,12 @@ mod errors;
 mod modules;
 mod prelude;
 mod textures;
+mod timing;
 mod utils;
 
 use config::Config;
 use prelude::*;
+use timing::TimingHandle;
 use serenity::utils::Colour;
 use std::collections::HashMap;
 use std::error::Error;
@@ -35,14 +37,26 @@ fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
     let token = env("DISCORD_TOKEN");
     let config = Config::parse()?;
+    let timing: &'static _ = Box::leak(Box::new(TimingHandle::new()));
+    let handler: &'static _ = Box::leak(Box::new(Handler {
+        config,
+        bombs: RwLock::new(HashMap::new()),
+        timing,
+    }));
+
     let mut client = Client::new(
         &token,
-        Handler {
-            config,
-            bombs: RwLock::new(HashMap::new()),
-        },
+        handler,
     )?;
+
+    // ThreadPool's clone behaves like Arc
+    let threadpool = client.threadpool.clone();
+    std::thread::spawn(move || {
+        timing.processing_loop(handler, threadpool);
+    });
+
     client.start()?;
+    info!("Exiting");
     Ok(())
 }
 
@@ -53,9 +67,10 @@ fn env(name: &'static str) -> String {
 pub struct Handler {
     config: Config,
     bombs: RwLock<HashMap<ChannelId, BombRef>>,
+    timing: &'static TimingHandle,
 }
 
-impl EventHandler for Handler {
+impl EventHandler for &Handler {
     fn ready(&self, ctx: Context, event: Ready) {
         info!("Ready as {}", event.user.name);
         crate::bomb::update_presence(self, &ctx);

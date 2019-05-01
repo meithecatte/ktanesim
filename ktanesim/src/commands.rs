@@ -4,7 +4,7 @@ use phf_macros::phf_ordered_map;
 use Command::*;
 pub static COMMANDS: phf::OrderedMap<&'static str, Command> = phf_ordered_map! {
     "run" => AnyTime(crate::bomb::starting::cmd_run),
-    "detonate" => AnyTime(crate::bomb::cmd_detonate),
+    "detonate" => NeedsBomb(crate::bomb::cmd_detonate),
     "edgework" => NeedsBomb(crate::edgework::cmd_edgework),
 };
 

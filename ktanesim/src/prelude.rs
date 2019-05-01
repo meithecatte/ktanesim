@@ -11,6 +11,7 @@ pub use crate::modules::{
     SolveLight,
 };
 pub use crate::textures::SharedTexture;
+pub use crate::timing::{TimingEvent, TimingHandle};
 pub use crate::errors::{CommandResult, ErrorMessage};
 pub use crate::Handler;
 

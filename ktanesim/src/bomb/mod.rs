@@ -117,6 +117,7 @@ impl Bomb {
             self.data.record_view(msg.author.id, num);
         }
 
+        // TODO: drop lock before rendering
         response.resolve(ctx, msg, self, &*self.modules[num as usize]);
 
         if self.data.solved_count == self.data.solvable_count {
@@ -128,17 +129,41 @@ impl Bomb {
                         e.color(Colour::DARK_GREEN);
                         e.title("Bomb defused \u{1f389}");
                         e.description(format!(
-                            "After {} strikes, the bomb has been **defused**, \
-                             with {} on the timer.",
+                            "After {} strikes, the bomb has been **defused**",
                             bomb.timer.strikes(),
-                            bomb.timer
-                        ))
+                        ));
+                        
+                        e.field(bomb.timer.field_name(), &bomb.timer, true)
                     })
                 });
             });
         }
 
+        if self.data.timer.strike_explosion() {
+            info!("Strikes ran out");
+            self.explode(handler, ctx, self.modules[num as usize].name());
+        }
+
         Ok(())
+    }
+
+    pub fn explode(
+        &mut self,
+        handler: &Handler,
+        ctx: &Context,
+        cause: &'static str,
+    ) {
+        let http = Arc::clone(&ctx.http);
+        crate::bomb::end_bomb(handler, ctx, &mut self.data, move |bomb| {
+            crate::utils::send_message(&http, bomb.channel, |m| {
+                m.embed(|e| {
+                    e.color(Colour::RED);
+                    e.title("Bomb exploded \u{1f4a5}");
+                    e.field(bomb.timer.field_name(), &bomb.timer, true);
+                    e.field("Cause of explosion", cause, true)
+                })
+            });
+        });
     }
 }
 
@@ -174,18 +199,14 @@ pub fn modcmd_view(
     })
 }
 
-// TODO: Ack and stuff
-// TODO: use end_bomb
+// TODO: Majority agreement
 pub fn cmd_detonate(
     handler: &Handler,
     ctx: &Context,
     msg: &Message,
+    bomb: BombRef,
     params: Parameters<'_>,
 ) -> CommandResult {
-    if handler.bombs.write().remove(&msg.channel_id).is_some() {
-        update_presence(handler, ctx);
-        Ok(())
-    } else {
-        Err(ErrorMessage::NoBomb)
-    }
+    bomb.write().explode(handler, ctx, "Humans got bored");
+    Ok(())
 }
