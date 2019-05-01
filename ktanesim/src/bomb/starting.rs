@@ -11,64 +11,54 @@ use std::fmt;
 use std::sync::Arc;
 use std::time::Duration;
 
-fn bomb_already_running(msg: &Message) -> Result<!, ErrorMessage> {
-    Err(ErrorMessage::BombAlreadyRunning { guild: msg.guild_id.is_some()})
-}
+type UpgradableBombsGuard = lock_api::RwLockUpgradableReadGuard<'static, parking_lot::RawRwLock, HashMap<ChannelId, BombRef>>;
 
-fn ensure_no_bomb(handler: &Handler, msg: &Message) -> Result<(), ErrorMessage> {
-    if crate::bomb::running_in(handler, msg.channel_id) {
-        bomb_already_running(msg)?
+fn ensure_no_bomb(handler: &'static Handler, msg: &Message) -> Result<UpgradableBombsGuard, ErrorMessage> {
+    let bombs = handler.bombs.upgradable_read();
+    if bombs.contains_key(&msg.channel_id) {
+        Err(ErrorMessage::BombAlreadyRunning { guild: msg.guild_id.is_some()})
     } else {
-        Ok(())
+        Ok(bombs)
     }
 }
 
 fn start_bomb(
-    handler: &Handler,
+    handler: &'static Handler,
     ctx: &Context,
     msg: &Message,
+    bombs: UpgradableBombsGuard,
     timer: TimerMode,
     rule_seed: u32,
-    modules: &[&'static ModuleDescriptor],
+    module_descriptors: &[&'static ModuleDescriptor],
 ) -> CommandResult {
-    use std::collections::hash_map::Entry;
-    let solvable_count = modules
+    let solvable_count = module_descriptors
         .iter()
         .filter(|descriptor| descriptor.category != ModuleCategory::Needy)
         .count() as ModuleNumber;
-    let render;
-    // TODO: use upgradable read
-    match handler.bombs.write().entry(msg.channel_id) {
-        // the starting commands make sure that there is no bomb running, but commands are
-        // processed across multiple threads...
-        Entry::Occupied(_) => bomb_already_running(msg)?,
-        Entry::Vacant(entry) => {
-            let mut data = BombData {
-                edgework: random(),
-                rule_seed,
-                module_count: modules.len() as ModuleNumber,
-                solvable_count,
-                solved_count: 0,
-                timer: Timer::new(timer, handler.timing, msg.channel_id),
-                channel: msg.channel_id,
-                defusers: HashMap::new(),
-                drop_callback: None,
-            };
+    let mut data = BombData {
+        edgework: random(),
+        rule_seed,
+        module_count: module_descriptors.len() as ModuleNumber,
+        solvable_count,
+        solved_count: 0,
+        timer: Timer::new(timer, handler.timing, msg.channel_id),
+        channel: msg.channel_id,
+        defusers: HashMap::new(),
+        drop_callback: None,
+    };
 
-            let modules = modules
-                .iter()
-                .enumerate()
-                .map(|(num, module)| {
-                    (module.constructor)(&mut data, ModuleState::new(num as ModuleNumber))
-                })
-                .collect();
+    let modules = module_descriptors
+        .iter()
+        .enumerate()
+        .map(|(num, module)| {
+            (module.constructor)(&mut data, ModuleState::new(num as ModuleNumber))
+        })
+        .collect();
 
-            let bomb = Bomb { modules, data };
-            render = bomb.data.render_edgework();
-            entry.insert(Arc::new(RwLock::new(bomb)));
-            info!("Bomb armed");
-        }
-    }
+    let bomb = Bomb { modules, data };
+    let render = bomb.data.render_edgework();
+    UpgradableBombsGuard::upgrade(bombs).insert(msg.channel_id, Arc::new(RwLock::new(bomb)));
+    info!("Bomb armed");
 
     render.resolve(ctx, msg.channel_id, |m, file| {
         m.embed(|e| {
@@ -77,7 +67,7 @@ fn start_bomb(
                 .description(format!(
                     "A {}-module bomb has been armed! \
                      Type `!cvany` to claim one of the modules and start defusing!",
-                    modules.len(),
+                    module_descriptors.len(),
                 ))
                 .image(file)
         })
@@ -144,12 +134,12 @@ impl fmt::Display for ModuleSet {
 }
 
 pub fn cmd_run(
-    handler: &Handler,
+    handler: &'static Handler,
     ctx: &Context,
     msg: &Message,
     params: Parameters<'_>,
 ) -> CommandResult {
-    ensure_no_bomb(handler, msg)?;
+    let bombs = ensure_no_bomb(handler, msg)?;
 
     let mut params = params.peekable();
     let mut named = Vec::new();
@@ -227,7 +217,7 @@ pub fn cmd_run(
         None => TimerMode::Normal { time, strikes },
     };
 
-    start_bomb(handler, ctx, msg, timer, named.rule_seed, &modules)
+    start_bomb(handler, ctx, msg, bombs, timer, named.rule_seed, &modules)
 }
 
 fn choose_modules(

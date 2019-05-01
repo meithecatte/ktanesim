@@ -19,6 +19,7 @@ strum_macros = "*"
 
 # Use the same version as serenity. If the version used changes and the new version is breaking.
 # it's a problem either way.
+lock_api = "*"
 log = "*"
 threadpool = "*"
 parking_lot = "*"

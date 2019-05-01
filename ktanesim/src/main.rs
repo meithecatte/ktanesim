@@ -81,7 +81,7 @@ impl Handler {
     }
 }
 
-impl EventHandler for &Handler {
+impl EventHandler for &'static Handler {
     fn ready(&self, ctx: Context, event: Ready) {
         info!("Ready as {}", event.user.name);
         crate::bomb::update_presence(self, &ctx);
