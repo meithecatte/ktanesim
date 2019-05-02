@@ -125,77 +125,12 @@ pub fn generate<R: Rng + ?Sized>(rng: &mut R) -> ([Option<Color>; MAX_WIRES], u8
     (wires, wire_count as u8)
 }
 
-macro_rules! cond {
-    ( $type:ident ) => {
-        Query::Edgework(EdgeworkQuery::$type)
-    };
-    ( PortPresent ($port:ident) ) => {
-        Query::Edgework(EdgeworkQuery::PortPresent(PortType::$port))
-    };
-    ( $type:ident ($color:ident) ) => {
-        Query::Wire(WireQuery {
-            query_type: WireQueryType::$type,
-            color: Color::$color,
-        })
-    };
-}
-
-macro_rules! rules {
-    ( $(
-        $( $condition_type:tt $( ( $condition_arg:tt ) )? ),+ =>
-        $solution_type:ident ($solution_arg:expr)
-    ),+ => $otherwise_type:ident ($otherwise_arg:expr) ) => {
-        RuleList {
-            rules: smallvec![
-                $(
-                    Rule {
-                        queries: smallvec![
-                            $(
-                                cond!($condition_type $(($condition_arg))?)
-                            ),+
-                        ],
-                        solution: Solution::$solution_type($solution_arg),
-                    }
-                ),+
-            ],
-            otherwise: Solution::$otherwise_type($otherwise_arg),
-        }
-    };
-}
-
 impl RuleSet {
     /// Generates the rule set for a given `seed`.
     pub fn new(seed: u32) -> Self {
         if seed == VANILLA_SEED {
-            use self::Color::*;
-
-            RuleSet([
-                rules! {
-                    NotPresent(Red) => Index(1),
-                    LastWireIs(White) => Index(2),
-                    MoreThanOne(Blue) => LastOfColor(Blue)
-                    => Index(2)
-                },
-                rules! {
-                    MoreThanOne(Red), SerialOdd => LastOfColor(Red),
-                    LastWireIs(Yellow), NotPresent(Red) => Index(0),
-                    ExactlyOne(Blue) => Index(0),
-                    MoreThanOne(Yellow) => Index(3)
-                    => Index(1)
-                },
-                rules! {
-                    LastWireIs(Black), SerialOdd => Index(3),
-                    ExactlyOne(Red), MoreThanOne(Yellow) => Index(0),
-                    NotPresent(Black) => Index(1)
-                    => Index(0)
-                },
-                rules! {
-                    NotPresent(Yellow), SerialOdd => Index(2),
-                    ExactlyOne(Yellow), MoreThanOne(White) => Index(3),
-                    NotPresent(Red) => Index(5)
-                    => Index(3)
-                },
-            ])
+            // At the bottom of the file to reduce clutter
+            RuleSet::vanilla()
         } else {
             let mut rng = RuleseedRandom::new(seed);
             RuleSet(array_init::array_init(|index| {
@@ -693,6 +628,80 @@ impl Solution {
             TheOneOfColor(color) => wires[index as usize] == color,
             _ => self.as_index(wires) == index,
         }
+    }
+}
+
+macro_rules! cond {
+    ( $type:ident ) => {
+        Query::Edgework(EdgeworkQuery::$type)
+    };
+    ( PortPresent ($port:ident) ) => {
+        Query::Edgework(EdgeworkQuery::PortPresent(PortType::$port))
+    };
+    ( $type:ident ($color:ident) ) => {
+        Query::Wire(WireQuery {
+            query_type: WireQueryType::$type,
+            color: Color::$color,
+        })
+    };
+}
+
+macro_rules! rules {
+    ( $(
+        $( $condition_type:tt $( ( $condition_arg:tt ) )? ),+ =>
+        $solution_type:ident ($solution_arg:expr)
+    ),+ => $otherwise_type:ident ($otherwise_arg:expr) ) => {
+        RuleList {
+            rules: smallvec![
+                $(
+                    Rule {
+                        queries: smallvec![
+                            $(
+                                cond!($condition_type $(($condition_arg))?)
+                            ),+
+                        ],
+                        solution: Solution::$solution_type($solution_arg),
+                    }
+                ),+
+            ],
+            otherwise: Solution::$otherwise_type($otherwise_arg),
+        }
+    };
+}
+
+impl RuleSet {
+    // clippy does not like these macros...
+    #[allow(clippy::cognitive_complexity)]
+    fn vanilla() -> Self {
+        use self::Color::*;
+
+        RuleSet([
+            rules! {
+                NotPresent(Red) => Index(1),
+                LastWireIs(White) => Index(2),
+                MoreThanOne(Blue) => LastOfColor(Blue)
+                => Index(2)
+            },
+            rules! {
+                MoreThanOne(Red), SerialOdd => LastOfColor(Red),
+                LastWireIs(Yellow), NotPresent(Red) => Index(0),
+                ExactlyOne(Blue) => Index(0),
+                MoreThanOne(Yellow) => Index(3)
+                => Index(1)
+            },
+            rules! {
+                LastWireIs(Black), SerialOdd => Index(3),
+                ExactlyOne(Red), MoreThanOne(Yellow) => Index(0),
+                NotPresent(Black) => Index(1)
+                => Index(0)
+            },
+            rules! {
+                NotPresent(Yellow), SerialOdd => Index(2),
+                ExactlyOne(Yellow), MoreThanOne(White) => Index(3),
+                NotPresent(Red) => Index(5)
+                => Index(3)
+            },
+        ])
     }
 }
 
