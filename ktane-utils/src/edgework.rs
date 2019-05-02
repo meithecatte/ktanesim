@@ -376,9 +376,8 @@ impl Distribution<PortPlate> for Standard {
     }
 }
 
-use enum_map::Enum;
 #[derive(
-    Debug, Display, Copy, Clone, IntoStaticStr, EnumIter, EnumString, EnumCount, Enum, PartialEq, Eq,
+    Debug, Display, Copy, Clone, IntoStaticStr, EnumIter, EnumString, EnumCount, enum_map::Enum, PartialEq, Eq,
 )]
 pub enum IndicatorCode {
     SND,

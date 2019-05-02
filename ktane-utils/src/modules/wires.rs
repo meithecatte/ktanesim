@@ -21,13 +21,13 @@ pub enum Color {
 
 /// Stores a full rule set for Wires.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RuleSet([RuleList; 4]);
+pub struct RuleSet([RuleList; MAX_WIRES - MIN_WIRES + 1]);
 
 /// Represents the rules for a particular wire count.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuleList {
     pub rules: SmallVec<[Rule; 4]>,
-    /// The solution in case none of the rules applies.
+    /// The solution in case none of the `rules` applies.
     pub otherwise: Solution,
 }
 
@@ -144,7 +144,7 @@ macro_rules! rules {
     ( $(
         $( $condition_type:tt $( ( $condition_arg:tt ) )? ),+ =>
         $solution_type:ident ($solution_arg:expr)
-    ),+ or $otherwise_type:ident ($otherwise_arg:expr) ) => {
+    ),+ => $otherwise_type:ident ($otherwise_arg:expr) ) => {
         RuleList {
             rules: smallvec![
                 $(
@@ -174,26 +174,26 @@ impl RuleSet {
                     NotPresent(Red) => Index(1),
                     LastWireIs(White) => Index(2),
                     MoreThanOne(Blue) => LastOfColor(Blue)
-                    or Index(2)
+                    => Index(2)
                 },
                 rules! {
                     MoreThanOne(Red), SerialOdd => LastOfColor(Red),
                     LastWireIs(Yellow), NotPresent(Red) => Index(0),
                     ExactlyOne(Blue) => Index(0),
                     MoreThanOne(Yellow) => Index(3)
-                    or Index(1)
+                    => Index(1)
                 },
                 rules! {
                     LastWireIs(Black), SerialOdd => Index(3),
                     ExactlyOne(Red), MoreThanOne(Yellow) => Index(0),
                     NotPresent(Black) => Index(1)
-                    or Index(0)
+                    => Index(0)
                 },
                 rules! {
                     NotPresent(Yellow), SerialOdd => Index(2),
                     ExactlyOne(Yellow), MoreThanOne(White) => Index(3),
                     NotPresent(Red) => Index(5)
-                    or Index(3)
+                    => Index(3)
                 },
             ])
         } else {
