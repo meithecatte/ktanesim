@@ -1,5 +1,6 @@
-use crate::edgework::Edgework;
+use crate::edgework::{Edgework, PortType};
 use crate::random::{RuleseedRandom, VANILLA_SEED};
+use rand::prelude::*;
 use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
 use strum_macros::{Display, EnumCount, EnumIter, IntoStaticStr};
@@ -7,7 +8,100 @@ use strum_macros::{Display, EnumCount, EnumIter, IntoStaticStr};
 pub const MIN_WIRES: usize = 3;
 pub const MAX_WIRES: usize = 6;
 
-use rand::prelude::*;
+/// The colors a wire can have
+#[derive(Debug, Display, Copy, Clone, IntoStaticStr, EnumCount, EnumIter, PartialEq, Eq)]
+#[strum(serialize_all = "snake_case")]
+pub enum Color {
+    Black,
+    Blue,
+    Red,
+    White,
+    Yellow,
+}
+
+/// Stores a full rule set for Wires.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RuleSet([RuleList; 4]);
+
+/// Represents the rules for a particular wire count.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RuleList {
+    pub rules: SmallVec<[Rule; 4]>,
+    /// The solution in case none of the rules applies.
+    pub otherwise: Solution,
+}
+
+/// Represents a single sentence in the manual. If all `queries` are met, the `solution` applies
+/// (except earlier rules take precedence)
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Rule {
+    pub queries: SmallVec<[Query; 2]>,
+    pub solution: Solution,
+}
+
+/// A single condition of a rule
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Query {
+    Edgework(EdgeworkQuery),
+    Wire(WireQuery),
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+enum QueryType {
+    Edgework(EdgeworkQuery),
+    Wire(WireQueryType),
+}
+
+const QUERY_TYPE_COUNT: usize = WIREQUERYTYPE_COUNT + crate::edgework::PORTTYPE_COUNT + 3;
+
+/// A condition pertaining to the edgework of a bomb
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum EdgeworkQuery {
+    SerialStartsWithLetter,
+    SerialOdd,
+    HasEmptyPortPlate,
+    PortPresent(PortType),
+}
+
+/// A condition pertaining to the colors of the wires on a module
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct WireQuery {
+    pub query_type: WireQueryType,
+    pub color: Color,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, EnumCount, EnumIter)]
+pub enum WireQueryType {
+    /// If there is exactly one _color_ wire...
+    ExactlyOne,
+    /// If there are no _color_ wires...
+    NotPresent,
+    /// If there last wire is _color_...
+    LastWireIs,
+    /// If there is more than one _color_ wire...
+    MoreThanOne,
+}
+
+/// The action the player should take to defuse a particular wire module
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Solution {
+    /// Cut the n-th wire. 0-indexed
+    Index(u8),
+    /// Cut the wire of the specified color. Only used when there is exactly one wire of the color.
+    TheOneOfColor(Color),
+    /// Cut the first wire of the specified color.
+    FirstOfColor(Color),
+    /// Cut the first wire of the specified color.
+    LastOfColor(Color),
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+enum ColorlessSolution {
+    Index(u8),
+    TheOneOfColor,
+    FirstOfColor,
+    LastOfColor,
+}
 
 /// Generates a wire module just like the game. Each wire slot is represented as an Option, which
 /// is set to `Some` if a wire is present, and to `None` otherwise. Additionally, the number of
@@ -30,10 +124,6 @@ pub fn generate<R: Rng + ?Sized>(rng: &mut R) -> ([Option<Color>; MAX_WIRES], u8
 
     (wires, wire_count as u8)
 }
-
-/// Stores a full rule set for Wires.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RuleSet([RuleList; 4]);
 
 macro_rules! cond {
     ( $type:ident ) => {
@@ -112,8 +202,8 @@ impl RuleSet {
                 let wire_count = index + MIN_WIRES;
                 let rule_count = Self::roll_rule_count(&mut rng);
                 let mut rules = smallvec![];
-                let mut query_weights: HashMap<QueryWeightKey, f64> = HashMap::new();
-                let mut solution_weights: HashMap<SolutionWeightKey, f64> = HashMap::new();
+                let mut query_weights: HashMap<QueryType, f64> = HashMap::new();
+                let mut solution_weights: HashMap<ColorlessSolution, f64> = HashMap::new();
 
                 while rules.len() < rule_count {
                     let rule = Self::generate_rule(
@@ -132,7 +222,7 @@ impl RuleSet {
                 rules.sort_by_key(|rule: &Rule| std::cmp::Reverse(rule.queries.len()));
 
                 let mut solutions = Self::possible_solutions(&[], wire_count);
-                let forbidden: SolutionWeightKey = rules.last().unwrap().solution.into();
+                let forbidden: ColorlessSolution = rules.last().unwrap().solution.into();
                 solutions.retain(|&mut solution| solution != forbidden);
 
                 let otherwise = rng.choice(&solutions).unwrap().colorize(&mut rng, &[]);
@@ -159,8 +249,8 @@ impl RuleSet {
     /// Generate a rule.
     fn generate_rule(
         rng: &mut RuleseedRandom,
-        query_weights: &mut HashMap<QueryWeightKey, f64>,
-        solution_weights: &mut HashMap<SolutionWeightKey, f64>,
+        query_weights: &mut HashMap<QueryType, f64>,
+        solution_weights: &mut HashMap<ColorlessSolution, f64>,
         wire_count: usize,
     ) -> Rule {
         let compound = Self::roll_compound(rng);
@@ -171,7 +261,7 @@ impl RuleSet {
 
         // Stores the query types that were not yet used in the rule.
         let available_queries: SmallVec<[_; WIREQUERYTYPE_COUNT]> =
-            WireQueryType::iter().map(QueryWeightKey::Wire).collect();
+            WireQueryType::iter().map(QueryType::Wire).collect();
         let main_query = Self::choose_query(
             rng,
             &available_queries,
@@ -189,19 +279,19 @@ impl RuleSet {
                 [SerialStartsWithLetter, SerialOdd]
                     .iter()
                     .copied()
-                    .map(QueryWeightKey::Edgework)
+                    .map(QueryType::Edgework)
                     .chain(
                         WireQueryType::iter()
                             // Can't use all uninvolved wires. Likely either off-by-one in the
                             // original algorithm or a remaining wire is reserved for the solution.
                             .filter(|query_type| query_type.wires_involved() < uninvolved_wires)
-                            .map(QueryWeightKey::Wire),
+                            .map(QueryType::Wire),
                     )
                     .chain(
                         PortType::iter()
                             .map(PortPresent)
                             .chain(std::iter::once(HasEmptyPortPlate))
-                            .map(QueryWeightKey::Edgework),
+                            .map(QueryType::Edgework),
                     )
                     .collect();
 
@@ -236,8 +326,8 @@ impl RuleSet {
 
     fn choose_query(
         rng: &mut RuleseedRandom,
-        available_queries: &[QueryWeightKey],
-        query_weights: &mut HashMap<QueryWeightKey, f64>,
+        available_queries: &[QueryType],
+        query_weights: &mut HashMap<QueryType, f64>,
         colors_available: &mut SmallVec<[Color; COLOR_COUNT]>,
     ) -> Query {
         let query_type = *rng.weighted_select(&available_queries, query_weights);
@@ -248,8 +338,8 @@ impl RuleSet {
     fn possible_solutions(
         queries: &[Query],
         wire_count: usize,
-    ) -> SmallVec<[SolutionWeightKey; 8]> {
-        use self::SolutionWeightKey::*;
+    ) -> SmallVec<[ColorlessSolution; 8]> {
+        use self::ColorlessSolution::*;
         let wire_count = wire_count as u8;
         let mut solutions = smallvec![Index(0), Index(1), Index(wire_count - 1)];
 
@@ -300,22 +390,13 @@ impl fmt::Display for RuleSet {
     }
 }
 
-use std::ops::Index;
-impl Index<usize> for RuleSet {
+impl std::ops::Index<usize> for RuleSet {
     type Output = RuleList;
 
     fn index(&self, wire_count: usize) -> &RuleList {
         self.get(wire_count)
             .expect("index for RuleSet out of bounds")
     }
-}
-
-/// Represents the rules for a particular wire count.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RuleList {
-    pub rules: SmallVec<[Rule; 4]>,
-    /// The solution in case none of the rules applies.
-    pub otherwise: Solution,
 }
 
 impl RuleList {
@@ -358,14 +439,6 @@ impl fmt::Display for RuleList {
     }
 }
 
-/// Represents a single sentence in the manual. If all `queries` are met, the `solution` applies
-/// (except earlier rules take precedence)
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Rule {
-    pub queries: SmallVec<[Query; 2]>,
-    pub solution: Solution,
-}
-
 impl Rule {
     pub fn evaluate(&self, edgework: &Edgework, wires: &[Color]) -> bool {
         self.queries
@@ -394,15 +467,6 @@ impl Rule {
     }
 }
 
-use crate::edgework::PortType;
-
-/// A single condition of a rule
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Query {
-    Edgework(EdgeworkQuery),
-    Wire(WireQuery),
-}
-
 impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::Query::*;
@@ -422,8 +486,8 @@ impl Query {
         }
     }
 
-    fn additional_solutions(self) -> impl Iterator<Item = SolutionWeightKey> {
-        use self::SolutionWeightKey::*;
+    fn additional_solutions(self) -> impl Iterator<Item = ColorlessSolution> {
+        use self::ColorlessSolution::*;
         use self::WireQueryType::*;
         let solutions: &[_] = match self {
             Query::Wire(WireQuery { query_type, .. }) => match query_type {
@@ -452,18 +516,9 @@ impl Query {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-enum QueryWeightKey {
-    Edgework(EdgeworkQuery),
-    Wire(WireQueryType),
-}
-
-use crate::edgework::PORTTYPE_COUNT;
-const QUERY_TYPE_COUNT: usize = WIREQUERYTYPE_COUNT + PORTTYPE_COUNT + 3;
-
-impl From<Query> for QueryWeightKey {
+impl From<Query> for QueryType {
     fn from(query: Query) -> Self {
-        use self::QueryWeightKey::*;
+        use self::QueryType::*;
         match query {
             Query::Edgework(q) => Edgework(q),
             Query::Wire(WireQuery { query_type, .. }) => Wire(query_type),
@@ -471,13 +526,13 @@ impl From<Query> for QueryWeightKey {
     }
 }
 
-impl QueryWeightKey {
+impl QueryType {
     fn colorize(
         self,
         rng: &mut RuleseedRandom,
         colors_available: &mut SmallVec<[Color; COLOR_COUNT]>,
     ) -> Query {
-        use self::QueryWeightKey::*;
+        use self::QueryType::*;
         match self {
             Edgework(q) => Query::Edgework(q),
             Wire(query_type) => Query::Wire(query_type.colorize(rng, colors_available)),
@@ -493,15 +548,6 @@ impl Query {
             Wire(query) => query.evaluate(wires),
         }
     }
-}
-
-/// A condition pertaining to the edgework of a bomb
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum EdgeworkQuery {
-    SerialStartsWithLetter,
-    SerialOdd,
-    HasEmptyPortPlate,
-    PortPresent(PortType),
 }
 
 impl fmt::Display for EdgeworkQuery {
@@ -529,25 +575,6 @@ impl EdgeworkQuery {
             PortPresent(port) => edgework.port_plates.iter().any(|&plate| plate.has(port)),
         }
     }
-}
-
-/// A condition pertaining to the colors of the wires on a module
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct WireQuery {
-    query_type: WireQueryType,
-    color: Color,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, EnumCount, EnumIter)]
-pub enum WireQueryType {
-    /// If there is exactly one _color_ wire...
-    ExactlyOne,
-    /// If there are no _color_ wires...
-    NotPresent,
-    /// If there last wire is _color_...
-    LastWireIs,
-    /// If there is more than one _color_ wire...
-    MoreThanOne,
 }
 
 impl WireQueryType {
@@ -607,41 +634,20 @@ impl WireQuery {
     }
 }
 
-/// The action the player should take to defuse a particular wire module
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Solution {
-    /// Cut the n-th wire. 0-indexed
-    Index(u8),
-    /// Cut the wire of the specified color. Only used when there is exactly one wire of the color.
-    TheOneOfColor(Color),
-    /// Cut the first wire of the specified color.
-    FirstOfColor(Color),
-    /// Cut the first wire of the specified color.
-    LastOfColor(Color),
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-enum SolutionWeightKey {
-    Index(u8),
-    TheOneOfColor,
-    FirstOfColor,
-    LastOfColor,
-}
-
-impl From<Solution> for SolutionWeightKey {
-    fn from(solution: Solution) -> SolutionWeightKey {
+impl From<Solution> for ColorlessSolution {
+    fn from(solution: Solution) -> ColorlessSolution {
         match solution {
-            Solution::Index(n) => SolutionWeightKey::Index(n),
-            Solution::TheOneOfColor(_) => SolutionWeightKey::TheOneOfColor,
-            Solution::FirstOfColor(_) => SolutionWeightKey::FirstOfColor,
-            Solution::LastOfColor(_) => SolutionWeightKey::LastOfColor,
+            Solution::Index(n) => ColorlessSolution::Index(n),
+            Solution::TheOneOfColor(_) => ColorlessSolution::TheOneOfColor,
+            Solution::FirstOfColor(_) => ColorlessSolution::FirstOfColor,
+            Solution::LastOfColor(_) => ColorlessSolution::LastOfColor,
         }
     }
 }
 
-impl SolutionWeightKey {
+impl ColorlessSolution {
     fn colorize(self, rng: &mut RuleseedRandom, colors_available: &[Color]) -> Solution {
-        use self::SolutionWeightKey::*;
+        use self::ColorlessSolution::*;
         let color = rng.choice(colors_available).copied();
         match self {
             Index(n) => Solution::Index(n),
@@ -688,17 +694,6 @@ impl Solution {
             _ => self.as_index(wires) == index,
         }
     }
-}
-
-/// The colors a wire can have
-#[derive(Debug, Display, Copy, Clone, IntoStaticStr, EnumCount, EnumIter, PartialEq, Eq)]
-#[strum(serialize_all = "snake_case")]
-pub enum Color {
-    Black,
-    Blue,
-    Red,
-    White,
-    Yellow,
 }
 
 #[cfg(test)]
