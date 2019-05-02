@@ -11,9 +11,8 @@ use std::fmt;
 use std::sync::Arc;
 use std::time::Duration;
 
-type UpgradableBombsGuard = lock_api::RwLockUpgradableReadGuard<
+type UpgradableBombsGuard = parking_lot::RwLockUpgradableReadGuard<
     'static,
-    parking_lot::RawRwLock,
     HashMap<ChannelId, BombRef>,
 >;
 

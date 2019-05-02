@@ -6,7 +6,10 @@ pub static COMMANDS: phf::OrderedMap<&'static str, Command> = phf_ordered_map! {
     "run" => AnyTime(crate::bomb::starting::cmd_run),
     "detonate" => NeedsBomb(crate::bomb::cmd_detonate),
     "edgework" => NeedsBomb(crate::edgework::cmd_edgework),
+    "source" => AnyTime(crate::commands::info::cmd_source),
 };
+
+mod info;
 
 pub type Parameters<'a> = std::str::SplitWhitespace<'a>;
 

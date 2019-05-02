@@ -7,6 +7,7 @@ pub struct Config {
     allow_dm: bool,
     bot_owner: UserId,
     allowed_channels: HashSet<ChannelId>,
+    pub source_url: String,
 }
 
 impl Config {
@@ -18,6 +19,7 @@ impl Config {
                 .split(',')
                 .map(|s| s.parse().map(ChannelId))
                 .collect::<Result<_, _>>()?,
+            source_url: env("SOURCE_URL"),
         })
     }
 

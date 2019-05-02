@@ -22,6 +22,8 @@ mod textures;
 mod timing;
 mod utils;
 
+git_testament::git_testament!(TESTAMENT);
+
 use config::Config;
 use prelude::*;
 use serenity::utils::Colour;

@@ -34,7 +34,7 @@ As a notable consequence of this fact, should you run a modified version of the 
 make the modified source code available to everyone who interacts with the bot**. A good way to
 do this is to set up the `!source` command to link to your code.
 
-**TOOD**: explain how.
+**TODO**: explain how.
 
 ### Contribution
 
