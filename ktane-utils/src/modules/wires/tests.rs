@@ -61,36 +61,6 @@ fn wire_query_evaluate() {
 }
 
 #[test]
-fn edgework_query_evaluate() {
-    use super::EdgeworkQuery::*;
-    use super::PortType::*;
-
-    #[rustfmt::skip]
-    const TESTS: &[(&str, EdgeworkQuery, bool)] = &[
-        ("0B 0H // KT4NE8", SerialStartsWithLetter, true),
-        ("0B 0H // 123AB4", SerialStartsWithLetter, false),
-        ("0B 0H // KT4NE8", SerialOdd, false),
-        ("0B 0H // KT4NE7", SerialOdd, true),
-        ("0B 0H // [Empty] // KT4NE8", HasEmptyPortPlate, true),
-        ("0B 0H // [Serial] [Empty] // KT4NE8", HasEmptyPortPlate, true),
-        ("0B 0H // KT4NE8", HasEmptyPortPlate, false),
-        ("0B 0H // [Serial] [RCA] // KT4NE8", HasEmptyPortPlate, false),
-        ("0B 0H // [Serial] // KT4NE8", PortPresent(Serial), true),
-        ("0B 0H // [Serial, Parallel] // KT4NE8", PortPresent(Serial), true),
-        ("0B 0H // [Serial, Parallel] // KT4NE8", PortPresent(Parallel), true),
-        ("0B 0H // [Parallel] [Empty] // KT4NE8", PortPresent(Serial), false),
-        ("0B 0H // [Parallel] [Serial] // KT4NE8", PortPresent(Serial), true),
-        ("0B 0H // [Serial] [Parallel] // KT4NE8", PortPresent(Serial), true),
-        ("0B 0H // KT4NE8", PortPresent(Serial), false),
-    ];
-
-    for &(edgework, query, expected) in TESTS {
-        let edgework = edgework.parse::<Edgework>().unwrap();
-        assert_eq!(query.evaluate(&edgework), expected);
-    }
-}
-
-#[test]
 fn generated_rules() {
     let rules = RuleSet::new(42);
     let expected = RuleSet([

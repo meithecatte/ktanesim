@@ -2,6 +2,7 @@ use enum_map::EnumMap;
 use enumflags2::BitFlags;
 use lazy_static::lazy_static;
 use rand::prelude::*;
+use std::fmt;
 use strum_macros::{Display, EnumCount, EnumIter, EnumProperty, EnumString, IntoStaticStr};
 
 /// Represents the set of widgets on the edges of a bomb.
@@ -436,6 +437,42 @@ impl Edgework {
     }
 }
 
+/// A condition pertaining to the edgework of a bomb
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum EdgeworkQuery {
+    SerialStartsWithLetter,
+    SerialOdd,
+    HasEmptyPortPlate,
+    PortPresent(PortType),
+}
+
+impl fmt::Display for EdgeworkQuery {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use self::EdgeworkQuery::*;
+        match *self {
+            SerialStartsWithLetter => write!(f, "the serial number starts with a letter"),
+            SerialOdd => write!(f, "the last digit of the serial number is odd"),
+            HasEmptyPortPlate => write!(f, "there is an empty port plate present on the bomb"),
+            PortPresent(port) => {
+                let article = if port == PortType::RJ45 { "an" } else { "a" };
+                write!(f, "there is {} {} port present on the bomb", article, port)
+            }
+        }
+    }
+}
+
+impl EdgeworkQuery {
+    pub fn evaluate(self, edgework: &Edgework) -> bool {
+        use self::EdgeworkQuery::*;
+        match self {
+            SerialStartsWithLetter => edgework.serial_number.as_bytes()[0].is_ascii_uppercase(),
+            SerialOdd => edgework.serial_number.last_digit() % 2 == 1,
+            HasEmptyPortPlate => edgework.port_plates.iter().any(|&plate| plate.is_empty()),
+            PortPresent(port) => edgework.port_plates.iter().any(|&plate| plate.has(port)),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -495,6 +532,36 @@ mod tests {
             ("3B 2H // [Airport] // KT4NE8", NotAPort),
         ] {
             assert_eq!(test.parse::<Edgework>(), Err(error));
+        }
+    }
+
+    #[test]
+    fn edgework_query_evaluate() {
+        use super::EdgeworkQuery::*;
+        use super::PortType::*;
+
+        #[rustfmt::skip]
+        const TESTS: &[(&str, EdgeworkQuery, bool)] = &[
+            ("0B 0H // KT4NE8", SerialStartsWithLetter, true),
+            ("0B 0H // 123AB4", SerialStartsWithLetter, false),
+            ("0B 0H // KT4NE8", SerialOdd, false),
+            ("0B 0H // KT4NE7", SerialOdd, true),
+            ("0B 0H // [Empty] // KT4NE8", HasEmptyPortPlate, true),
+            ("0B 0H // [Serial] [Empty] // KT4NE8", HasEmptyPortPlate, true),
+            ("0B 0H // KT4NE8", HasEmptyPortPlate, false),
+            ("0B 0H // [Serial] [RCA] // KT4NE8", HasEmptyPortPlate, false),
+            ("0B 0H // [Serial] // KT4NE8", PortPresent(Serial), true),
+            ("0B 0H // [Serial, Parallel] // KT4NE8", PortPresent(Serial), true),
+            ("0B 0H // [Serial, Parallel] // KT4NE8", PortPresent(Parallel), true),
+            ("0B 0H // [Parallel] [Empty] // KT4NE8", PortPresent(Serial), false),
+            ("0B 0H // [Parallel] [Serial] // KT4NE8", PortPresent(Serial), true),
+            ("0B 0H // [Serial] [Parallel] // KT4NE8", PortPresent(Serial), true),
+            ("0B 0H // KT4NE8", PortPresent(Serial), false),
+        ];
+
+        for &(edgework, query, expected) in TESTS {
+            let edgework = edgework.parse::<Edgework>().unwrap();
+            assert_eq!(query.evaluate(&edgework), expected);
         }
     }
 }

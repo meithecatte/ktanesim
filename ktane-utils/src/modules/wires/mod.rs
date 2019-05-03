@@ -1,4 +1,4 @@
-use crate::edgework::{Edgework, PortType};
+use crate::edgework::{Edgework, EdgeworkQuery};
 use crate::random::{RuleseedRandom, VANILLA_SEED};
 use joinery::prelude::*;
 use rand::prelude::*;
@@ -13,7 +13,7 @@ pub use solution::Solution;
 
 mod query;
 use query::QueryType;
-pub use query::{EdgeworkQuery, Query, WireQuery, WireQueryType};
+pub use query::{Query, WireQuery, WireQueryType};
 
 pub const MIN_WIRES: usize = 3;
 pub const MAX_WIRES: usize = 6;
@@ -241,45 +241,19 @@ impl Rule {
         let mut colors_available_for_queries: SmallVec<[Color; COLOR_COUNT]> =
             Color::iter().collect();
 
-        // Stores the query types that were not yet used in the rule.
-        let available_queries: SmallVec<[_; query::WIREQUERYTYPE_COUNT]> =
-            WireQueryType::iter().map(QueryType::Wire).collect();
         let main_query = Self::choose_query(
             rng,
-            &available_queries,
+            &QueryType::primary_queries(),
             query_weights,
             &mut colors_available_for_queries,
         );
 
         let auxiliary_query = if compound {
             let uninvolved_wires = wire_count - main_query.wires_involved();
-            use self::EdgeworkQuery::*;
-
-            // The serial number queries go first, then the wire colors, and ports at the end. This
-            // order is necessary to generate the correct rules.
-            let available_queries: SmallVec<[_; query::QUERY_TYPE_COUNT]> =
-                [SerialStartsWithLetter, SerialOdd]
-                    .iter()
-                    .copied()
-                    .map(QueryType::Edgework)
-                    .chain(
-                        WireQueryType::iter()
-                            // Can't use all uninvolved wires. Likely either off-by-one in the
-                            // original algorithm or a remaining wire is reserved for the solution.
-                            .filter(|query_type| query_type.wires_involved() < uninvolved_wires)
-                            .map(QueryType::Wire),
-                    )
-                    .chain(
-                        PortType::iter()
-                            .map(PortPresent)
-                            .chain(std::iter::once(HasEmptyPortPlate))
-                            .map(QueryType::Edgework),
-                    )
-                    .collect();
 
             Some(Self::choose_query(
                 rng,
-                &available_queries,
+                &QueryType::secondary_queries(uninvolved_wires),
                 query_weights,
                 &mut colors_available_for_queries,
             ))
@@ -391,6 +365,9 @@ impl RuleSet {
         ])
     }
 }
+
+#[cfg(test)]
+use crate::edgework::PortType;
 
 #[cfg(test)]
 mod tests;

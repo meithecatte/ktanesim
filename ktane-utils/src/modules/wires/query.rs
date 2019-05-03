@@ -1,5 +1,5 @@
 use super::{Color, ColorlessSolution, COLOR_COUNT};
-use crate::edgework::{Edgework, PortType};
+use crate::edgework::{Edgework, EdgeworkQuery, PortType};
 use crate::random::RuleseedRandom;
 use smallvec::SmallVec;
 use std::fmt;
@@ -20,15 +20,6 @@ pub(super) enum QueryType {
 
 pub(super) const QUERY_TYPE_COUNT: usize =
     WIREQUERYTYPE_COUNT + crate::edgework::PORTTYPE_COUNT + 3;
-
-/// A condition pertaining to the edgework of a bomb
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum EdgeworkQuery {
-    SerialStartsWithLetter,
-    SerialOdd,
-    HasEmptyPortPlate,
-    PortPresent(PortType),
-}
 
 /// A condition pertaining to the colors of the wires on a module
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -120,6 +111,37 @@ impl QueryType {
             Wire(query_type) => Query::Wire(query_type.colorize(rng, colors_available)),
         }
     }
+
+    pub(super) fn primary_queries() -> SmallVec<[QueryType; WIREQUERYTYPE_COUNT]> {
+        use strum::IntoEnumIterator;
+        WireQueryType::iter().map(QueryType::Wire).collect()
+    }
+
+    pub(super) fn secondary_queries(uninvolved_wires: usize) -> SmallVec<[QueryType; QUERY_TYPE_COUNT]> {
+        use super::EdgeworkQuery::*;
+        use strum::IntoEnumIterator;
+
+        // The serial number queries go first, then the wire colors, and ports at the end. This
+        // order is necessary to generate the correct rules.
+        [SerialStartsWithLetter, SerialOdd]
+            .iter()
+            .copied()
+            .map(QueryType::Edgework)
+            .chain(
+                WireQueryType::iter()
+                    // Can't use all uninvolved wires. Likely either an off-by-one in the
+                    // original algorithm or a remaining wire is reserved for the solution.
+                    .filter(|query_type| query_type.wires_involved() < uninvolved_wires)
+                    .map(QueryType::Wire),
+            )
+            .chain(
+                PortType::iter()
+                    .map(PortPresent)
+                    .chain(std::iter::once(HasEmptyPortPlate))
+                    .map(QueryType::Edgework),
+            )
+            .collect()
+    }
 }
 
 impl Query {
@@ -128,33 +150,6 @@ impl Query {
         match self {
             Edgework(query) => query.evaluate(edgework),
             Wire(query) => query.evaluate(wires),
-        }
-    }
-}
-
-impl fmt::Display for EdgeworkQuery {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use self::EdgeworkQuery::*;
-        match *self {
-            SerialStartsWithLetter => write!(f, "the serial number starts with a letter"),
-            SerialOdd => write!(f, "the last digit of the serial number is odd"),
-            HasEmptyPortPlate => write!(f, "there is an empty port plate present on the bomb"),
-            PortPresent(port) => {
-                let article = if port == PortType::RJ45 { "an" } else { "a" };
-                write!(f, "there is {} {} port present on the bomb", article, port)
-            }
-        }
-    }
-}
-
-impl EdgeworkQuery {
-    pub fn evaluate(self, edgework: &Edgework) -> bool {
-        use self::EdgeworkQuery::*;
-        match self {
-            SerialStartsWithLetter => edgework.serial_number.as_bytes()[0].is_ascii_uppercase(),
-            SerialOdd => edgework.serial_number.last_digit() % 2 == 1,
-            HasEmptyPortPlate => edgework.port_plates.iter().any(|&plate| plate.is_empty()),
-            PortPresent(port) => edgework.port_plates.iter().any(|&plate| plate.has(port)),
         }
     }
 }
