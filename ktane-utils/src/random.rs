@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::hash::Hash;
+use smallvec::SmallVec;
 
 const SEED_LEN: usize = 55;
 
@@ -136,6 +137,24 @@ impl RuleseedRandom {
         use std::convert::TryInto;
         let index = self.next_below(slice.len().try_into().expect("slice too large"));
         slice.get(index as usize)
+    }
+
+    /// Returns a randomly chosen element from the vector. Removes the chosen element.
+    ///
+    /// Panics if empty
+    pub fn choice_remove<T>(&mut self, vector: &mut Vec<T>) -> T {
+        use std::convert::TryInto;
+        let index = self.next_below(vector.len().try_into().expect("vector too large"));
+        vector.remove(index as usize)
+    }
+
+    /// Returns a randomly chosen element from the `SmallVec` vector. Removes the chosen element.
+    ///
+    /// Panics if empty.
+    pub fn choice_remove_small<A: smallvec::Array>(&mut self, vector: &mut SmallVec<A>) -> A::Item {
+        use std::convert::TryInto;
+        let index = self.next_below(vector.len().try_into().expect("vector too large"));
+        vector.remove(index as usize)
     }
 
     /// Given a `Vec<T>` and a `HashMap<T, f64>`, perform a weighted random selection from the

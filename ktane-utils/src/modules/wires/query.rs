@@ -174,12 +174,9 @@ impl WireQueryType {
         rng: &mut RuleseedRandom,
         colors_available: &mut SmallVec<[Color; COLOR_COUNT]>,
     ) -> WireQuery {
-        let index = rng.next_below(colors_available.len() as u32) as usize;
-        let color = colors_available.remove(index);
-
         WireQuery {
             query_type: self,
-            color,
+            color: rng.choice_remove_small(colors_available),
         }
     }
 }
