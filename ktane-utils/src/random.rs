@@ -1,6 +1,6 @@
+use smallvec::SmallVec;
 use std::collections::HashMap;
 use std::hash::Hash;
-use smallvec::SmallVec;
 
 const SEED_LEN: usize = 55;
 

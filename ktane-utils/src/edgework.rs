@@ -552,8 +552,8 @@ mod tests {
     #[test]
     fn edgework_query_evaluate() {
         use super::EdgeworkQuery::*;
-        use super::PortType::*;
         use super::IndicatorCode::*;
+        use super::PortType::*;
 
         #[rustfmt::skip]
         const TESTS: &[(&str, EdgeworkQuery, bool)] = &[
@@ -591,6 +591,8 @@ mod tests {
     fn edgework_query_display() {
         use super::EdgeworkQuery::*;
         use super::PortType::*;
+
+        #[rustfmt::skip]
         const TESTS: &[(EdgeworkQuery, &str)] = &[
             (PortPresent(Serial), "there is a serial port present on the bomb"),
             (PortPresent(RJ45), "there is an RJ-45 port present on the bomb"),

@@ -117,7 +117,9 @@ impl QueryType {
         WireQueryType::iter().map(QueryType::Wire).collect()
     }
 
-    pub(super) fn secondary_queries(uninvolved_wires: usize) -> SmallVec<[QueryType; QUERY_TYPE_COUNT]> {
+    pub(super) fn secondary_queries(
+        uninvolved_wires: usize,
+    ) -> SmallVec<[QueryType; QUERY_TYPE_COUNT]> {
         use super::EdgeworkQuery::*;
         use strum::IntoEnumIterator;
 
