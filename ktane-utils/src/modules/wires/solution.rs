@@ -1,5 +1,5 @@
-use crate::random::RuleseedRandom;
 use super::Color;
+use crate::random::RuleseedRandom;
 use smallvec::{smallvec, SmallVec};
 use std::fmt;
 
@@ -28,7 +28,6 @@ pub(super) enum ColorlessSolution {
     FirstOfColor,
     LastOfColor,
 }
-
 
 impl From<Solution> for ColorlessSolution {
     fn from(solution: Solution) -> ColorlessSolution {

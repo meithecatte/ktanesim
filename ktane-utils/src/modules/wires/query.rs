@@ -1,9 +1,9 @@
+use super::{Color, ColorlessSolution, COLOR_COUNT};
 use crate::edgework::{Edgework, PortType};
 use crate::random::RuleseedRandom;
 use smallvec::SmallVec;
 use std::fmt;
 use strum_macros::{EnumCount, EnumIter};
-use super::{Color, COLOR_COUNT, ColorlessSolution};
 
 /// A single condition of a rule
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -18,7 +18,8 @@ pub(super) enum QueryType {
     Wire(WireQueryType),
 }
 
-pub(super) const QUERY_TYPE_COUNT: usize = WIREQUERYTYPE_COUNT + crate::edgework::PORTTYPE_COUNT + 3;
+pub(super) const QUERY_TYPE_COUNT: usize =
+    WIREQUERYTYPE_COUNT + crate::edgework::PORTTYPE_COUNT + 3;
 
 /// A condition pertaining to the edgework of a bomb
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -68,8 +69,8 @@ impl Query {
     }
 
     pub(super) fn additional_solutions(self) -> impl Iterator<Item = ColorlessSolution> {
-        use super::ColorlessSolution::*;
         use self::WireQueryType::*;
+        use super::ColorlessSolution::*;
         let solutions: &[_] = match self {
             Query::Wire(WireQuery { query_type, .. }) => match query_type {
                 ExactlyOne => &[TheOneOfColor],

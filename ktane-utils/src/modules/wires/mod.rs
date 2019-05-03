@@ -8,12 +8,12 @@ use std::fmt;
 use strum_macros::{Display, EnumCount, EnumIter, IntoStaticStr};
 
 mod solution;
-pub use solution::Solution;
 use solution::ColorlessSolution;
+pub use solution::Solution;
 
 mod query;
-pub use query::{Query, EdgeworkQuery, WireQuery, WireQueryType};
 use query::QueryType;
+pub use query::{EdgeworkQuery, Query, WireQuery, WireQueryType};
 
 pub const MIN_WIRES: usize = 3;
 pub const MAX_WIRES: usize = 6;
@@ -187,7 +187,8 @@ impl fmt::Display for RuleList {
             let beginning = if first_rule { "If" } else { "Otherwise, if" };
 
             writeln!(
-                f, "{} {}, {}.",
+                f,
+                "{} {}, {}.",
                 beginning,
                 rule.queries.iter().join_with(" and "),
                 rule.solution,
