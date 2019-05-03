@@ -1,4 +1,4 @@
-use crate::edgework::{IndicatorCode, PortType};
+use crate::edgework::EdgeworkQuery;
 use enum_map::EnumMap;
 use smallvec::SmallVec;
 use strum_macros::{Display, EnumCount, EnumIter, IntoStaticStr};
@@ -41,12 +41,7 @@ pub struct Rule {
 pub enum Query {
     Color(Color),
     Label(Label),
-    IndicatorLit(IndicatorCode),
-    PortPresent(PortType),
-    MoreBatteriesThan(u8),
-    EmptyPortPlate,
-    SerialStartsWithLetter,
-    HasEmptyPortPlate,
+    Edgework(EdgeworkQuery),
 }
 
 /// The solution provided by a main rule.

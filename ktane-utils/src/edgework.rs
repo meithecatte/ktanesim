@@ -181,6 +181,12 @@ impl Distribution<Edgework> for Standard {
     }
 }
 
+impl Edgework {
+    pub fn battery_count(&self) -> u32 {
+        2 * self.aa_battery_pairs + self.dcell_batteries
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SerialNumber(String);
 
@@ -382,13 +388,14 @@ impl Distribution<PortPlate> for Standard {
     Display,
     Copy,
     Clone,
+    Hash,
+    PartialEq,
+    Eq,
     IntoStaticStr,
     EnumIter,
     EnumString,
     EnumCount,
     enum_map::Enum,
-    PartialEq,
-    Eq,
 )]
 pub enum IndicatorCode {
     SND,
@@ -444,6 +451,8 @@ pub enum EdgeworkQuery {
     SerialOdd,
     HasEmptyPortPlate,
     PortPresent(PortType),
+    MoreBatteriesThan(u32),
+    IndicatorLit(IndicatorCode),
 }
 
 impl fmt::Display for EdgeworkQuery {
@@ -457,6 +466,9 @@ impl fmt::Display for EdgeworkQuery {
                 let article = if port == PortType::RJ45 { "an" } else { "a" };
                 write!(f, "there is {} {} port present on the bomb", article, port)
             }
+            MoreBatteriesThan(1) => write!(f, "there is more than 1 battery on the bomb"),
+            MoreBatteriesThan(n) => write!(f, "there are more than {} batteries on the bomb", n),
+            IndicatorLit(code) => write!(f, "there is a lit indicator with label {}", code),
         }
     }
 }
@@ -469,6 +481,8 @@ impl EdgeworkQuery {
             SerialOdd => edgework.serial_number.last_digit() % 2 == 1,
             HasEmptyPortPlate => edgework.port_plates.iter().any(|&plate| plate.is_empty()),
             PortPresent(port) => edgework.port_plates.iter().any(|&plate| plate.has(port)),
+            MoreBatteriesThan(n) => edgework.battery_count() > n,
+            IndicatorLit(code) => edgework.indicators[code] == IndicatorState::Lit,
         }
     }
 }
@@ -539,6 +553,7 @@ mod tests {
     fn edgework_query_evaluate() {
         use super::EdgeworkQuery::*;
         use super::PortType::*;
+        use super::IndicatorCode::*;
 
         #[rustfmt::skip]
         const TESTS: &[(&str, EdgeworkQuery, bool)] = &[
@@ -557,11 +572,35 @@ mod tests {
             ("0B 0H // [Parallel] [Serial] // KT4NE8", PortPresent(Serial), true),
             ("0B 0H // [Serial] [Parallel] // KT4NE8", PortPresent(Serial), true),
             ("0B 0H // KT4NE8", PortPresent(Serial), false),
+            ("3B 2H // KT4NE8", MoreBatteriesThan(4), false),
+            ("3B 2H // KT4NE8", MoreBatteriesThan(3), false),
+            ("3B 2H // KT4NE8", MoreBatteriesThan(2), true),
+            ("0B 0H // *NSA // KT4NE8", IndicatorLit(NSA), true),
+            ("0B 0H // *NSA // KT4NE8", IndicatorLit(MSA), false),
+            ("0B 0H // NSA // KT4NE8", IndicatorLit(NSA), false),
+            ("0B 0H // KT4NE8", IndicatorLit(NSA), false),
         ];
 
         for &(edgework, query, expected) in TESTS {
             let edgework = edgework.parse::<Edgework>().unwrap();
             assert_eq!(query.evaluate(&edgework), expected);
+        }
+    }
+
+    #[test]
+    fn edgework_query_display() {
+        use super::EdgeworkQuery::*;
+        use super::PortType::*;
+        const TESTS: &[(EdgeworkQuery, &str)] = &[
+            (PortPresent(Serial), "there is a serial port present on the bomb"),
+            (PortPresent(RJ45), "there is an RJ-45 port present on the bomb"),
+            (MoreBatteriesThan(1), "there is more than 1 battery on the bomb"),
+            (MoreBatteriesThan(3), "there are more than 3 batteries on the bomb"),
+            (IndicatorLit(IndicatorCode::NSA), "there is a lit indicator with label NSA"),
+        ];
+
+        for &(query, expected) in TESTS {
+            assert_eq!(format!("{}", query), expected);
         }
     }
 }
