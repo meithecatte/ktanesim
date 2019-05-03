@@ -4,5 +4,6 @@
 pub mod edgework;
 pub mod random;
 pub mod modules {
+    pub mod button;
     pub mod wires;
 }
