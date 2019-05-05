@@ -155,8 +155,11 @@ impl RuleseedRandom {
         vector.remove(index as usize)
     }
 
-    /// Given a `Vec<T>` and a `HashMap<T, f64>`, perform a weighted random selection from the
-    /// `Vec`, using the corresponding values in the `HashMap` as weights.
+    /// Given a `&[T]` and a generic `*Map<T, f64>`, perform a random selection from the slice,
+    /// using the corresponding values in the map as weights.
+    ///
+    /// [`DefaultHashMap`][defaultmap::DefaultHashMap] and [`EnumMap`][enum_map::EnumMap] are good
+    /// choices for the weight map.
     pub fn weighted_select<'s, T, M>(
         &mut self,
         elements: &'s [T],
