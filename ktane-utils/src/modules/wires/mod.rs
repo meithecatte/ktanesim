@@ -3,7 +3,7 @@ use crate::random::{RuleseedRandom, VANILLA_SEED};
 use joinery::prelude::*;
 use rand::prelude::*;
 use smallvec::{smallvec, SmallVec};
-use std::collections::HashMap;
+use defaultmap::DefaultHashMap;
 use std::fmt;
 use strum_macros::{Display, EnumCount, EnumIter, IntoStaticStr};
 
@@ -83,8 +83,8 @@ impl RuleSet {
                 let wire_count = index + MIN_WIRES;
                 let rule_count = Self::roll_rule_count(&mut rng);
                 let mut rules = smallvec![];
-                let mut query_weights: HashMap<QueryType, f64> = HashMap::new();
-                let mut solution_weights: HashMap<ColorlessSolution, f64> = HashMap::new();
+                let mut query_weights = DefaultHashMap::new(1.0);
+                let mut solution_weights = DefaultHashMap::new(1.0);
 
                 while rules.len() < rule_count {
                     let rule = Rule::generate(
@@ -231,8 +231,8 @@ impl Rule {
     /// Generate a rule.
     fn generate(
         rng: &mut RuleseedRandom,
-        query_weights: &mut HashMap<QueryType, f64>,
-        solution_weights: &mut HashMap<ColorlessSolution, f64>,
+        query_weights: &mut DefaultHashMap<QueryType, f64>,
+        solution_weights: &mut DefaultHashMap<ColorlessSolution, f64>,
         wire_count: usize,
     ) -> Rule {
         let compound = rng.next_double() >= 0.6;
@@ -267,7 +267,7 @@ impl Rule {
         let available_solutions = ColorlessSolution::possible_solutions(&queries, wire_count);
 
         let solution = *rng.weighted_select(&available_solutions, solution_weights);
-        *solution_weights.entry(solution).or_insert(1.0) *= 0.05;
+        solution_weights[solution] *= 0.05;
 
         let solution_colors: SmallVec<[Color; 2]> = queries
             .iter()
@@ -283,11 +283,11 @@ impl Rule {
     fn choose_query(
         rng: &mut RuleseedRandom,
         available_queries: &[QueryType],
-        query_weights: &mut HashMap<QueryType, f64>,
+        query_weights: &mut DefaultHashMap<QueryType, f64>,
         colors_available: &mut SmallVec<[Color; COLOR_COUNT]>,
     ) -> Query {
         let query_type = *rng.weighted_select(&available_queries, query_weights);
-        *query_weights.entry(query_type).or_insert(1.0) *= 0.1;
+        query_weights[query_type] *= 0.1;
         query_type.colorize(rng, colors_available)
     }
 }

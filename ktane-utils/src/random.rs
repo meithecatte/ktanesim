@@ -1,6 +1,4 @@
 use smallvec::SmallVec;
-use std::collections::HashMap;
-use std::hash::Hash;
 
 const SEED_LEN: usize = 55;
 
@@ -159,18 +157,22 @@ impl RuleseedRandom {
 
     /// Given a `Vec<T>` and a `HashMap<T, f64>`, perform a weighted random selection from the
     /// `Vec`, using the corresponding values in the `HashMap` as weights.
-    pub fn weighted_select<'s, T>(&mut self, elements: &'s [T], weights: &HashMap<T, f64>) -> &'s T
+    pub fn weighted_select<'s, T, M>(
+        &mut self,
+        elements: &'s [T],
+        weights: &M
+    ) -> &'s T
     where
-        T: Hash + Eq,
+        M: std::ops::Index<&'s T, Output=f64>,
     {
         let total_weights: f64 = elements
             .iter()
-            .map(|element| weights.get(element).copied().unwrap_or(1.0))
+            .map(|element| weights[element])
             .sum();
         let mut choice = self.next_double() * total_weights;
 
         for element in elements.iter() {
-            let weight = weights.get(element).copied().unwrap_or(1.0);
+            let weight = weights[element];
             if choice < weight {
                 return element;
             } else {
@@ -261,7 +263,7 @@ mod tests {
     #[should_panic]
     fn weighted_select_empty() {
         let mut random = get_rng();
-        random.weighted_select::<u8>(&[], &std::collections::HashMap::new());
+        random.weighted_select::<u8, _>(&[], &std::collections::HashMap::<u8, _>::new());
     }
 
     const EXPECTED_INTS: [u32; 96] = [
