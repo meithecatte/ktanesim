@@ -439,7 +439,7 @@ class ComplicatedWires(modules.Module):
 
 		for wire in parsed:
 			if self.cut[wire]:
-				await self.log(f'Wire {wire + 1} has already been cut, ignoring')
+				self.log(f'Wire {wire + 1} has already been cut, ignoring')
 			else:
 				self.cut[wire] = True
 				if self.should_cut[wire]:
