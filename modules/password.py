@@ -7,7 +7,6 @@ import cairosvg
 class Password(modules.Module):
     display_name = "Password"
     manual_name = "Password"
-    supports_hummus = True
     help_text = "`{cmd} cycle 3` - cycle the third column. `{cmd} cycle 1 3 5`, `{cmd} cycle 135` - cycle multiple columns. `{cmd} cycle` - cycle all columns. `{cmd} submit water` - try to submit a word. "
     module_score = 2
 
@@ -21,20 +20,9 @@ class Password(modules.Module):
         "where", "which", "world", "would", "write",
     ]
 
-    WORDS_HUMMUS = [
-        "aloof", "arena", "bleat", "boxed", "butts",
-        "caley", "crate", "feret", "freak", "humus",
-        "jewel", "joule", "joust", "knobs", "local",
-        "pause", "press", "prime", "rings", "sails",
-        "snake", "space", "splat", "spoon", "steel",
-        "tangy", "texas", "these", "those", "toons",
-        "tunes", "walks", "weird", "wodar", "words",
-    ]
-
     def __init__(self, bomb, ident):
         super().__init__(bomb, ident)
-        self.wordset = Password.WORDS_HUMMUS if self.bomb.hummus else Password.WORDS
-        self.solution = random.choice(self.wordset)
+        self.solution = random.choice(Password.WORDS)
         self.positions = [0] * 5
         self.log(f"Solution: {self.solution}")
         self.spinners = [list(abc) for _ in range(5)]
@@ -60,7 +48,7 @@ class Password(modules.Module):
         self.log(f"Spinners:\n\n{spinners_str}")
 
     def get_matches(self):
-        for word in self.wordset:
+        for word in Password.WORDS:
             if self.can_set_word(word):
                 yield word
 

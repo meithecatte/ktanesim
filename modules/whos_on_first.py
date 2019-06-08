@@ -4,7 +4,6 @@ import modules
 class WhosOnFirst(modules.Module):
     display_name = "Who's on First"
     manual_name = "Who\u2019s on First"
-    supports_hummus = True
     help_text = "`{cmd} push you're` or `{cmd} press press` to push a button. The phrase must match exactly."
     module_score = 4
     third_base = False
@@ -20,14 +19,6 @@ class WhosOnFirst(modules.Module):
         "RED": 3, "REED": 4, "LEED": 4, "HOLD ON": 5, "YOU": 3, "YOU ARE": 5,
         "YOUR": 3, "YOU'RE": 3, "UR": 0, "THERE": 5, "THEY'RE": 4, "THEIR": 3,
         "THEY ARE": 2, "SEE": 5, "C": 1, "CEE": 5
-    }
-
-    DISPLAY_WORDS_HUMMUS = {
-        "YES": 4, "FIRST": 0, "DISPLAY": 5, "OKAY": 2, "SAYS": 4, "NOTHING": 0,
-        "": 4, "BLANK": 3, "NO": 5, "LED": 5, "LEAD": 4, "READ": 3,
-        "RED": 1, "REED": 5, "LEED": 0, "HOLD ON": 0, "YOU": 2, "YOU ARE": 1,
-        "YOUR": 2, "YOU'RE": 3, "UR": 5, "THERE": 0, "THEY'RE": 5, "THEIR": 4,
-        "THEY ARE": 4, "SEE": 4, "C": 4, "CEE": 1
     }
 
     PRECEDENCE = {
@@ -59,37 +50,6 @@ class WhosOnFirst(modules.Module):
         "HOLD":    ["YOU ARE", "U", "DONE", "UH UH", "YOU", "UR", "SURE", "WHAT?", "YOU'RE", "NEXT", "HOLD", "UH HUH", "YOUR", "LIKE"],
         "SURE":    ["YOU ARE", "DONE", "LIKE", "YOU'RE", "YOU", "HOLD", "UH HUH", "UR", "SURE", "U", "WHAT?", "NEXT", "YOUR", "UH UH"],
         "LIKE":    ["YOU'RE", "NEXT", "U", "UR", "HOLD", "DONE", "UH UH", "WHAT?", "UH HUH", "YOU", "LIKE", "SURE", "YOU ARE", "YOUR"],
-    }
-
-    PRECEDENCE_HUMMUS = {
-        "READY":   ["FIRST", "YES", "OKAY", "UHHH", "LEFT", "BLANK", "NOTHING", "RIGHT", "WHAT", "MIDDLE", "PRESS", "READY", "WAIT", "NO"],
-        "FIRST":   ["NOTHING", "RIGHT", "UHHH", "NO", "BLANK", "WHAT", "READY", "MIDDLE", "WAIT", "PRESS", "LEFT", "OKAY", "FIRST", "YES"],
-        "NO":      ["PRESS", "WAIT", "MIDDLE", "YES", "NO", "NOTHING", "WHAT", "BLANK", "RIGHT", "READY", "FIRST", "OKAY", "UHHH", "LEFT"],
-        "BLANK":   ["PRESS", "OKAY", "READY", "BLANK", "WAIT", "UHHH", "WHAT", "LEFT", "RIGHT", "NO", "MIDDLE", "YES", "FIRST", "NOTHING"],
-        "NOTHING": ["WAIT", "OKAY", "YES", "READY", "WHAT", "LEFT", "RIGHT", "BLANK", "PRESS", "NOTHING", "FIRST", "NO", "UHHH", "MIDDLE"],
-        "YES":     ["WAIT", "YES", "WHAT", "UHHH", "READY", "OKAY", "MIDDLE", "PRESS", "RIGHT", "LEFT", "FIRST", "NO", "NOTHING", "BLANK"],
-        "WHAT":    ["LEFT", "BLANK", "WAIT", "PRESS", "RIGHT", "MIDDLE", "FIRST", "OKAY", "NO", "READY", "YES", "UHHH", "WHAT", "NOTHING"],
-        "UHHH":    ["LEFT", "YES", "READY", "MIDDLE", "RIGHT", "WHAT", "FIRST", "PRESS", "NO", "OKAY", "WAIT", "UHHH", "BLANK", "NOTHING"],
-        "LEFT":    ["LEFT", "PRESS", "WAIT", "UHHH", "NOTHING", "MIDDLE", "NO", "FIRST", "OKAY", "WHAT", "YES", "READY", "RIGHT", "BLANK"],
-        "RIGHT":   ["BLANK", "NO", "LEFT", "NOTHING", "FIRST", "YES", "RIGHT", "PRESS", "OKAY", "UHHH", "MIDDLE", "WAIT", "READY", "WHAT"],
-        "MIDDLE":  ["UHHH", "NOTHING", "FIRST", "LEFT", "WHAT", "YES", "READY", "RIGHT", "NO", "MIDDLE", "WAIT", "BLANK", "PRESS", "OKAY"],
-        "OKAY":    ["RIGHT", "OKAY", "FIRST", "WAIT", "LEFT", "READY", "PRESS", "MIDDLE", "WHAT", "NOTHING", "BLANK", "YES", "UHHH", "NO"],
-        "WAIT":    ["FIRST", "WHAT", "OKAY", "LEFT", "BLANK", "WAIT", "UHHH", "NOTHING", "READY", "NO", "MIDDLE", "YES", "PRESS", "RIGHT"],
-        "PRESS":   ["RIGHT", "NOTHING", "PRESS", "BLANK", "LEFT", "FIRST", "OKAY", "MIDDLE", "YES", "WHAT", "WAIT", "NO", "UHHH", "READY"],
-        "YOU":     ["LIKE", "YOU", "UH HUH", "NEXT", "YOU'RE", "WHAT?", "UR", "UH UH", "U", "SURE", "DONE", "YOU ARE", "YOUR", "HOLD"],
-        "YOU ARE": ["YOU ARE", "YOU'RE", "UR", "YOUR", "DONE", "SURE", "UH UH", "WHAT?", "YOU", "HOLD", "U", "LIKE", "NEXT", "UH HUH"],
-        "YOUR":    ["UH HUH", "YOU ARE", "U", "NEXT", "YOU'RE", "YOUR", "UR", "SURE", "HOLD", "UH UH", "YOU", "LIKE", "WHAT?", "DONE"],
-        "YOU'RE":  ["UR", "YOUR", "WHAT?", "YOU", "UH UH", "HOLD", "SURE", "UH HUH", "YOU ARE", "U", "LIKE", "DONE", "YOU'RE", "NEXT"],
-        "UR":      ["DONE", "U", "YOU", "UH HUH", "WHAT?", "YOUR", "UH UH", "SURE", "UR", "LIKE", "HOLD", "NEXT", "YOU'RE", "YOU ARE"],
-        "U":       ["WHAT?", "YOU'RE", "UR", "YOU ARE", "NEXT", "UH UH", "UH HUH", "U", "YOU", "DONE", "YOUR", "HOLD", "LIKE", "SURE"],
-        "UH HUH":  ["UH HUH", "WHAT?", "UH UH", "DONE", "YOU'RE", "HOLD", "U", "UR", "NEXT", "YOU ARE", "LIKE", "YOU", "YOUR", "SURE"],
-        "UH UH":   ["YOU", "YOU ARE", "LIKE", "YOUR", "UR", "U", "DONE", "SURE", "NEXT", "UH HUH", "UH UH", "HOLD", "WHAT?", "YOU'RE"],
-        "WHAT?":   ["U", "DONE", "SURE", "YOUR", "NEXT", "YOU ARE", "YOU'RE", "HOLD", "LIKE", "UH HUH", "WHAT?", "UH UH", "UR", "YOU"],
-        "DONE":    ["UR", "NEXT", "U", "YOU ARE", "YOU'RE", "SURE", "UH HUH", "YOUR", "LIKE", "DONE", "YOU", "WHAT?", "UH UH", "HOLD"],
-        "NEXT":    ["LIKE", "NEXT", "UH HUH", "UR", "YOU ARE", "YOU'RE", "UH UH", "SURE", "U", "HOLD", "DONE", "YOUR", "YOU", "WHAT?"],
-        "HOLD":    ["UH UH", "YOU ARE", "YOU", "SURE", "UR", "DONE", "UH HUH", "HOLD", "LIKE", "YOU'RE", "YOUR", "NEXT", "U", "WHAT?"],
-        "SURE":    ["YOU", "UH HUH", "WHAT?", "UH UH", "U", "DONE", "YOUR", "SURE", "NEXT", "HOLD", "LIKE", "YOU'RE", "YOU ARE", "UR"],
-        "LIKE":    ["YOUR", "U", "UH UH", "UR", "WHAT?", "YOU ARE", "YOU", "NEXT", "UH HUH", "YOU'RE", "DONE", "LIKE", "SURE", "HOLD"],
     }
 
     def __init__(self, bomb, ident):
@@ -154,18 +114,12 @@ class WhosOnFirst(modules.Module):
             await self.handle_strike(author)
     
     def get_solution(self):
-        if self.bomb.hummus and not self.third_base:
-            index = self.DISPLAY_WORDS_HUMMUS[self.display]
-        else:
-            index = self.DISPLAY_WORDS[self.display]
+        index = self.DISPLAY_WORDS[self.display]
 
         word = self.buttons[index]
         self.log(f"Button to look at is {index}, the word is {word}")
 
-        if self.bomb.hummus and not self.third_base:
-            precedence = self.PRECEDENCE_HUMMUS[word]
-        else:
-            precedence = self.PRECEDENCE[word]
+        precedence = self.PRECEDENCE[word]
 
         self.log(f"Precedence list: {','.join(precedence)}")
         for button in precedence:
@@ -182,7 +136,6 @@ class WhosOnFirst(modules.Module):
 class ThirdBase(WhosOnFirst):
     display_name = "Third Base"
     manual_name = "Third Base"
-    supports_hummus = False
     help_text = "`{cmd} push 8i99` or `{cmd} press 66i8` to push a button."
     module_score = 6
     third_base = True

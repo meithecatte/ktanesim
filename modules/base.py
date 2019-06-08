@@ -50,7 +50,6 @@ class CommandConsolidator(type):
         return type.__new__(cls, clsname, superclasses, attributes)
 
 class Module(metaclass=CommandConsolidator):
-    supports_hummus = False
     strike_penalty = 6
 
     def __init__(self, bomb, ident):

@@ -4,7 +4,6 @@ import modules
 class Keypad(modules.Module):
     display_name = "Keypad"
     manual_name = "Keypad"
-    supports_hummus = True
     help_text = "`{cmd} press 1 3 2 4` or `{cmd} press 1324` or `{cmd} press tl bl tr br`. Partial solutions allowed."
     module_score = 1
 
@@ -13,22 +12,13 @@ class Keypad(modules.Module):
     def __init__(self, bomb, ident):
         super().__init__(bomb, ident)
 
-        if self.bomb.hummus:
-            self.column = random.choice([
-                ["six", "ce", "k", "hollowstar", "paragraph", "mirrorc", "zeta"],
-                ["ce", "n", "lambda", "at", "chair", "paragraph", "k"],
-                ["kitty", "six", "h", "zeta", "pitchfork", "lambda", "eye"],
-                ["kitty", "smiley", "circle", "copyright", "lightning", "mirrorc", "h"],
-                ["q", "copyright", "questionmark", "alien", "hollowstar", "fullstar", "chair"],
-                ["ae", "r", "euro", "alien", "bt", "eye", "pitchfork"]])
-        else:
-            self.column = random.choice([
-                ["q", "at", "lambda", "lightning", "kitty", "h", "mirrorc"],
-                ["euro", "q", "mirrorc", "ce", "hollowstar", "h", "questionmark"],
-                ["copyright", "eye", "ce", "k", "r", "lambda", "hollowstar"],
-                ["six", "paragraph", "bt", "kitty", "k", "questionmark", "smiley"],
-                ["pitchfork", "smiley", "bt", "normalc", "paragraph", "three", "fullstar"],
-                ["six", "euro", "tracks", "ae", "pitchfork", "n", "omega"]])
+        self.column = random.choice([
+            ["q", "at", "lambda", "lightning", "kitty", "h", "mirrorc"],
+            ["euro", "q", "mirrorc", "ce", "hollowstar", "h", "questionmark"],
+            ["copyright", "eye", "ce", "k", "r", "lambda", "hollowstar"],
+            ["six", "paragraph", "bt", "kitty", "k", "questionmark", "smiley"],
+            ["pitchfork", "smiley", "bt", "normalc", "paragraph", "three", "fullstar"],
+            ["six", "euro", "tracks", "ae", "pitchfork", "n", "omega"]])
 
         self.log(f"Precedence list: {' '.join(self.column)}")
         self.buttons = random.sample(self.column, 4)

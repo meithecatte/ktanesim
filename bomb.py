@@ -17,9 +17,8 @@ class Bomb:
     client = None
     shutdown_mode = False
 
-    def __init__(self, channel, modules, hummus = False):
+    def __init__(self, channel, modules):
         self.channel = channel
-        self.hummus = hummus
         self.strikes = 0
         self.start_time = time.monotonic()
         self.serial = self._randomize_serial()
@@ -189,7 +188,7 @@ class Bomb:
                 if len(chosen_modules) > 101:
                     return await channel.send(f"{author.mention} Nope.")
 
-        bomb = Bomb(channel, chosen_modules, hummus)
+        bomb = Bomb(channel, chosen_modules)
         Bomb.bombs[channel] = bomb
         await channel.send(f"A bomb with {len(bomb.modules)} {'modules' if len(bomb.modules) != 1 else 'module'} has been armed!\nEdgework: `{bomb.get_edgework()}`")
         await Bomb.update_presence()
@@ -393,7 +392,7 @@ class Bomb:
         if parts:
             return await self.channel.send(f"{author.mention} Trailing arguments.")
 
-        await self.channel.send(('Hummus mode on, ' if self.hummus else '') +
+        await self.channel.send(
             f"Zen mode on, time: {self.get_time_formatted()}, {self.strikes} strikes, "
             f"{self.get_solved_count()} out of {len(self.modules)} modules solved.")
 

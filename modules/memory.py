@@ -4,7 +4,6 @@ import modules
 class Memory(modules.Module):
     display_name = "Memory"
     manual_name = "Memory"
-    supports_hummus = True
     help_text = "`{cmd} pos 2` or `{cmd} position 2` - press the button in the second position. `{cmd} lab 4` or `{cmd} label 4` - press the button labeled \"4\"."
     module_score = 4
 
@@ -66,45 +65,28 @@ class Memory(modules.Module):
         self.log(f"Position history: {' '.join(map(str, self.pressed_positions))}")
         self.log(f"Label history: {' '.join(map(str, self.pressed_labels))}")
         
-        if self.bomb.hummus:
-            if self.stage == 0:
-                return [0, 2, 1, 3][self.display - 1]
-            elif self.stage == 1:
-                if self.display == 2:   return self.buttons.index(4)
-                elif self.display == 4: return 0
-                else:                   return self.pressed_positions[0]
-            elif self.stage == 2:
-                if self.display == 1:   return self.buttons.index(self.pressed_labels[0])
-                elif self.display == 2: return 1
-                elif self.display == 3: return self.buttons.index(4)
-                else:                   return 2
-            elif self.stage == 3:
-                return self.pressed_positions[[2, 0, 1, 2][self.display - 1]]
-            else:
-                return self.buttons.index(self.pressed_labels[[1, 3, 0, 2][self.display - 1]])
+        if self.stage == 0:
+            return [1, 1, 2, 3][self.display - 1]
+        elif self.stage == 1:
+            if self.display == 1:   return self.buttons.index(4)
+            elif self.display == 3: return 0
+            else:                   return self.pressed_positions[0]
+        elif self.stage == 2:
+            if self.display == 1:   return self.buttons.index(self.pressed_labels[1])
+            elif self.display == 2: return self.buttons.index(self.pressed_labels[0])
+            elif self.display == 3: return 2
+            else:                   return self.buttons.index(4)
+        elif self.stage == 3:
+            if self.display == 1:   return self.pressed_positions[0]
+            elif self.display == 2: return 0
+            else:                   return self.pressed_positions[1]
         else:
-            if self.stage == 0:
-                return [1, 1, 2, 3][self.display - 1]
-            elif self.stage == 1:
-                if self.display == 1:   return self.buttons.index(4)
-                elif self.display == 3: return 0
-                else:                   return self.pressed_positions[0]
-            elif self.stage == 2:
-                if self.display == 1:   return self.buttons.index(self.pressed_labels[1])
-                elif self.display == 2: return self.buttons.index(self.pressed_labels[0])
-                elif self.display == 3: return 2
-                else:                   return self.buttons.index(4)
-            elif self.stage == 3:
-                if self.display == 1:   return self.pressed_positions[0]
-                elif self.display == 2: return 0
-                else:                   return self.pressed_positions[1]
-            else:
-                return self.buttons.index(self.pressed_labels[[0, 1, 3, 2][self.display - 1]])
-    
-    @modules.check_solve_cmd
-    async def cmd_position(self, author, parts):
-        if len(parts) != 1 or not parts[0].isdigit():
-            return await self.usage(author)
+            return self.buttons.index(self.pressed_labels[[0, 1, 3, 2][self.display - 1]])
+
+@modules.check_solve_cmd
+async def cmd_position(self, author, parts):
+    if len(parts) != 1 or not parts[0].isdigit():
+        return await self.usage(author)
 
         position = int(parts[0]) - 1
 

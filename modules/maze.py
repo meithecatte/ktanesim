@@ -6,7 +6,6 @@ import modules
 class Maze(modules.Module):
     display_name = "Maze"
     manual_name = "Maze"
-    supports_hummus = True
     help_text = "`{cmd} move up down left right`, `{cmd} move udlr` - make a series of moves."
     module_score = 2
 
@@ -98,75 +97,10 @@ class Maze(modules.Module):
 └┘└┘└╴
 """]
 
-    MAZES_HUMMUS = ["""
-┌─┬━┐╷
-└┐│╶┴┤
-╷│└─┐│
-├┴╴┌┘│
-└┐┌┘┌┘
-╺┘╵╶┴╴
-""","""
-┌────┐
-└─┐╶┐│
-╷┌┴─┘│
-└┘┏━─┤
-┌┐│┌─┘
-╵└┘└─╴
-""","""
-╷┌┐╶┬╴
-│╵└┐└┐
-├─╴│┌┫
-│┌┐│││
-│││└┘│
-└┘┗──┘
-""","""
-┏─┐╷╶┐
-└┐│└─┤
-┌┘└─╴│
-│┌┐┌─┘
-├┘│└┐╷
-└╴└━┴┘
-""","""
-┌─┐╶┬┓
-│╶┴─┘│
-├─┐┌─┘
-┗┐│╵┌┐
-┌┘│╶┘│
-└╴└──┘
-""","""
-┌┐┌┬┐╷
-│┗┘│││
-└─┐│└┤
-╷┌┘└┐╵
-││┌┐│╻
-└┴┘╵└┘
-""","""
-┌──┬─┐
-└─┐│╷│
-╺┐││││
-╷│╵│││
-││┌┘├┘
-└┴┘╶┴╸
-""","""
-┌──┬─┐
-╵┌━┘┌┘
-╷└─┐│╷
-└┐┌┘┗┤
-┌┘│╷┌┘
-└─┘└┴╴
-""","""
-┌────┐
-└─┬┐╶┤
-┌┐╵└┐╵
-│└─┬┘╷
-│╶─┘┏┘
-└───┻╴
-"""]
     def __init__(self, bomb, ident):
         super().__init__(bomb, ident)
 
-        mazes = Maze.MAZES_HUMMUS if self.bomb.hummus else Maze.MAZES
-        maze = random.choice(mazes)
+        maze = random.choice(Maze.MAZES)
         self.parse(maze)
         self.visible_walls = ""
         self.position = random.randint(0, 5), random.randint(0, 5)

@@ -8,7 +8,6 @@ from wand.image import Image
 class SimonSays(modules.Module):
     display_name = "Simon Says"
     manual_name = "Simon Says"
-    supports_hummus = True
     help_text = "`{cmd} press red green blue yellow`, `{cmd} press rgby`. You must include the input from any previous stages."
     module_score = 3
 
@@ -19,19 +18,13 @@ class SimonSays(modules.Module):
         yellow = enum.auto()
 
     MAPPING = {
-    # strikes, vowel, hummus
-        (0, True, False):  {Color.red: Color.blue, Color.blue: Color.red, Color.green: Color.yellow, Color.yellow: Color.green},
-        (1, True, False):  {Color.red: Color.yellow, Color.blue: Color.green, Color.green: Color.blue, Color.yellow: Color.red},
-        (2, True, False):  {Color.red: Color.green, Color.blue: Color.red, Color.green: Color.yellow, Color.yellow: Color.blue},
-        (0, False, False): {Color.red: Color.blue, Color.blue: Color.yellow, Color.green: Color.green, Color.yellow: Color.red},
-        (1, False, False): {Color.red: Color.red, Color.blue: Color.blue, Color.green: Color.yellow, Color.yellow: Color.green},
-        (2, False, False): {Color.red: Color.yellow, Color.blue: Color.green, Color.green: Color.blue, Color.yellow: Color.red},
-        (0, True, True):   {Color.red: Color.yellow, Color.blue: Color.red, Color.green: Color.yellow, Color.yellow: Color.blue},
-        (1, True, True):   {Color.red: Color.green, Color.blue: Color.red, Color.green: Color.green, Color.yellow: Color.green},
-        (2, True, True):   {Color.red: Color.yellow, Color.blue: Color.yellow, Color.green: Color.yellow, Color.yellow: Color.green},
-        (0, False, True):  {Color.red: Color.red, Color.blue: Color.yellow, Color.green: Color.red, Color.yellow: Color.red},
-        (1, False, True):  {Color.red: Color.blue, Color.blue: Color.blue, Color.green: Color.blue, Color.yellow: Color.green},
-        (2, False, True):  {Color.red: Color.yellow, Color.blue: Color.red, Color.green: Color.yellow, Color.yellow: Color.yellow}
+    # strikes, vowel
+        (0, True):  {Color.red: Color.blue, Color.blue: Color.red, Color.green: Color.yellow, Color.yellow: Color.green},
+        (1, True):  {Color.red: Color.yellow, Color.blue: Color.green, Color.green: Color.blue, Color.yellow: Color.red},
+        (2, True):  {Color.red: Color.green, Color.blue: Color.red, Color.green: Color.yellow, Color.yellow: Color.blue},
+        (0, False): {Color.red: Color.blue, Color.blue: Color.yellow, Color.green: Color.green, Color.yellow: Color.red},
+        (1, False): {Color.red: Color.red, Color.blue: Color.blue, Color.green: Color.yellow, Color.yellow: Color.green},
+        (2, False): {Color.red: Color.yellow, Color.blue: Color.green, Color.green: Color.blue, Color.yellow: Color.red},
     }
 
     def __init__(self, bomb, ident):
@@ -127,7 +120,7 @@ class SimonSays(modules.Module):
         strikes = self.bomb.strikes
         if strikes > 2: strikes = 2
         vowel = self.bomb.has_vowel()
-        mapping = SimonSays.MAPPING[strikes, vowel, self.bomb.hummus]
+        mapping = SimonSays.MAPPING[strikes, vowel]
         solution = [mapping[color] for color in self.sequence]
         self.log(f"Strikes: {strikes}. Vowel: {vowel}. Solution: {' '.join(color.name for color in solution)}")
         return solution

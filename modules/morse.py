@@ -38,7 +38,6 @@ DOT_LENGTH = 45
 class MorseCode(modules.Module):
     display_name = "Morse Code"
     manual_name = "Morse Code"
-    supports_hummus = True
     help_text = "`{cmd} tx 3.545`, `{cmd} tx 545`, `{cmd} tx 3.545 MHz`, or `{cmd} transmit ...` to transmit on 3.545 MHz."
     module_score = 3
 
@@ -61,32 +60,13 @@ class MorseCode(modules.Module):
         "beats":  600,
     }
 
-    WORDS_HUMMUS = {
-        "bravo":  502,
-        "alien":  505,
-        "slick":  512,
-        "strobe": 515,
-        "break":  532,
-        "beats":  535,
-        "bombs":  545,
-        "halls":  552,
-        "shell":  562,
-        "vector": 565,
-        "brick":  572,
-        "hello":  575,
-        "flick":  582,
-        "brain":  585,
-        "sting":  595,
-        "trick":  600,
-    }
-
     def __init__(self, bomb, ident):
         super().__init__(bomb, ident)
 
-        self.wordset = MorseCode.WORDS_HUMMUS if self.bomb.hummus else MorseCode.WORDS
+        self.wordset = MorseCode.WORDS
         self.word = random.choice(list(self.wordset.keys()))
         self.frequency = self.wordset[self.word]
-        self.last_frequency = 502 if self.bomb.hummus else 505
+        self.last_frequency = 505
         self.log(f"The word is {self.word}, with a frequency of 3.{self.frequency} MHz")
     
     def get_image(self, rx_led, solve_led):

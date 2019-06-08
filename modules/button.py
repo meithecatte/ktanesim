@@ -7,7 +7,6 @@ import modules
 class Button(modules.Module):
     display_name = "The Button"
     manual_name = "The Button"
-    supports_hummus = True
     help_text = "`{cmd} tap` to tap, `{cmd} hold` to hold, `{cmd} release 7` to release when any digit of the timer is 7."
     module_score = 1
 
@@ -30,13 +29,6 @@ class Button(modules.Module):
         Color.white: 1,
         Color.yellow: 5,
         Color.red: 1,
-    }
-
-    RELEASE_RULES_HUMMUS = {
-        Color.white: 3,
-        Color.yellow: 3,
-        Color.red: 5,
-        Color.blue: 4,
     }
 
     def __init__(self, bomb, ident):
@@ -115,57 +107,30 @@ class Button(modules.Module):
                 await self.handle_strike(author)
 
     def should_hold(self):
-        if self.bomb.hummus:
-            if self.button_color == Button.Color.yellow and self.button_label == Button.Label.PRESS:
-                self.log('rule: yellow PRESS')
-                return True
-            elif self.button_color == Button.Color.white and self.bomb.get_indicator(edgework.Indicator.BOB) is True:
-                self.log('rule: white with lit BOB')
-                return False
-            elif self.bomb.get_battery_count() > 1:
-                self.log('rule: more than one battery')
-                return True
-            elif self.button_color == Button.Color.red:
-                self.log('rule: red')
-                return False
-            elif self.button_color == Button.Color.blue:
-                self.log('rule: blue')
-                return True
-            elif self.bomb.get_battery_count() > 2:
-                # never reached because of the one battery rule
-                self.log('rule: more than two batteries')
-                return False
-            else:
-                self.log('rule: wildcard')
-                return True
+        if self.button_color == Button.Color.blue and self.button_label == Button.Label.ABORT:
+            self.log('rule: blue ABORT')
+            return True
+        elif self.bomb.get_battery_count() > 1 and self.button_label == Button.Label.DETONATE:
+            self.log('rule: more than one battery and DETONATE')
+            return False
+        elif self.button_color == Button.Color.white and self.bomb.get_indicator(edgework.Indicator.CAR) is True:
+            self.log('rule: white with lit CAR')
+            return True
+        elif self.bomb.get_battery_count() > 2 and self.bomb.get_indicator(edgework.Indicator.FRK) is True:
+            self.log('rule: more than two batteries and lit FRK')
+            return False
+        elif self.button_color == Button.Color.yellow:
+            self.log('rule: yellow')
+            return True
+        elif self.button_color == Button.Color.red and self.button_label == Button.Label.HOLD:
+            self.log('rule: red HOLD')
+            return False
         else:
-            if self.button_color == Button.Color.blue and self.button_label == Button.Label.ABORT:
-                self.log('rule: blue ABORT')
-                return True
-            elif self.bomb.get_battery_count() > 1 and self.button_label == Button.Label.DETONATE:
-                self.log('rule: more than one battery and DETONATE')
-                return False
-            elif self.button_color == Button.Color.white and self.bomb.get_indicator(edgework.Indicator.CAR) is True:
-                self.log('rule: white with lit CAR')
-                return True
-            elif self.bomb.get_battery_count() > 2 and self.bomb.get_indicator(edgework.Indicator.FRK) is True:
-                self.log('rule: more than two batteries and lit FRK')
-                return False
-            elif self.button_color == Button.Color.yellow:
-                self.log('rule: yellow')
-                return True
-            elif self.button_color == Button.Color.red and self.button_label == Button.Label.HOLD:
-                self.log('rule: red HOLD')
-                return False
-            else:
-                self.log('rule: wildcard')
-                return True
+            self.log('rule: wildcard')
+            return True
 
     def get_release_digit(self):
-        if self.bomb.hummus:
-            return Button.RELEASE_RULES_HUMMUS[self.strip_color]
-        else:
-            return Button.RELEASE_RULES[self.strip_color]
+        return Button.RELEASE_RULES[self.strip_color]
 
     COMMANDS = {
         "tap": cmd_tap,
