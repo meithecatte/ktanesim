@@ -14,25 +14,25 @@ from modules.connection_check import ConnectionCheck
 from modules.hexamaze import Hexamaze
 
 VANILLA_MODULES = {
-	"wires": Wires,
-	"button": Button,
-	"keypad": Keypad,
-	"simonSays": SimonSays,
-	"whosOnFirst": WhosOnFirst,
-	"memory": Memory,
-	"morseCode": MorseCode,
-	"complicatedWires": ComplicatedWires,
-	"wireSequence": WireSequence,
-	"maze": Maze,
-	"password": Password,
+    "wires": Wires,
+    "button": Button,
+    "keypad": Keypad,
+    "simonSays": SimonSays,
+    "whosOnFirst": WhosOnFirst,
+    "memory": Memory,
+    "morseCode": MorseCode,
+    "complicatedWires": ComplicatedWires,
+    "wireSequence": WireSequence,
+    "maze": Maze,
+    "password": Password,
 }
 
 MODDED_MODULES = {
-	"connectionCheck": ConnectionCheck,
-	"hexamaze": Hexamaze,
-	"thirdBase": ThirdBase,
+    "connectionCheck": ConnectionCheck,
+    "hexamaze": Hexamaze,
+    "thirdBase": ThirdBase,
 }
 
 async def cmd_modules(channel, author, parts):
-	list_ = lambda d: ', '.join(f"`{x}`" for x in d)
-	await channel.send(f"Available modules:\nVanilla: {list_(VANILLA_MODULES)}\nModded: {list_(MODDED_MODULES)}")
+    list_ = lambda d: ', '.join(f"`{x}`" for x in d)
+    await channel.send(f"Available modules:\nVanilla: {list_(VANILLA_MODULES)}\nModded: {list_(MODDED_MODULES)}")
