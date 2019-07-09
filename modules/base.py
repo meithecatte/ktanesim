@@ -4,6 +4,7 @@ import cairosvg
 import discord
 import asyncio
 import leaderboard
+import time
 from wand.image import Image
 from config import *
 
@@ -156,7 +157,10 @@ class Module(metaclass=CommandConsolidator):
         await self.do_view(author.mention)
 
     async def do_view(self, text, strike=False):
+        start_time = time.time()
         data, filename = await self.bomb.client.loop.run_in_executor(None, self.render, strike)
+        end_time = time.time()
+        print("Rendering took {:.2}s".format(end_time - start_time))
         descr = f"[Manual]({self.get_manual()}). {self.get_help()}" if not self.solved else ''
         embed = discord.Embed(title=str(self), description=descr)
         embed.set_image(url=f"attachment://{filename}")
