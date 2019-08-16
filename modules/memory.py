@@ -11,7 +11,7 @@ class Memory(modules.Module):
         super().__init__(bomb, ident)
         self.buttons = list(range(1, 5))
         self.initialize()
-    
+
     def initialize(self):
         self.stage = 0
         self.pressed_positions = []
@@ -22,7 +22,7 @@ class Memory(modules.Module):
         self.display = random.randint(1, 4)
         random.shuffle(self.buttons)
         self.log(f"Randomized on stage {self.stage}. Display is {self.display}. Buttons: {' '.join(map(str, self.buttons))}")
-    
+
     def get_svg(self, led):
         svg = (
             f'<svg viewBox="0 0 348 348" fill="#fff" stroke="none" stroke-linejoin="round" stroke-linecap="butt" stroke-miterlimit="10">'
@@ -42,7 +42,7 @@ class Memory(modules.Module):
 
         svg += f'</svg>'
         return svg
-    
+
     async def handle_press(self, author, position):
         solution = self.get_solution()
         self.log(f"Player pressed position {position}, expected {solution}")
@@ -60,11 +60,11 @@ class Memory(modules.Module):
         else:
             self.initialize()
             await self.handle_strike(author)
-    
+
     def get_solution(self):
         self.log(f"Position history: {' '.join(map(str, self.pressed_positions))}")
         self.log(f"Label history: {' '.join(map(str, self.pressed_labels))}")
-        
+
         if self.stage == 0:
             return [1, 1, 2, 3][self.display - 1]
         elif self.stage == 1:
@@ -94,7 +94,7 @@ async def cmd_position(self, author, parts):
             return await self.bomb.channel.send(f"{author.mention} There are only four positions: 1-4.")
 
         await self.handle_press(author, position)
-        
+
     @modules.check_solve_cmd
     async def cmd_label(self, author, parts):
         if len(parts) != 1 or not parts[0].isdigit():
@@ -106,7 +106,7 @@ async def cmd_position(self, author, parts):
             return await self.bomb.channel.send(f"{author.mention} There are only four labels: 1-4.")
 
         await self.handle_press(author, self.buttons.index(label))
-    
+
     COMMANDS = {
         "position": cmd_position,
         "pos": cmd_position,
