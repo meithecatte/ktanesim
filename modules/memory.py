@@ -83,10 +83,10 @@ class Memory(modules.Module):
         else:
             return self.buttons.index(self.pressed_labels[[0, 1, 3, 2][self.display - 1]])
 
-@modules.check_solve_cmd
-async def cmd_position(self, author, parts):
-    if len(parts) != 1 or not parts[0].isdigit():
-        return await self.usage(author)
+    @modules.check_solve_cmd
+    async def cmd_position(self, author, parts):
+        if len(parts) != 1 or not parts[0].isdigit():
+            return await self.usage(author)
 
         position = int(parts[0]) - 1
 
