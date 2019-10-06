@@ -8,22 +8,22 @@ import importlib
 VANILLA_MODULES={}
 MODDED_MODULES={}
 
-for i in glob.glob(pjoin(pdir(__file__),"*.py")):
-    if pbase(i) in ["__init__.py","base.py"]:
+for moduleScript in glob.glob(pjoin(pdir(__file__),"*.py")):
+    if pbase(moduleScript) in ["__init__.py","base.py"]:
         continue
-    moduleName=pbase(i)[:-3]
+    moduleName=pbase(moduleScript)[:-3]
     moduleImport=importlib.import_module('modules.'+moduleName)
-    classObject=dir(moduleImport)
+    attributeList=dir(moduleImport)
     hasFoundModule=False
-    for i in classObject:
-        j=getattr(moduleImport,i)
-        if hasattr(j,'__mro__'):
-            if Module in j.__mro__:
+    for attrName in attributeList:
+        testAttr=getattr(moduleImport,i)
+        if hasattr(testAttr,'__mro__'):
+            if Module in testAttr.__mro__:
                 hasFoundModule=True
-                if j.vanilla:
-                    VANILLA_MODULES[moduleName]=j
+                if testAttr.vanilla:
+                    VANILLA_MODULES[moduleName]=testAttr
                 else:
-                    MODDED_MODULES[moduleName]=j
+                    MODDED_MODULES[moduleName]=testAttr
                 break
     if not hasFoundModule:
         raise Exception(f"Module was not found in the script `{moduleName}.py`")
