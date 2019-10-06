@@ -52,6 +52,7 @@ class CommandConsolidator(type):
 
 class Module(metaclass=CommandConsolidator):
     strike_penalty = 6
+    vanilla=False
 
     def __init__(self, bomb, ident):
         self._bomb = bomb

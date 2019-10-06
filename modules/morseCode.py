@@ -40,6 +40,7 @@ class MorseCode(modules.Module):
     manual_name = "Morse Code"
     help_text = "`{cmd} tx 3.545`, `{cmd} tx 545`, `{cmd} tx 3.545 MHz`, or `{cmd} transmit ...` to transmit on 3.545 MHz."
     module_score = 3
+    vanilla=True
 
     WORDS = {
         "shell":  505,
@@ -143,5 +144,3 @@ class MorseCode(modules.Module):
         "transmit": cmd_transmit,
         "tx": cmd_transmit,
     }
-
-__module_class__=MorseCode

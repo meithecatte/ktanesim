@@ -8,6 +8,7 @@ class Maze(modules.Module):
     manual_name = "Maze"
     help_text = "`{cmd} move up down left right`, `{cmd} move udlr` - make a series of moves."
     module_score = 2
+    vanilla=True
 
     class Direction(enum.Flag):
         nothing = 0
@@ -191,5 +192,3 @@ class Maze(modules.Module):
     COMMANDS = {
         "move": cmd_move,
     }
-
-__module_class__=Maze

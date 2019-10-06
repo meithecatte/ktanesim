@@ -15,14 +15,17 @@ for i in glob.glob(pjoin(pdir(__file__),"*.py")):
         continue
     moduleName=pbase(i)[:-3]
     moduleImport=importlib.import_module('modules.'+moduleName)
-    classObject=moduleImport.__module_class__
-    if moduleName in VANILLA_MODULE_LIST:
-        VANILLA_MODULES[moduleName]=classObject
-    else:
-        MODDED_MODULES[moduleName]=classObject
-
-print("VANILLA:\n",VANILLA_MODULES)
-print("MODDED:\n",MODDED_MODULES)
+    classObject=dir(moduleImport)
+    for i in classObject:
+        j=getattr(moduleImport,i)
+        try:
+            if j.__mro__[-1]==Module:
+                if j.vanilla:
+                    VANILLA_MODULES[moduleName]=j
+                else:
+                    MODDED_MODULES[moduleName]=j
+        except:
+            pass
 
 async def cmd_modules(channel, author, parts):
     list_ = lambda d: ', '.join(f"`{x}`" for x in d)

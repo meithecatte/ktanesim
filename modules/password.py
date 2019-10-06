@@ -9,6 +9,7 @@ class Password(modules.Module):
     manual_name = "Password"
     help_text = "`{cmd} cycle 3` - cycle the third column. `{cmd} cycle 1 3 5`, `{cmd} cycle 135` - cycle multiple columns. `{cmd} cycle` - cycle all columns. `{cmd} submit water` - try to submit a word. "
     module_score = 2
+    vanilla=True
 
     WORDS = [
         "about", "after", "again", "below", "could",
@@ -135,5 +136,3 @@ class Password(modules.Module):
         "submit": cmd_submit,
         "cycle": cmd_cycle,
     }
-
-__module_class__=Password

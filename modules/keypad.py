@@ -6,6 +6,7 @@ class Keypad(modules.Module):
     manual_name = "Keypad"
     help_text = "`{cmd} press 1 3 2 4` or `{cmd} press 1324` or `{cmd} press tl bl tr br`. Partial solutions allowed."
     module_score = 1
+    vanilla=True
 
     BUTTONS = ['tl', 'tr', 'bl', 'br']
 
@@ -93,5 +94,3 @@ class Keypad(modules.Module):
     COMMANDS = {
         "press": cmd_press
     }
-
-__module_class__=Keypad

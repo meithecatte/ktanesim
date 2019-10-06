@@ -1,11 +1,15 @@
-from modules.whosOnFirst import __module_class__ as WhosOnFirst
+from modules.whosOnFirst import WhosOnFirst
 
 class ThirdBase(WhosOnFirst):
     display_name = "Third Base"
     manual_name = "Third Base"
     help_text = "`{cmd} push 8i99` or `{cmd} press 66i8` to push a button."
     module_score = 6
-    third_base = True
+    transform = 'rotate(180 174 174)'
+    vanilla=False
+
+    def button_replace_values(self,v):
+        return v.replace('0', 'O').replace('1', 'I')
 
     DISPLAY_WORDS = {
         "NHXS": 2, "IH6X": 1, "XI8Z": 5, "I8O9": 1, "XOHZ": 5, "H68S": 2,
@@ -47,5 +51,3 @@ class ThirdBase(WhosOnFirst):
     }
 
     BUTTON_GROUPS = [list(PRECEDENCE)]
-
-__module_class__=ThirdBase

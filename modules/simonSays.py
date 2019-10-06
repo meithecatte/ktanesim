@@ -10,6 +10,7 @@ class SimonSays(modules.Module):
     manual_name = "Simon Says"
     help_text = "`{cmd} press red green blue yellow`, `{cmd} press rgby`. You must include the input from any previous stages."
     module_score = 3
+    vanilla=True
 
     class Color(enum.Enum):
         red = enum.auto()
@@ -128,5 +129,3 @@ class SimonSays(modules.Module):
     COMMANDS = {
         "press": cmd_press
     }
-
-__module_class__=SimonSays

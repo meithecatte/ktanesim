@@ -6,6 +6,7 @@ class Memory(modules.Module):
     manual_name = "Memory"
     help_text = "`{cmd} pos 2` or `{cmd} position 2` - press the button in the second position. `{cmd} lab 4` or `{cmd} label 4` - press the button labeled \"4\"."
     module_score = 4
+    vanilla=True
 
     def __init__(self, bomb, ident):
         super().__init__(bomb, ident)
@@ -113,5 +114,3 @@ class Memory(modules.Module):
         "label": cmd_label,
         "lab": cmd_label,
     }
-
-__module_class__=Memory

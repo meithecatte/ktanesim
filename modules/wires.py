@@ -9,6 +9,7 @@ class Wires(modules.Module):
     manual_name = "Wires"
     help_text = "`{cmd} cut 3` to cut the third wire. Empty spaces are not counted."
     module_score = 1
+    vanilla=True
 
     @enum.unique
     class Color(enum.Enum):
@@ -149,5 +150,3 @@ class Wires(modules.Module):
     COMMANDS = {
         "cut": cmd_cut
     }
-
-__module_class__=Wires

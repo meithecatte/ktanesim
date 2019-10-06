@@ -121,5 +121,3 @@ class ConnectionCheck(modules.Module):
     COMMANDS = {
         'submit': cmd_submit,
     }
-
-__module_class__=ConnectionCheck

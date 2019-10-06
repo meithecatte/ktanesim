@@ -6,7 +6,8 @@ class WhosOnFirst(modules.Module):
     manual_name = "Who\u2019s on First"
     help_text = "`{cmd} push you're` or `{cmd} press press` to push a button. The phrase must match exactly."
     module_score = 4
-    third_base = False
+    transform='none'
+    vanilla=True
 
     BUTTON_GROUPS = [
         ["READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS"],
@@ -58,9 +59,8 @@ class WhosOnFirst(modules.Module):
         self.randomize()
 
     def get_svg(self, led):
-        transform = 'rotate(180 174 174)' if self.third_base else 'none'
         svg = (
-            f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10" transform="{transform}">'
+            f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10" transform="{self.transform}">'
             f'<path stroke="#000" stroke-width="2" d="M5 5h338v338h-338z"/>'
             f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>'
             '<path fill="#000" stroke="#000" stroke-width="2" d="M34 25h230v67h-232zM277 106h52v208h-52z"/>'
@@ -83,14 +83,16 @@ class WhosOnFirst(modules.Module):
         self.buttons = random.sample(random.choice(self.BUTTON_GROUPS), 6)
         self.log(f"State randomized. Stage {self.stage}. Display: {self.display}. Buttons: {' '.join(self.buttons)}")
 
+    def button_replace_values(self,v):
+        return v
+
     @modules.check_solve_cmd
     async def cmd_push(self, author, parts):
         if not parts:
             return await self.usage(author)
         button = ' '.join(parts).upper()
 
-        if self.third_base:
-            button = button.replace('0', 'O').replace('1', 'I')
+        button=self.button_replace_values(button)
 
         if button not in sum(self.BUTTON_GROUPS, []):
             return await self.bomb.channel.send(f"{author.mention} \"{button}\" isn't a valid word.")
@@ -132,5 +134,3 @@ class WhosOnFirst(modules.Module):
         "push": cmd_push,
         "press": cmd_push,
     }
-
-__module_class__=WhosOnFirst
