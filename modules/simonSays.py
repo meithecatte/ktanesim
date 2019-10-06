@@ -35,7 +35,7 @@ class SimonSays(modules.Module):
             self.sequence.append(random.choice(list(SimonSays.Color)))
 
         self.log(f"Sequence: {' '.join(color.name for color in self.sequence)}")
-    
+
     @staticmethod
     @lru_cache(maxsize=16)
     def get_image(color, led):
@@ -71,7 +71,7 @@ class SimonSays(modules.Module):
                 first = False
 
             return modules.gif_output(im)
-    
+
     @modules.check_solve_cmd
     async def cmd_press(self, author, parts):
         if not parts:
@@ -115,7 +115,7 @@ class SimonSays(modules.Module):
             await self.handle_next_stage(author)
         else:
             await self.do_view(f"{author.mention} All of these inputs are correct, but the module expects more")
-    
+
     def get_solution(self):
         strikes = self.bomb.strikes
         if strikes > 2: strikes = 2
@@ -124,7 +124,9 @@ class SimonSays(modules.Module):
         solution = [mapping[color] for color in self.sequence]
         self.log(f"Strikes: {strikes}. Vowel: {vowel}. Solution: {' '.join(color.name for color in solution)}")
         return solution
-    
+
     COMMANDS = {
         "press": cmd_press
     }
+
+__module_class__=SimonSays

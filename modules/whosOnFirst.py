@@ -132,3 +132,5 @@ class WhosOnFirst(modules.Module):
         "push": cmd_push,
         "press": cmd_push,
     }
+
+__module_class__=WhosOnFirst

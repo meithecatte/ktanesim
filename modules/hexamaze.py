@@ -425,3 +425,5 @@ class Hexamaze(modules.Module):
     COMMANDS = {
         "move": cmd_move,
     }
+
+__module_class__=Hexamaze

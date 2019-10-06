@@ -93,7 +93,7 @@ class Password(modules.Module):
                     self.positions[column] = (self.positions[column] + 1) % 6
 
             return modules.gif_output(im)
-            
+
     @modules.check_solve_cmd
     async def cmd_submit(self, author, parts):
         if len(parts) != 1 or len(parts[0]) != 5 or not parts[0].isalpha():
@@ -135,3 +135,5 @@ class Password(modules.Module):
         "submit": cmd_submit,
         "cycle": cmd_cycle,
     }
+
+__module_class__=Password

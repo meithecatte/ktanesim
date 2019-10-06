@@ -46,7 +46,7 @@ class Keypad(modules.Module):
             f'<path stroke="#000" fill="{self.led[2]}" stroke-width="2" d="M78 208h20v6h-20z"/>'
             f'<path stroke="#000" fill="{self.led[3]}" stroke-width="2" d="M184 208h20v6h-20z"/>'
             f'</svg>')
-    
+
     @modules.check_solve_cmd
     async def cmd_press(self, author, parts):
         if not parts:
@@ -89,7 +89,9 @@ class Keypad(modules.Module):
                     self.led[press] = '#000'
                     return
         await self.do_view(author.mention)
-    
+
     COMMANDS = {
         "press": cmd_press
     }
+
+__module_class__=Keypad

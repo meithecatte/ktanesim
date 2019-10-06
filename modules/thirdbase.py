@@ -1,4 +1,4 @@
-from modules.whos_on_first import WhosOnFirst
+from modules.whosOnFirst import __module_class__ as WhosOnFirst
 
 class ThirdBase(WhosOnFirst):
     display_name = "Third Base"
@@ -47,3 +47,5 @@ class ThirdBase(WhosOnFirst):
     }
 
     BUTTON_GROUPS = [list(PRECEDENCE)]
+
+__module_class__=ThirdBase

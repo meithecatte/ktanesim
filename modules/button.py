@@ -137,3 +137,5 @@ class Button(modules.Module):
         "hold": cmd_hold,
         "release": cmd_release
     }
+
+__module_class__=Button

@@ -113,3 +113,5 @@ class Memory(modules.Module):
         "label": cmd_label,
         "lab": cmd_label,
     }
+
+__module_class__=Memory
