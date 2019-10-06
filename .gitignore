@@ -4,3 +4,4 @@ leaderboard.dat
 *.pyc
 target
 .env
+/modules/__pycache__/
