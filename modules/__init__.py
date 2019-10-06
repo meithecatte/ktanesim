@@ -5,8 +5,6 @@ from os.path import dirname as pdir
 from os.path import basename as pbase
 import importlib
 
-VANILLA_MODULE_LIST="wires/button/keypad/simonSays/whosOnFirst/memory/morseCode/complicatedWires/wireSequence/maze/password".split("/")
-
 VANILLA_MODULES={}
 MODDED_MODULES={}
 
