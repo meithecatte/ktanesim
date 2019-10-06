@@ -4,7 +4,7 @@ from modules.wires import Wires, ComplicatedWires, WireSequence
 from modules.button import Button
 from modules.keypad import Keypad
 from modules.simon import SimonSays
-from modules.whos_on_first import WhosOnFirst, ThirdBase
+from modules.whos_on_first import WhosOnFirst
 from modules.memory import Memory
 from modules.morse import MorseCode
 from modules.maze import Maze
@@ -12,6 +12,7 @@ from modules.password import Password
 
 from modules.connection_check import ConnectionCheck
 from modules.hexamaze import Hexamaze
+from modules.thirdbase import ThirdBase
 
 VANILLA_MODULES = {
     "wires": Wires,
