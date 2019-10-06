@@ -16,7 +16,7 @@ for moduleScript in glob.glob(pjoin(pdir(__file__),"*.py")):
     attributeList=dir(moduleImport)
     hasFoundModule=False
     for attrName in attributeList:
-        testAttr=getattr(moduleImport,i)
+        testAttr=getattr(moduleImport,attrName)
         if hasattr(testAttr,'__mro__'):
             if Module in testAttr.__mro__:
                 hasFoundModule=True
