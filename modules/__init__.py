@@ -14,16 +14,19 @@ for i in glob.glob(pjoin(pdir(__file__),"*.py")):
     moduleName=pbase(i)[:-3]
     moduleImport=importlib.import_module('modules.'+moduleName)
     classObject=dir(moduleImport)
+    hasFoundModule=False
     for i in classObject:
         j=getattr(moduleImport,i)
-        try:
-            if j.__mro__[-1]==Module:
+        if hasattr(j,'__mro__'):
+            if Module in j.__mro__:
+                hasFoundModule=True
                 if j.vanilla:
                     VANILLA_MODULES[moduleName]=j
                 else:
                     MODDED_MODULES[moduleName]=j
-        except:
-            pass
+                break
+    if not hasFoundModule:
+        raise Exception(f"Module was not found in the script `{moduleName}.py`")
 
 async def cmd_modules(channel, author, parts):
     list_ = lambda d: ', '.join(f"`{x}`" for x in d)
