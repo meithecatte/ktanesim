@@ -69,8 +69,7 @@ class MorseCode(modules.Module):
         self.word = random.choice(list(self.wordset.keys()))
         self.frequency = self.wordset[self.word]
         self.last_frequency = 505
-        self.log(
-            f"The word is {self.word}, with a frequency of 3.{self.frequency} MHz")
+        self.log(f"The word is {self.word}, with a frequency of 3.{self.frequency} MHz")
 
     def get_image(self, rx_led, solve_led):
         svg = (

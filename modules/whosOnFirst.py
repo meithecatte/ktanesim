@@ -84,8 +84,7 @@ class WhosOnFirst(modules.Module):
     def randomize(self):
         self.display = random.choice(list(self.DISPLAY_WORDS.keys()))
         self.buttons = random.sample(random.choice(self.BUTTON_GROUPS), 6)
-        self.log(
-            f"State randomized. Stage {self.stage}. Display: {self.display}. Buttons: {' '.join(self.buttons)}")
+        self.log(f"State randomized. Stage {self.stage}. Display: {self.display}. Buttons: {' '.join(self.buttons)}")
 
     def button_replace_values(self, v):
         return v

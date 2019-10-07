@@ -36,8 +36,7 @@ class SimonSays(modules.Module):
         for _ in range(random.randint(3, 5)):
             self.sequence.append(random.choice(list(SimonSays.Color)))
 
-        self.log(
-            f"Sequence: {' '.join(color.name for color in self.sequence)}")
+        self.log(f"Sequence: {' '.join(color.name for color in self.sequence)}")
 
     @staticmethod
     @lru_cache(maxsize=16)
@@ -126,8 +125,7 @@ class SimonSays(modules.Module):
         vowel = self.bomb.has_vowel()
         mapping = SimonSays.MAPPING[strikes, vowel]
         solution = [mapping[color] for color in self.sequence]
-        self.log(
-            f"Strikes: {strikes}. Vowel: {vowel}. Solution: {' '.join(color.name for color in solution)}")
+        self.log(f"Strikes: {strikes}. Vowel: {vowel}. Solution: {' '.join(color.name for color in solution)}")
         return solution
 
     COMMANDS = {
