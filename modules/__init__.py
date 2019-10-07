@@ -16,13 +16,14 @@ for moduleScript in glob.glob(pjoin(pdir(__file__),"*.py")):
     attributeList=dir(moduleImport)
     for attrName in attributeList:
         testAttr=getattr(moduleImport,attrName)
-        if isinstance(testAttr,Module):
+        if isinstance(testAttr,Module.__class__):
+            if moduleName in list(VANILLA_MODULES.keys())+list(MODDED_MODULES.keys()):
+                raise Exception(f"Tried to load multiple classes for one module from the script `{moduleName}.py`")
             if testAttr.vanilla:
                 VANILLA_MODULES[moduleName]=testAttr
             else:
                 MODDED_MODULES[moduleName]=testAttr
-            break
-    else:
+    if moduleName in list(VANILLA_MODULES.keys())+list(MODDED_MODULES.keys()):
         continue
     raise Exception(f"Module was not found in the script `{moduleName}.py`")
 
