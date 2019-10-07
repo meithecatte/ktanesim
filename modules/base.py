@@ -7,6 +7,7 @@ import leaderboard
 import time
 from wand.image import Image
 from config import *
+from modules import register_module
 
 
 def noparts(func):
@@ -53,7 +54,10 @@ class CommandConsolidator(type):
             commands.update(attributes['COMMANDS'])
 
         attributes['COMMANDS'] = commands
-        return type.__new__(cls, clsname, superclasses, attributes)
+        module = type.__new__(cls, clsname, superclasses, attributes)
+        if clsname != 'Module':
+            register_module(module)
+        return module
 
 
 class Module(metaclass=CommandConsolidator):

@@ -6,6 +6,7 @@ import edgework
 
 
 class Wires(modules.Module):
+    identifiers = ['wires']
     display_name = "Wires"
     manual_name = "Wires"
     help_text = "`{cmd} cut 3` to cut the third wire. Empty spaces are not counted."

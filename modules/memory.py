@@ -3,6 +3,7 @@ import modules
 
 
 class Memory(modules.Module):
+    identifiers = ['memory']
     display_name = "Memory"
     manual_name = "Memory"
     help_text = "`{cmd} pos 2` or `{cmd} position 2` - press the button in the second position. `{cmd} lab 4` or `{cmd} label 4` - press the button labeled \"4\"."

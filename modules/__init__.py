@@ -1,51 +1,21 @@
-from modules.base import Module, noparts, check_solve_cmd, gif_append, gif_output
-import glob
-from os.path import join as pjoin
-from os.path import dirname as pdir
-from os.path import basename as pbase
+from os.path import basename, dirname, join as path_join
+from glob import glob
 import importlib
 
 VANILLA_MODULES = {}
 MODDED_MODULES = {}
 
+def register_module(module):
+    category = VANILLA_MODULES if module.vanilla else MODDED_MODULES
+    for identifier in module.identifiers:
+        category[identifier] = module
 
-def __find_module_class(module_name):
-    output_instance = None
-    module_import = importlib.import_module('modules.' + module_name)
-    attribute_list = dir(module_import)
-    # Loop through each attribute
-    for attr_name in attribute_list:
-        if attr_name.lower() != module_name.lower():
-            continue
-        test_attr = getattr(module_import, attr_name)
-        # Check if the attribute is an instance of the module class
-        if isinstance(test_attr, Module.__class__):
-            # if the module is in the list raise an exception as only one Module class should be found for each script
-            if not output_instance is None:
-                raise Exception(
-                    f"Tried to load multiple classes for one module from the script `{module_name}.py`")
-            output_instance = test_attr
-    if output_instance is None:
-        raise Exception(
-            f"Module was not found in the script `{module_name}.py`")
-    return output_instance
+# This has to be here to avoid cyclic imports.
+from modules.base import Module, noparts, check_solve_cmd, gif_append, gif_output
 
-
-# Grab all scripts from the current folder
-for module_script in glob.glob(pjoin(pdir(__file__), "*.py")):
-    # Ignore non-module scripts
-    if pbase(module_script) in ["__init__.py", "base.py"]:
-        continue
-
-    # Grab the module name an imported instance of it and its attribute list
-    module_name = pbase(module_script)[:-3]
-    module_instance = __find_module_class(module_name)
-
-    if module_instance.vanilla:
-        VANILLA_MODULES[module_name] = module_instance
-    else:
-        MODDED_MODULES[module_name] = module_instance
-
+for module_file in glob(path_join(dirname(__file__), "*.py")):
+    module_name = basename(module_file)[:-3]
+    importlib.import_module('modules.' + module_name)
 
 async def cmd_modules(channel, author, parts):
     def list_(d): return ', '.join(f"`{x}`" for x in d)

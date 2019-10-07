@@ -6,6 +6,7 @@ import edgework
 
 
 class ComplicatedWires(modules.Module):
+    identifiers = ['complicatedWires']
     display_name = "Complicated Wires"
     manual_name = "Complicated Wires"
     help_text = "`{cmd} cut 3` - cut the third wire. `{cmd} cut 1 4 6` - cut multiple wires. `{cmd} cut 146` - cut multiple wires, shorter. Wires are counted left to right, empty spaces excluded."
