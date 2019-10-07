@@ -1,6 +1,7 @@
 import modules
 import random
 
+
 class ConnectionCheck(modules.Module):
     display_name = "Connection Check"
     manual_name = "Connection Check"
@@ -10,13 +11,20 @@ class ConnectionCheck(modules.Module):
     GRAPHS = {}
     for code, graph in [
         ('7HPJ', {(1, 2), (2, 3), (1, 3), (4, 6), (5, 6), (5, 7), (4, 7)}),
-        ('34XYZ', {(1, 4), (1, 2), (1, 6), (2, 3), (2, 4), (4, 7), (6, 7), (7, 8), (6, 8), (5, 6)}),
-        ('SLIM', {(1, 2), (1, 3), (1, 6), (2, 6), (3, 6), (3, 4), (4, 6), (5, 6), (4, 5), (4, 8), (4, 7), (5, 7), (7, 8)}),
-        ('15BRO', {(1, 7), (1, 2), (2, 7), (6, 7), (5, 6), (5, 7), (4, 8), (3, 8), (3, 4)}),
-        ('8CAKE', {(1, 3), (2, 4), (3, 6), (1, 2), (3, 4), (3, 7), (4, 7), (5, 7), (7, 8), (4, 5), (3, 8), (5, 8), (1, 8), (1, 6), (2, 6), (4, 6)}),
-        ('9QVN', {(1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (1, 8), (2, 7), (3, 6), (2, 6), (3, 7), (1, 4), (5, 8)}),
-        ('20DGT', {(1, 3), (3, 5), (5, 7), (2, 7), (2, 4), (4, 6), (6, 8), (3, 7), (4, 7), (4, 8), (1, 2), (5, 6)}),
-        ('6WUF', {(2, 3), (3, 8), (3, 5), (3, 6), (4, 5), (4, 7), (4, 8), (5, 7), (5, 6), (7, 8), (2, 8), (6, 7), (1, 6), (1, 7), (1, 2), (2, 7)}),
+        ('34XYZ', {(1, 4), (1, 2), (1, 6), (2, 3),
+                   (2, 4), (4, 7), (6, 7), (7, 8), (6, 8), (5, 6)}),
+        ('SLIM', {(1, 2), (1, 3), (1, 6), (2, 6), (3, 6), (3, 4),
+                  (4, 6), (5, 6), (4, 5), (4, 8), (4, 7), (5, 7), (7, 8)}),
+        ('15BRO', {(1, 7), (1, 2), (2, 7), (6, 7),
+                   (5, 6), (5, 7), (4, 8), (3, 8), (3, 4)}),
+        ('8CAKE', {(1, 3), (2, 4), (3, 6), (1, 2), (3, 4), (3, 7), (4, 7),
+                   (5, 7), (7, 8), (4, 5), (3, 8), (5, 8), (1, 8), (1, 6), (2, 6), (4, 6)}),
+        ('9QVN', {(1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7,
+                                                                   8), (1, 8), (2, 7), (3, 6), (2, 6), (3, 7), (1, 4), (5, 8)}),
+        ('20DGT', {(1, 3), (3, 5), (5, 7), (2, 7), (2, 4),
+                   (4, 6), (6, 8), (3, 7), (4, 7), (4, 8), (1, 2), (5, 6)}),
+        ('6WUF', {(2, 3), (3, 8), (3, 5), (3, 6), (4, 5), (4, 7), (4, 8), (5,
+                                                                           7), (5, 6), (7, 8), (2, 8), (6, 7), (1, 6), (1, 7), (1, 2), (2, 7)}),
     ]:
         for letter in code:
             GRAPHS[letter] = graph
@@ -63,13 +71,13 @@ class ConnectionCheck(modules.Module):
         graph = ConnectionCheck.GRAPHS[letter]
         self.expected = [pair in graph for pair in self.pairs]
         self.log(f"Expected: {self.expected!r}")
-        
+
     def get_svg(self, led):
         svg = ('<svg viewBox="0 0 348 348" fill="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="butt" stroke-miterlimit="10">'
-            '<path stroke="#000" d="M5 5h338v338h-338z"/>'
-            f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15"/>'
-            '<path stroke="#000" d="M38 45h200v60h-200z"/>'
-            '<text text-anchor="middle" fill="#000" style="font-family:sans-serif;font-size:28pt;" x="138" y="89">CHECK</text>')
+               '<path stroke="#000" d="M5 5h338v338h-338z"/>'
+               f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15"/>'
+               '<path stroke="#000" d="M38 45h200v60h-200z"/>'
+               '<text text-anchor="middle" fill="#000" style="font-family:sans-serif;font-size:28pt;" x="138" y="89">CHECK</text>')
 
         for x, y, pair, swap, on in zip([18, 180, 18, 180], [144, 144, 243, 243], self.pairs, self.swap, self.on):
             if swap:
@@ -78,9 +86,9 @@ class ConnectionCheck(modules.Module):
                 a, b = pair
 
             svg += (f'<path stroke="#000" d="M{x} {y}h150v60h-150z"/>'
-                f'<path stroke="#000" fill="{"#0f0" if on else "#f00"}" d="M{x + 54} {y}h42v60h-42z"/>'
-                f'<text text-anchor="middle" fill="#000" style="font-family:sans-serif;font-size:32pt;" x="{x + 27}" y="{y + 46}">{a}</text>'
-                f'<text text-anchor="middle" fill="#000" style="font-family:sans-serif;font-size:32pt;" x="{x + 123}" y="{y + 46}">{b}</text>')
+                    f'<path stroke="#000" fill="{"#0f0" if on else "#f00"}" d="M{x + 54} {y}h42v60h-42z"/>'
+                    f'<text text-anchor="middle" fill="#000" style="font-family:sans-serif;font-size:32pt;" x="{x + 27}" y="{y + 46}">{a}</text>'
+                    f'<text text-anchor="middle" fill="#000" style="font-family:sans-serif;font-size:32pt;" x="{x + 123}" y="{y + 46}">{b}</text>')
         svg += '</svg>'
         return svg
 
