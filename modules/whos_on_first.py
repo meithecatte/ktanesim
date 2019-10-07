@@ -2,11 +2,13 @@ import random
 import modules
 
 class WhosOnFirst(modules.Module):
+    identifiers = ['whosOnFirst']
     display_name = "Who's on First"
     manual_name = "Who\u2019s on First"
     help_text = "`{cmd} push you're` or `{cmd} press press` to push a button. The phrase must match exactly."
     module_score = 4
     third_base = False
+    vanilla = True
 
     BUTTON_GROUPS = [
         ["READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS"],
@@ -56,7 +58,7 @@ class WhosOnFirst(modules.Module):
         super().__init__(bomb, ident)
         self.stage = 0
         self.randomize()
-    
+
     def get_svg(self, led):
         transform = 'rotate(180 174 174)' if self.third_base else 'none'
         svg = (
@@ -77,12 +79,12 @@ class WhosOnFirst(modules.Module):
             svg += f'<text x="{x}" y="{y}" text-anchor="middle" style="font-family:sans-serif;font-size:16pt;" fill="#000">{text}</text>'
         svg += '</svg>'
         return svg
-    
+
     def randomize(self):
         self.display = random.choice(list(self.DISPLAY_WORDS.keys()))
         self.buttons = random.sample(random.choice(self.BUTTON_GROUPS), 6)
         self.log(f"State randomized. Stage {self.stage}. Display: {self.display}. Buttons: {' '.join(self.buttons)}")
-    
+
     @modules.check_solve_cmd
     async def cmd_push(self, author, parts):
         if not parts:
@@ -112,7 +114,7 @@ class WhosOnFirst(modules.Module):
         else:
             self.randomize()
             await self.handle_strike(author)
-    
+
     def get_solution(self):
         index = self.DISPLAY_WORDS[self.display]
 
@@ -139,6 +141,7 @@ class ThirdBase(WhosOnFirst):
     help_text = "`{cmd} push 8i99` or `{cmd} press 66i8` to push a button."
     module_score = 6
     third_base = True
+    vanilla = False
 
     DISPLAY_WORDS = {
         "NHXS": 2, "IH6X": 1, "XI8Z": 5, "I8O9": 1, "XOHZ": 5, "H68S": 2,
