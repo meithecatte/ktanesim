@@ -3,12 +3,13 @@ import math
 import random
 import modules
 
+
 class Maze(modules.Module):
     display_name = "Maze"
     manual_name = "Maze"
     help_text = "`{cmd} move up down left right`, `{cmd} move udlr` - make a series of moves."
     module_score = 2
-    vanilla=True
+    vanilla = True
 
     class Direction(enum.Flag):
         nothing = 0
@@ -24,12 +25,17 @@ class Maze(modules.Module):
         for line in lines:
             cell_line = []
             for char in line:
-                cell = Maze.Direction.nothing # bits set have a wall
-                if char in "─┌┐┬╴╷╶━┏┓┳╸╻╺":  cell |= Maze.Direction.up
-                if char in "─└┘┴╴╵╶━┗┛┻╸╹╺":  cell |= Maze.Direction.down
-                if char in "│┌└├╶╷╵┃┏┗┣╺╻╹":  cell |= Maze.Direction.left
-                if char in "│┐┘┤╴╵╷┃┓┛┫╸╹╻":  cell |= Maze.Direction.right
-                if char in "━┃┏┓┗┛┣┫┳┻╋╸╹╺╻": self.markers.append((len(cell_line), len(self.grid)))
+                cell = Maze.Direction.nothing  # bits set have a wall
+                if char in "─┌┐┬╴╷╶━┏┓┳╸╻╺":
+                    cell |= Maze.Direction.up
+                if char in "─└┘┴╴╵╶━┗┛┻╸╹╺":
+                    cell |= Maze.Direction.down
+                if char in "│┌└├╶╷╵┃┏┗┣╺╻╹":
+                    cell |= Maze.Direction.left
+                if char in "│┐┘┤╴╵╷┃┓┛┫╸╹╻":
+                    cell |= Maze.Direction.right
+                if char in "━┃┏┓┗┛┣┫┳┻╋╸╹╺╻":
+                    self.markers.append((len(cell_line), len(self.grid)))
                 cell_line.append(cell)
             self.grid.append(cell_line)
 
@@ -40,56 +46,56 @@ class Maze(modules.Module):
 │╶┴┘╶┤
 ├─┐┌╴│
 └╴└┘╶┘
-""","""
+""", """
 ╶┬╴┌┬╴
 ┌┘┌┘┗┐
 │┌┘┌─┤
 ├┛┌┘╷│
 │╷│┌┘│
 ╵└┘└─┘
-""","""
+""", """
 ┌─┐╷┌┐
 ╵╷│└┘│
 ┌┤│┌┐│
 │││┃│┃
 │└┘│││
 └──┘└┘
-""","""
+""", """
 ┏┐╶──┐
 ││┌──┤
 │└┘┌╴│
 ┃╶─┴─┤
 ├───┐│
 └─╴╶┘╵
-""","""
+""", """
 ╶───┬┐
 ┌──┬┘╵
 ├┐╶┘┏┐
 │└─┐╵│
 │┌─┴╴│
 ╵└─━─┘
-""","""
+""", """
 ╷┌┐╶┳┐
 │││┌┘│
 ├┘╵│┌┘
 └┐┌┤│╷
 ┌┘╹│└┤
 └──┘╶┘
-""","""
+""", """
 ┌━─┐┌┐
 │┌╴└┘│
 └┘┌╴┌┘
 ┌┐├─┘╷
 │╵└─┐│
 └━──┴┘
-""","""
+""", """
 ╷┌─┓┌┐
 ├┴╴└┘│
 │┌──┐│
 │└┓╶┴┘
 │╷└──╴
 └┴───╴
-""","""
+""", """
 ╷┌──┬┐
 ││┏╴││
 ├┴┘┌┘│
@@ -119,7 +125,8 @@ class Maze(modules.Module):
             f'<path fill="#000" stroke="#000" d="M59 59h230v230h-230zM44 148l-24 26 24 26zM304 148l24 26-24 24zM148 44l26-24 26 24zM148 304l26 24 26-24z"/>'
             f'<path fill="#444" d="M81 81h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm-175 35h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm-175 35h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm-175 35h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm-175 35h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm-175 35h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11zm35 0h11v11h-11z"/>'
             f'<path fill="#fff" d="M{81 + self.position[0] * 35} {81 + self.position[1] * 35}h11v11h-11z"/>'
-            f'<path fill="#000" d="M{81 + self.goal[0] * 35} {81 + self.goal[1] * 35}h11v11h-11z"/>' # hide the dot behind the goal triangle
+            # hide the dot behind the goal triangle
+            f'<path fill="#000" d="M{81 + self.goal[0] * 35} {81 + self.goal[1] * 35}h11v11h-11z"/>'
             f'<path stroke-width="6" stroke-linecap="square" stroke="#f00" d="{self.visible_walls}"/>')
 
         for marker in self.markers:
@@ -136,7 +143,7 @@ class Maze(modules.Module):
         goal_cy = goal_y + math.sin(goal_rotation + 4 * math.pi / 3) * 12
 
         svg += (f'<path fill="#f00" d="M{goal_ax} {goal_ay}L{goal_bx} {goal_by} {goal_cx} {goal_cy}"/>'
-            f'</svg>')
+                f'</svg>')
 
         return svg
 

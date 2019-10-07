@@ -1,14 +1,15 @@
 from modules.whosOnFirst import WhosOnFirst
 
+
 class ThirdBase(WhosOnFirst):
     display_name = "Third Base"
     manual_name = "Third Base"
     help_text = "`{cmd} push 8i99` or `{cmd} press 66i8` to push a button."
     module_score = 6
     transform = 'rotate(180 174 174)'
-    vanilla=False
+    vanilla = False
 
-    def button_replace_values(self,v):
+    def button_replace_values(self, v):
         return v.replace('0', 'O').replace('1', 'I')
 
     DISPLAY_WORDS = {

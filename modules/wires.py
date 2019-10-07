@@ -4,19 +4,20 @@ import enum
 import modules
 import edgework
 
+
 class Wires(modules.Module):
     display_name = "Wires"
     manual_name = "Wires"
     help_text = "`{cmd} cut 3` to cut the third wire. Empty spaces are not counted."
     module_score = 1
-    vanilla=True
+    vanilla = True
 
     @enum.unique
     class Color(enum.Enum):
-        black =  "#000"
-        blue =   "#00f"
-        red =    "#f00"
-        white =  "#fff"
+        black = "#000"
+        blue = "#00f"
+        red = "#f00"
+        white = "#fff"
         yellow = "#ff0"
 
     PATHS_UNCUT = [
@@ -40,13 +41,15 @@ class Wires(modules.Module):
     def __init__(self, bomb, ident):
         super().__init__(bomb, ident)
         wire_count = random.randint(3, 8)
-        if wire_count > 6: wire_count = 6
+        if wire_count > 6:
+            wire_count = 6
         self.positions = sorted(random.sample(range(6), wire_count))
         self.cut = [False] * wire_count
         self.colors = []
         for _ in range(wire_count):
             self.colors.append(random.choice(list(Wires.Color)))
-        self.log(f"There are {len(self.colors)} wires: {' '.join(color.name for color in self.colors)}")
+        self.log(
+            f"There are {len(self.colors)} wires: {' '.join(color.name for color in self.colors)}")
 
     def get_svg(self, led):
         svg = (
@@ -71,7 +74,8 @@ class Wires(modules.Module):
                 await self.bomb.channel.send(f"There are only {len(self.colors)} wires. How on earth am I supposed to cut wire {parts[0]}?")
             else:
                 expected = self.get_solution()
-                self.log(f"player cut wire {wire+1}. expected wire {expected+1}")
+                self.log(
+                    f"player cut wire {wire+1}. expected wire {expected+1}")
                 self.cut[wire] = True
                 if expected == wire:
                     await self.handle_solve(author)
@@ -89,7 +93,8 @@ class Wires(modules.Module):
             return len(self.colors) - 1 - self.colors[::-1].index(color)
 
         serial_odd = int(self.bomb.serial[-1]) % 2 == 1
-        self.log('the last digit of the serial number is {:s}'.format('odd' if serial_odd else 'even'))
+        self.log('the last digit of the serial number is {:s}'.format(
+            'odd' if serial_odd else 'even'))
 
         if len(self.colors) == 3:
             if count(Wires.Color.red) == 0:
@@ -109,7 +114,8 @@ class Wires(modules.Module):
                 self.log('rule: there is more than one red wire')
                 return last(Wires.Color.red)
             elif self.colors[-1] == Wires.Color.yellow and count(Wires.Color.red) == 0:
-                self.log('rule: the last wire is yellow and there are no red wires')
+                self.log(
+                    'rule: the last wire is yellow and there are no red wires')
                 return 0
             elif count(Wires.Color.blue) == 1:
                 self.log('rule: there is exactly one blue wire')
@@ -122,10 +128,12 @@ class Wires(modules.Module):
                 return 1
         elif len(self.colors) == 5:
             if self.colors[-1] == Wires.Color.black and serial_odd:
-                self.log('rule: the last wire is black and the last digit of the serial number is odd')
+                self.log(
+                    'rule: the last wire is black and the last digit of the serial number is odd')
                 return 3
             elif count(Wires.Color.red) == 1 and count(Wires.Color.yellow) > 1:
-                self.log('rule: there is exactly one red wire and there is more than one yellow wire')
+                self.log(
+                    'rule: there is exactly one red wire and there is more than one yellow wire')
                 return 0
             elif count(Wires.Color.black) == 0:
                 self.log('rule: there are no black wires')
@@ -135,10 +143,12 @@ class Wires(modules.Module):
                 return 0
         else:
             if count(Wires.Color.yellow) == 0 and serial_odd:
-                self.log('rule: there are no yellow wires and the last digit of the serial number is odd')
+                self.log(
+                    'rule: there are no yellow wires and the last digit of the serial number is odd')
                 return 2
             elif count(Wires.Color.yellow) == 1 and count(Wires.Color.white) > 1:
-                self.log('rule: there is exactly one yellow wire and there is more than one white wire')
+                self.log(
+                    'rule: there is exactly one yellow wire and there is more than one white wire')
                 return 3
             elif count(Wires.Color.red) == 0:
                 self.log('rule: there are no red wires')

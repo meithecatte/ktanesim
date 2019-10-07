@@ -35,12 +35,13 @@ MORSE_CODE = {
 
 DOT_LENGTH = 45
 
+
 class MorseCode(modules.Module):
     display_name = "Morse Code"
     manual_name = "Morse Code"
     help_text = "`{cmd} tx 3.545`, `{cmd} tx 545`, `{cmd} tx 3.545 MHz`, or `{cmd} transmit ...` to transmit on 3.545 MHz."
     module_score = 3
-    vanilla=True
+    vanilla = True
 
     WORDS = {
         "shell":  505,
@@ -68,7 +69,8 @@ class MorseCode(modules.Module):
         self.word = random.choice(list(self.wordset.keys()))
         self.frequency = self.wordset[self.word]
         self.last_frequency = 505
-        self.log(f"The word is {self.word}, with a frequency of 3.{self.frequency} MHz")
+        self.log(
+            f"The word is {self.word}, with a frequency of 3.{self.frequency} MHz")
 
     def get_image(self, rx_led, solve_led):
         svg = (
@@ -100,7 +102,8 @@ class MorseCode(modules.Module):
                 add(off, 3)
                 first_signal = True
                 for signal in MORSE_CODE[letter]:
-                    if not first_signal: add(off, 1)
+                    if not first_signal:
+                        add(off, 1)
                     first_signal = False
                     add(on, 3 if signal == '-' else 1)
             add(off, 4)
@@ -113,7 +116,8 @@ class MorseCode(modules.Module):
             return await self.usage(author)
 
         freq = parts[0]
-        if freq.startswith('3.'): freq = freq[2:]
+        if freq.startswith('3.'):
+            freq = freq[2:]
 
         if not freq.isdigit() or len(freq) != 3 or (freq[0] != "5" or freq[-1] not in '25') and freq != "600":
             return await self.usage(author)
