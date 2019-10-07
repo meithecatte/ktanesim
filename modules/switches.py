@@ -3,6 +3,7 @@ import modules
 
 
 class Switches(modules.Module):
+    identifiers = ['switches']
     display_name = "Switches"
     manual_name = "Switches"
     help_text = "`{cmd} flip 1 5 3 4 2 5 2` or `{cmd} flip 1534252`. Partial solutions allowed."
@@ -63,8 +64,6 @@ class Switches(modules.Module):
     async def cmd_flip(self, author, parts):
         if not parts:
             return await self.usage(author)
-
-        print(parts)
 
         input_ = []
 
