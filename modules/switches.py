@@ -11,23 +11,19 @@ class Switches(modules.Module):
     def __init__(self, bomb, ident):
         super().__init__(bomb, ident)
 
-        self.invalidPositions = "11011/10100/10000/01101/01100/01000/00111/00101/00011/00001".split(
-            "/")
+        self.invalidPositions = "11011/10100/10000/01101/01100/01000/00111/00101/00011/00001".split("/")
 
         self.solution = "10000"
         while self.solution in self.invalidPositions:
-            self.solution = ''.join(
-                [str(random.randint(0, 1)) for i in range(5)])
+            self.solution = ''.join([str(random.randint(0, 1)) for i in range(5)])
 
         self.switches = "10000"
         while self.switches in self.invalidPositions or self.switches == self.solution:
-            self.switches = ''.join(
-                [str(random.randint(0, 1)) for i in range(5)])
+            self.switches = ''.join([str(random.randint(0, 1)) for i in range(5)])
 
         self.positionNames = ["up", "down"]
 
-        self.log(
-            f"Solution: {' '.join(map(lambda x:self.positionNames[int(x)],list(self.solution)))}")
+        self.log(f"Solution: {' '.join(map(lambda x:self.positionNames[int(x)],list(self.solution)))}")
 
     def generateSwitch(self, index):
         default = [[50.5, 174], [65.5, 174], [73, 234], [43, 234]]

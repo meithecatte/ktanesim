@@ -86,8 +86,7 @@ class WireSequence(modules.Module):
             counts[color] += 1
 
             should_cut = "cut" if self.should_cut[index] else "don't count"
-            self.log(
-                f"Wire {index + 1} to {'ABC'[to]} is the {counts[color]}. {color.name} wire - {should_cut}")
+            self.log(f"Wire {index + 1} to {'ABC'[to]} is the {counts[color]}. {color.name} wire - {should_cut}")
 
     def get_svg(self, led):
         svg = (
