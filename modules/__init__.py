@@ -14,14 +14,16 @@ def __find_module_class(moduleName):
     attributeList=dir(moduleImport)
     # Loop through each attribute
     for attrName in attributeList:
+        if attrName.lower()!=moduleName.lower():
+            continue
         testAttr=getattr(moduleImport,attrName)
         # Check if the attribute is an instance of the module class
         if isinstance(testAttr,Module.__class__):
             # if the module is in the list raise an exception as only one Module class should be found for each script
-            if moduleName in list(VANILLA_MODULES.keys())+list(MODDED_MODULES.keys()):
+            if not outputInstance is None:
                 raise Exception(f"Tried to load multiple classes for one module from the script `{moduleName}.py`")
             outputInstance=testAttr
-    if outputInstance==None:
+    if outputInstance is None:
         raise Exception(f"Module was not found in the script `{moduleName}.py`")
     return outputInstance
 
