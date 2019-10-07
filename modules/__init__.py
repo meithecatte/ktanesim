@@ -14,18 +14,16 @@ for moduleScript in glob.glob(pjoin(pdir(__file__),"*.py")):
     moduleName=pbase(moduleScript)[:-3]
     moduleImport=importlib.import_module('modules.'+moduleName)
     attributeList=dir(moduleImport)
-    hasFoundModule=False
     for attrName in attributeList:
         testAttr=getattr(moduleImport,attrName)
         if hasattr(testAttr,'__mro__'):
             if Module in testAttr.__mro__:
-                hasFoundModule=True
                 if testAttr.vanilla:
                     VANILLA_MODULES[moduleName]=testAttr
                 else:
                     MODDED_MODULES[moduleName]=testAttr
                 break
-    if not hasFoundModule:
+    else:
         raise Exception(f"Module was not found in the script `{moduleName}.py`")
 
 async def cmd_modules(channel, author, parts):
