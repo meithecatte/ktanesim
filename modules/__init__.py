@@ -25,8 +25,6 @@ def __find_module_class(moduleName):
         raise Exception(f"Module was not found in the script `{moduleName}.py`")
     return outputInstance
 
-grab=__find_module_class
-
 # Grab all scripts from the current folder
 for moduleScript in glob.glob(pjoin(pdir(__file__),"*.py")):
     # Ignore non-module scripts

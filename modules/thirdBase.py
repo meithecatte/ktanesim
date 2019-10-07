@@ -1,6 +1,6 @@
-import modules
+from modules.whosOnFirst import WhosOnFirst
 
-class ThirdBase(modules.grab('whosOnFirst')):
+class ThirdBase(WhosOnFirst):
     display_name = "Third Base"
     manual_name = "Third Base"
     help_text = "`{cmd} push 8i99` or `{cmd} press 66i8` to push a button."
