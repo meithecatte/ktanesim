@@ -153,10 +153,12 @@ class Wires(modules.Module):
     }
 
 class ComplicatedWires(modules.Module):
+    identifiers = ['complicatedWires']
     display_name = "Complicated Wires"
     manual_name = "Complicated Wires"
     help_text = "`{cmd} cut 3` - cut the third wire. `{cmd} cut 1 4 6` - cut multiple wires. `{cmd} cut 146` - cut multiple wires, shorter. Wires are counted left to right, empty spaces excluded."
     module_score = 3
+    vanilla = True
 
     @enum.unique
     class Color(enum.Enum):
@@ -370,10 +372,12 @@ class ComplicatedWires(modules.Module):
     }
 
 class WireSequence(modules.Module):
+    identifiers = ['wireSequence']
     display_name = "Wire Sequence"
     manual_name = "Wire Sequence"
     help_text = "`{cmd} cut 7` - cut wire 7. `{cmd} down`, `{cmd} d` - go to the next panel. `{cmd} up`, `{cmd} u` - go back to the previous panel. `{cmd} cut 1 3 d` - cut mutiple wires and continue."
     module_score = 4
+    vanilla = True
 
     @enum.unique
     class Color(enum.Enum):
