@@ -4,35 +4,6 @@ import modules
 from functools import lru_cache
 from wand.image import Image
 
-MORSE_CODE = {
-    "a": ".-",
-    "b": "-...",
-    "c": "-.-.",
-    "d": "-..",
-    "e": ".",
-    "f": "..-.",
-    "g": "--.",
-    "h": "....",
-    "i": "..",
-    "j": ".---",
-    "k": "-.-",
-    "l": ".-..",
-    "m": "--",
-    "n": "-.",
-    "o": "---",
-    "p": ".--.",
-    "q": "--.-",
-    "r": ".-.",
-    "s": "...",
-    "t": "-",
-    "u": "..-",
-    "v": "...-",
-    "w": ".--",
-    "x": "-..-",
-    "y": "-.--",
-    "z": "--..",
-}
-
 DOT_LENGTH = 45
 
 class MorseCode(modules.Module):
@@ -100,7 +71,7 @@ class MorseCode(modules.Module):
             for letter in self.word:
                 add(off, 3)
                 first_signal = True
-                for signal in MORSE_CODE[letter]:
+                for signal in modules.utils.LETTER_TO_MORSE[letter]:
                     if not first_signal: add(off, 1)
                     first_signal = False
                     add(on, 3 if signal == '-' else 1)
