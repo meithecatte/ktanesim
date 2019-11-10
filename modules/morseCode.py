@@ -70,7 +70,7 @@ class MorseCode(modules.Module):
         self.frequency = self.wordset[self.word]
         self.last_frequency = 505
         self.log(f"The word is {self.word}, with a frequency of 3.{self.frequency} MHz")
-    
+
     def get_image(self, rx_led, solve_led):
         svg = (
             f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10">'
@@ -87,7 +87,7 @@ class MorseCode(modules.Module):
     def render(self, strike):
         if self.solved:
             return self.get_image(False, '#0f0'), 'render.png'
-        
+
         led = '#f00' if strike else '#fff'
 
         on = self.get_image(True, led)
@@ -107,7 +107,7 @@ class MorseCode(modules.Module):
             add(off, 4)
 
             return modules.gif_output(im)
-    
+
     @modules.check_solve_cmd
     async def cmd_transmit(self, author, parts):
         if len(parts) == 0 or len(parts) > 2 or len(parts) == 2 and parts[1].lower() != "mhz":
@@ -115,7 +115,7 @@ class MorseCode(modules.Module):
 
         freq = parts[0]
         if freq.startswith('3.'): freq = freq[2:]
-    
+
         if not freq.isdigit() or len(freq) != 3 or (freq[0] != "5" or freq[-1] not in '25') and freq != "600":
             return await self.usage(author)
 
@@ -140,7 +140,7 @@ class MorseCode(modules.Module):
             await self.handle_solve(author)
         else:
             await self.handle_strike(author)
-    
+
     COMMANDS = {
         "transmit": cmd_transmit,
         "tx": cmd_transmit,
