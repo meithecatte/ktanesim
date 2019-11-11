@@ -1,7 +1,92 @@
 import random
 import modules
 
-class WhosOnFirst(modules.Module):
+# Abstract superclass containing code shared
+# between Who's on First and Third Base
+class WoFCommon(modules.Module):
+    # Called on each button while parsing.
+    def canonical_button_name(self,v):
+        raise NotImplementedError
+
+    def __init__(self, bomb, ident):
+        super().__init__(bomb, ident)
+        self.stage = 0
+        self.randomize()
+
+    def get_svg(self, led):
+        svg = (
+            f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10" transform="{self.transform}">'
+            f'<path stroke="#000" stroke-width="2" d="M5 5h338v338h-338z"/>'
+            f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>'
+            '<path fill="#000" stroke="#000" stroke-width="2" d="M34 25h230v67h-232zM277 106h52v208h-52z"/>'
+            '<path stroke="#000" d="M34 125h106v44h-106zM158 125h106v44h-106zM34 202h106v44h-106zM158 202h106v44h-106zM34 270h106v44h-106zM158 270h106v44h-106z"/>'
+            '<text x="149" y="72" text-anchor="middle" style="font-family:sans-serif;font-size:28pt;">{:s}</text>'.format(self.display))
+
+        for i in range(3):
+            color = '#0f0' if self.stage > i else '#fff'
+            svg += f'<path fill="{color}" stroke="{color}" stroke-width="2" d="M288 {257 - 57 * i}h30v20h-30z"/>'
+
+        for index, text in enumerate(self.buttons):
+            x = [87, 211][index % 2]
+            y = [155, 232, 300][index // 2]
+            svg += f'<text x="{x}" y="{y}" text-anchor="middle" style="font-family:sans-serif;font-size:16pt;" fill="#000">{text}</text>'
+        svg += '</svg>'
+        return svg
+
+    def randomize(self):
+        self.display = random.choice(list(self.DISPLAY_WORDS.keys()))
+        self.buttons = random.sample(random.choice(self.BUTTON_GROUPS), 6)
+        self.log(f"State randomized. Stage {self.stage}. Display: {self.display}. Buttons: {' '.join(self.buttons)}")
+
+    @modules.check_solve_cmd
+    async def cmd_push(self, author, parts):
+        if not parts:
+            return await self.usage(author)
+        button = ' '.join(parts).upper()
+        button = self.canonical_button_name(button)
+
+        if button not in sum(self.BUTTON_GROUPS, []):
+            return await self.bomb.channel.send(f"{author.mention} \"{button}\" isn't a valid word.")
+
+        if button not in self.buttons:
+            return await self.handle_unsubmittable(author)
+
+        solution = self.get_solution()
+
+        self.log(f"Pressed {button}, expected {solution}")
+
+        if button == solution:
+            self.stage += 1
+            if self.stage == 3:
+                await self.handle_solve(author)
+            else:
+                self.randomize()
+                await self.handle_next_stage(author)
+        else:
+            self.randomize()
+            await self.handle_strike(author)
+
+    def get_solution(self):
+        index = self.DISPLAY_WORDS[self.display]
+
+        word = self.buttons[index]
+        self.log(f"Button to look at is {index}, the word is {word}")
+
+        precedence = self.PRECEDENCE[word]
+
+        self.log(f"Precedence list: {','.join(precedence)}")
+        for button in precedence:
+            if button in self.buttons:
+                self.log(f"Button to press is {button}")
+                return button
+        assert False, "The rules should prevent this"
+
+    COMMANDS = {
+        "push": cmd_push,
+        "press": cmd_push,
+    }
+
+class WhosOnFirst(WoFCommon):
     identifiers = ['whosOnFirst']
     display_name = "Who's on First"
     manual_name = "Who\u2019s on First"
@@ -56,95 +141,15 @@ class WhosOnFirst(modules.Module):
         "LIKE":    ["YOU'RE", "NEXT", "U", "UR", "HOLD", "DONE", "UH UH", "WHAT?", "UH HUH", "YOU", "LIKE", "SURE", "YOU ARE", "YOUR"],
     }
 
-    def __init__(self, bomb, ident):
-        super().__init__(bomb, ident)
-        self.stage = 0
-        self.randomize()
-
-    def get_svg(self, led):
-        svg = (
-            f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10" transform="{self.transform}">'
-            f'<path stroke="#000" stroke-width="2" d="M5 5h338v338h-338z"/>'
-            f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>'
-            '<path fill="#000" stroke="#000" stroke-width="2" d="M34 25h230v67h-232zM277 106h52v208h-52z"/>'
-            '<path stroke="#000" d="M34 125h106v44h-106zM158 125h106v44h-106zM34 202h106v44h-106zM158 202h106v44h-106zM34 270h106v44h-106zM158 270h106v44h-106z"/>'
-            '<text x="149" y="72" text-anchor="middle" style="font-family:sans-serif;font-size:28pt;">{:s}</text>'.format(self.display))
-
-        for i in range(3):
-            color = '#0f0' if self.stage > i else '#fff'
-            svg += f'<path fill="{color}" stroke="{color}" stroke-width="2" d="M288 {257 - 57 * i}h30v20h-30z"/>'
-
-        for index, text in enumerate(self.buttons):
-            x = [87, 211][index % 2]
-            y = [155, 232, 300][index // 2]
-            svg += f'<text x="{x}" y="{y}" text-anchor="middle" style="font-family:sans-serif;font-size:16pt;" fill="#000">{text}</text>'
-        svg += '</svg>'
-        return svg
-
-    def randomize(self):
-        self.display = random.choice(list(self.DISPLAY_WORDS.keys()))
-        self.buttons = random.sample(random.choice(self.BUTTON_GROUPS), 6)
-        self.log(f"State randomized. Stage {self.stage}. Display: {self.display}. Buttons: {' '.join(self.buttons)}")
-
-    # method is overwritten when used in third base
-    def canonical_button_name(self,v):
+    def canonical_button_name(self, v):
         return v
 
-    @modules.check_solve_cmd
-    async def cmd_push(self, author, parts):
-        if not parts:
-            return await self.usage(author)
-        button = ' '.join(parts).upper()
-        button = self.canonical_button_name(button)
-
-        if button not in sum(self.BUTTON_GROUPS, []):
-            return await self.bomb.channel.send(f"{author.mention} \"{button}\" isn't a valid word.")
-
-        if button not in self.buttons:
-            return await self.handle_unsubmittable(author)
-
-        solution = self.get_solution()
-
-        self.log(f"Pressed {button}, expected {solution}")
-
-        if button == solution:
-            self.stage += 1
-            if self.stage == 3:
-                await self.handle_solve(author)
-            else:
-                self.randomize()
-                await self.handle_next_stage(author)
-        else:
-            self.randomize()
-            await self.handle_strike(author)
-
-    def get_solution(self):
-        index = self.DISPLAY_WORDS[self.display]
-
-        word = self.buttons[index]
-        self.log(f"Button to look at is {index}, the word is {word}")
-
-        precedence = self.PRECEDENCE[word]
-
-        self.log(f"Precedence list: {','.join(precedence)}")
-        for button in precedence:
-            if button in self.buttons:
-                self.log(f"Button to press is {button}")
-                return button
-        assert False, "The rules should prevent this"
-
-    COMMANDS = {
-        "push": cmd_push,
-        "press": cmd_push,
-    }
-
-class ThirdBase(WhosOnFirst):
+class ThirdBase(WoFCommon):
     identifiers = ['thirdBase']
     display_name = "Third Base"
     manual_name = "Third Base"
     help_text = "`{cmd} push 8i99` or `{cmd} press 66i8` to push a button."
     module_score = 6
-    vanilla = False
     transform = 'rotate(180 174 174)'
 
     def canonical_button_name(self, v):
@@ -189,4 +194,4 @@ class ThirdBase(WhosOnFirst):
         "X6IS": ["HZN9", "IS9H", "S89H", "SZN6", "XZNS", "X9HI", "ZSN8", "SI9X", "SNZX", "9NZS", "X6IS", "8NSZ", "8I99", "ZHOX"],
     }
 
-    BUTTON_GROUPS = [list(PRECEDENCE)]
+    BUTTON_GROUPS = [list(PRECEDENCE.keys())]
