@@ -7,12 +7,14 @@ class WhosOnFirst(modules.Module):
     manual_name = "Who\u2019s on First"
     help_text = "`{cmd} push you're` or `{cmd} press press` to push a button. The phrase must match exactly."
     module_score = 4
-    third_base = False
     vanilla = True
+    transform = 'none'
 
     BUTTON_GROUPS = [
-        ["READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS"],
-        ["YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE"],
+        ["READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT",
+            "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS"],
+        ["YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH",
+            "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE"],
     ]
 
     DISPLAY_WORDS = {
@@ -60,13 +62,12 @@ class WhosOnFirst(modules.Module):
         self.randomize()
 
     def get_svg(self, led):
-        transform = 'rotate(180 174 174)' if self.third_base else 'none'
         svg = (
-            f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10" transform="{transform}">'
+            f'<svg viewBox="0 0 348 348" fill="#fff" stroke-linecap="butt" stroke-linejoin="round" stroke-miterlimit="10" transform="{self.transform}">'
             f'<path stroke="#000" stroke-width="2" d="M5 5h338v338h-338z"/>'
             f'<circle fill="{led}" stroke="#000" cx="298" cy="40.5" r="15" stroke-width="2"/>'
             '<path fill="#000" stroke="#000" stroke-width="2" d="M34 25h230v67h-232zM277 106h52v208h-52z"/>'
-            '<path stroke="#000" d="M34 125h106v44h-106zM158 125h106v44h-106zM34 202h106v44h-106zM158 202h106v44h-106zM34 270h106v44h-106zM158 270h106v44h-106z"/>' +
+            '<path stroke="#000" d="M34 125h106v44h-106zM158 125h106v44h-106zM34 202h106v44h-106zM158 202h106v44h-106zM34 270h106v44h-106zM158 270h106v44h-106z"/>'
             '<text x="149" y="72" text-anchor="middle" style="font-family:sans-serif;font-size:28pt;">{:s}</text>'.format(self.display))
 
         for i in range(3):
@@ -85,14 +86,16 @@ class WhosOnFirst(modules.Module):
         self.buttons = random.sample(random.choice(self.BUTTON_GROUPS), 6)
         self.log(f"State randomized. Stage {self.stage}. Display: {self.display}. Buttons: {' '.join(self.buttons)}")
 
+    # method is overwritten when used in third base
+    def canonical_button_name(self,v):
+        return v
+
     @modules.check_solve_cmd
     async def cmd_push(self, author, parts):
         if not parts:
             return await self.usage(author)
         button = ' '.join(parts).upper()
-
-        if self.third_base:
-            button = button.replace('0', 'O').replace('1', 'I')
+        button = self.canonical_button_name(button)
 
         if button not in sum(self.BUTTON_GROUPS, []):
             return await self.bomb.channel.send(f"{author.mention} \"{button}\" isn't a valid word.")
@@ -141,8 +144,11 @@ class ThirdBase(WhosOnFirst):
     manual_name = "Third Base"
     help_text = "`{cmd} push 8i99` or `{cmd} press 66i8` to push a button."
     module_score = 6
-    third_base = True
     vanilla = False
+    transform = 'rotate(180 174 174)'
+
+    def canonical_button_name(self, v):
+        return v.replace('0', 'O').replace('1', 'I')
 
     DISPLAY_WORDS = {
         "NHXS": 2, "IH6X": 1, "XI8Z": 5, "I8O9": 1, "XOHZ": 5, "H68S": 2,
