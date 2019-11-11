@@ -7,8 +7,13 @@ MODDED_MODULES = {}
 
 def register_module(module):
     category = VANILLA_MODULES if module.vanilla else MODDED_MODULES
-    for identifier in module.identifiers:
-        category[identifier] = module
+    try:
+        for identifier in module.identifiers:
+            category[identifier] = module
+    except AttributeError:
+        # Assume we're dealing with an abstract class that doesn't need
+        # to be registered.
+        pass
 
 # This has to be here to avoid cyclic imports.
 from modules.base import Module, noparts, check_solve_cmd, gif_append, gif_output
