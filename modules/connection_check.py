@@ -64,7 +64,7 @@ class ConnectionCheck(modules.Module):
         graph = ConnectionCheck.GRAPHS[letter]
         self.expected = [pair in graph for pair in self.pairs]
         self.log(f"Expected: {self.expected!r}")
-        
+
     def get_svg(self, led):
         svg = ('<svg viewBox="0 0 348 348" fill="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="butt" stroke-miterlimit="10">'
             '<path stroke="#000" d="M5 5h338v338h-338z"/>'
