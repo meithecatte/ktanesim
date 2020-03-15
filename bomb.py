@@ -410,30 +410,7 @@ class Bomb:
         await self.run_command_on_unclaimed(author, parts, "claimview")
 
     async def cmd_detonate(self, author, parts):
-        if parts:
-            return await self.channel.send(f"{author.mention} Trailing arguments.")
-        if author.id == BOT_OWNER or isinstance(self.channel, discord.channel.DMChannel):
-            return await self.bomb_end(True)
-        else:
-            msg = await self.channel.send(f"{author.mention} wants to detonate this bomb in an explosion-proof container instead of defusing it and selling the parts for :dollar:. If you agree, react with {DETONATE_REACT}")
-            await msg.add_reaction(DETONATE_REACT)
-            start_time = time.monotonic()
-            while time.monotonic() < start_time + DETONATE_TIMEOUT:
-                try:
-                    await self.client.wait_for('reaction_add', timeout=start_time+DETONATE_TIMEOUT-time.monotonic(),
-                        check=lambda reaction, user: reaction.emoji == DETONATE_REACT and reaction.message.id == msg.id)
-                except asyncio.TimeoutError:
-                    pass
-                msg = await self.channel.get_message(msg.id)
-                approval = 0
-                for reaction in msg.reactions:
-                    if reaction.emoji == DETONATE_REACT:
-                        async for user in reaction.users():
-                            if user.id != author.id:
-                                approval += 1
-                if approval >= DETONATE_APPROVAL:
-                    return await self.bomb_end(True)
-            await self.channel.send(f"Only {approval} out of {DETONATE_APPROVAL} needed people agreed. Not detonating.")
+        return await self.bomb_end(True)
 
     async def cmd_find(self, author, parts):
         if not parts:
